@@ -871,6 +871,17 @@ td code,
   transition: background 0.2s var(--ease-out);
 }
 
+/* pre 안의 code는 인라인 스타일 리셋 — 하이라이터 색상 유지 */
+pre code {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  color: var(--code-text) !important;
+}
+
 
 /* ================================================================
    OUTPUT BLOCK
