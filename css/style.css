@@ -1274,7 +1274,14 @@ details.answer .answer-body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.callout pre {
+/* 모든 컨텐츠 박스 안 pre — 다크 배경으로 통일 */
+.callout pre,
+.why-box pre,
+.ai-box pre,
+.computer-box pre,
+.caution-box pre,
+.docs-box pre,
+.problem pre {
   margin: 8px 0 0;
   background: var(--code-bg);
   color: var(--code-text);
@@ -1282,6 +1289,8 @@ details.answer .answer-body {
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   border: 1px solid var(--code-border);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
 }
 .callout-tip {
   background: color-mix(in srgb, var(--level-adv) 8%, transparent);
