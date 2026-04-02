@@ -4,18 +4,30 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>11주차: 컴프리헨션 & 제너레이터 — 파이썬이 게으른 이유 | PyWhy</title>
-  <link rel="stylesheet" href="../css/style.css">
+  <title>11주차: 컴프리헨션 &amp; 제너레이터 | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="컴프리헨션 & 제너레이터 — 의도대로 읽히는 코드, 필요할 때만 계산하는 코드">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="11주차: 컴프리헨션 &amp; 제너레이터 | PyWhy">
+  <meta property="og:description" content="컴프리헨션 & 제너레이터 — 의도대로 읽히는 코드, 필요할 때만 계산하는 코드">
+  <meta property="og:url" content="https://soccz.github.io/python-why/weeks/week11.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="11주차: 컴프리헨션 &amp; 제너레이터 | PyWhy">
+  <meta name="twitter:description" content="컴프리헨션 & 제너레이터 — 의도대로 읽히는 코드, 필요할 때만 계산하는 코드">
 </head>
 <body data-week="11">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
 
 <!-- ==================== HEADER ==================== -->
 <header class="site-header">
   <div class="header-inner">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
-        <a href="../index.html" class="site-title">PyWhy</a>
-      </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
     <div class="header-nav">
       <a href="week10.html" class="nav-btn">&larr; 이전</a>
       <a href="week12.html" class="nav-btn">다음 &rarr;</a>
@@ -25,16 +37,17 @@
 </header>
 
 <div class="page-wrapper">
-<main>
+<main id="main-content">
 
 <!-- ==================== WEEK HEADER ==================== -->
 <div class="week-header">
   <div class="week-number">WEEK 11</div>
-  <h1 class="week-title">컴프리헨션 &amp; 제너레이터<br>— 파이썬이 게으른 이유</h1>
+  <h1 class="week-title">컴프리헨션 &amp; 제너레이터<br>— 의도대로 읽히는 코드, 필요할 때만 계산하는 코드</h1>
   <p class="week-subtitle">
-    <code>[x*2 for x in lst]</code>는 왜 for 루프보다 빠른가?<br>
-    제너레이터는 어떻게 함수를 <strong>일시정지</strong>하는가?<br>
-    <strong>Lazy Evaluation</strong>이 메모리를 어떻게 아끼는가 — 내부까지 완전히 분해합니다.
+    4줄짜리 for문이 1줄로 줄어듭니다 — 그런데 이것은 "축약"이 아닙니다.<br>
+    1억 개의 데이터를 메모리 200바이트로 처리합니다 — 어떻게?<br>
+    <code>yield</code>는 함수를 "멈춥니다" — 그리고 다시 살립니다.<br>
+    <strong>컴프리헨션</strong>은 의도를 코드로, <strong>제너레이터</strong>는 계산을 미루는 도구입니다.
   </p>
 </div>
 
@@ -43,14 +56,10 @@
   <summary>목차 — 11주차 전체 내용</summary>
   <div class="toc-body">
     <div class="toc-section">
-      <a href="#story" class="toc-section-link">
-        <span class="toc-num">01</span>이번 주 이야기
-      </a>
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기</a>
     </div>
     <div class="toc-section">
-      <a href="#listcomp" class="toc-section-link">
-        <span class="toc-num">02</span>리스트 컴프리헨션 — 왜 빠른가
-      </a>
+      <a href="#list-comp" class="toc-section-link"><span class="toc-num">02</span>리스트 컴프리헨션 — for문보다 나은 게 뭔가</a>
       <div class="toc-levels">
         <span class="toc-level-dot elem">초급</span>
         <span class="toc-level-dot inter">중급</span>
@@ -59,19 +68,7 @@
       </div>
     </div>
     <div class="toc-section">
-      <a href="#dict-set-comp" class="toc-section-link">
-        <span class="toc-num">03</span>dict / set 컴프리헨션
-      </a>
-      <div class="toc-levels">
-        <span class="toc-level-dot elem">초급</span>
-        <span class="toc-level-dot inter">중급</span>
-        <span class="toc-level-dot adv">고급</span>
-      </div>
-    </div>
-    <div class="toc-section">
-      <a href="#genexpr" class="toc-section-link">
-        <span class="toc-num">04</span>제너레이터 표현식 vs 리스트 컴프리헨션
-      </a>
+      <a href="#dict-set-comp" class="toc-section-link"><span class="toc-num">03</span>딕셔너리 &amp; 세트 컴프리헨션</a>
       <div class="toc-levels">
         <span class="toc-level-dot elem">초급</span>
         <span class="toc-level-dot inter">중급</span>
@@ -80,9 +77,15 @@
       </div>
     </div>
     <div class="toc-section">
-      <a href="#yield" class="toc-section-link">
-        <span class="toc-num">05</span>yield — 함수가 일시정지하는 원리
-      </a>
+      <a href="#nested" class="toc-section-link"><span class="toc-num">04</span>중첩 컴프리헨션과 스코프 격리</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#generator-func" class="toc-section-link"><span class="toc-num">05</span>제너레이터 함수 &amp; yield</a>
       <div class="toc-levels">
         <span class="toc-level-dot elem">초급</span>
         <span class="toc-level-dot inter">중급</span>
@@ -91,9 +94,14 @@
       </div>
     </div>
     <div class="toc-section">
-      <a href="#yield-from" class="toc-section-link">
-        <span class="toc-num">06</span>yield from — 제너레이터 위임
-      </a>
+      <a href="#yield-advanced" class="toc-section-link"><span class="toc-num">06</span>yield from &amp; send — 양방향 통신</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#genexpr" class="toc-section-link"><span class="toc-num">07</span>제너레이터 표현식 — 괄호 하나의 차이</a>
       <div class="toc-levels">
         <span class="toc-level-dot inter">중급</span>
         <span class="toc-level-dot adv">고급</span>
@@ -101,2773 +109,2022 @@
       </div>
     </div>
     <div class="toc-section">
-      <a href="#itertools" class="toc-section-link">
-        <span class="toc-num">07</span>itertools — 무한한 도구상자
-      </a>
+      <a href="#itertools" class="toc-section-link"><span class="toc-num">08</span>itertools — C로 작성된 이터레이터 도구</a>
       <div class="toc-levels">
-        <span class="toc-level-dot inter">중급</span>
-        <span class="toc-level-dot adv">고급</span>
-      </div>
-    </div>
-    <div class="toc-section">
-      <a href="#ai-generators" class="toc-section-link">
-        <span class="toc-num">08</span>AI와 제너레이터
-      </a>
-      <div class="toc-levels">
-        <span class="toc-level-dot elem">초급</span>
-        <span class="toc-level-dot inter">중급</span>
-      </div>
-    </div>
-    <div class="toc-section">
-      <a href="#exercises" class="toc-section-link">
-        <span class="toc-num">09</span>연습문제 (12문제 — 초급3 + 중급4 + 고급1 + 전공자4)
-      </a>
-      <div class="toc-levels">
-        <span class="toc-level-dot elem">초급</span>
         <span class="toc-level-dot inter">중급</span>
         <span class="toc-level-dot adv">고급</span>
         <span class="toc-level-dot exp">전공자</span>
       </div>
     </div>
     <div class="toc-section">
-      <a href="#summary" class="toc-section-link">
-        <span class="toc-num">10</span>이번 주 정리
-      </a>
+      <a href="#lazy" class="toc-section-link"><span class="toc-num">09</span>Lazy Evaluation — 계산을 미루는 철학</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
     </div>
     <div class="toc-section">
-      <a href="#glossary" class="toc-section-link">
-        <span class="toc-num">11</span>용어 사전 (30개)
-      </a>
+      <a href="#ai" class="toc-section-link"><span class="toc-num">10</span>AI는 이걸 어떻게 하는가</a>
     </div>
     <div class="toc-section">
-      <a href="#next-week" class="toc-section-link">
-        <span class="toc-num">12</span>다음 주 맛보기
-      </a>
+      <a href="#practice" class="toc-section-link"><span class="toc-num">11</span>실습 &amp; 연습문제</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary" class="toc-section-link"><span class="toc-num">12</span>요약 &amp; 용어집</a>
     </div>
   </div>
 </details>
 
-<!-- ==================== 01. 이번 주 이야기 ==================== -->
+<!-- ==================== 01 이야기 ==================== -->
 <section id="story">
-  <h2>이번 주 이야기</h2>
   <div class="story-block">
+    <h2>01 — 이번 주 이야기</h2>
     <p>
-      지난 주에 딕셔너리와 세트를 배웠습니다.
-      이제 이 자료구조들을 만들 때마다 반복되는 패턴을 봅시다.
+      1부터 100까지 중 짝수의 제곱을 구해야 합니다. 지금까지 배운 방식으로 쓰면 이렇습니다.
     </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># 1~10의 짝수를 제곱한 리스트를 만드는 세 가지 방법
-numbers = range(1, 11)
-
-# 방법 1: 전통적인 for 루프
-result1 = []
-for n in numbers:
-    if n % 2 == 0:
-        result1.append(n ** 2)
-print(result1)   # [4, 16, 36, 64, 100]
-
-# 방법 2: map + filter (함수형)
-result2 = list(map(lambda n: n**2, filter(lambda n: n % 2 == 0, numbers)))
-print(result2)   # [4, 16, 36, 64, 100]
-
-# 방법 3: 리스트 컴프리헨션
-result3 = [n**2 for n in numbers if n % 2 == 0]
-print(result3)   # [4, 16, 36, 64, 100]</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[4, 16, 36, 64, 100]
-[4, 16, 36, 64, 100]
-[4, 16, 36, 64, 100]
-    </div>
+<pre><code>result = []
+for i in range(1, 101):
+    if i % 2 == 0:
+        result.append(i ** 2)
+print(result[:5])   # [4, 16, 36, 64, 100]
+print(len(result))  # 50</code></pre>
     <p>
-      세 가지 모두 같은 결과를 냅니다. 그런데 방법 3이 단연 가장 짧고 읽기 쉽습니다.
-      그리고 실제로 <strong>더 빠르기까지</strong> 합니다. 왜일까요?
+      4줄입니다. 잘못된 코드는 아닙니다. 하지만 이 코드가 하는 일을 한 문장으로 말하면?<br>
+      <em>"1부터 100까지 중 짝수인 것의 제곱으로 이루어진 리스트"</em><br>
+      그 문장이 그대로 코드가 되면 어떨까요?
+    </p>
+<pre><code>result = [i ** 2 for i in range(1, 101) if i % 2 == 0]
+print(result[:5])   # [4, 16, 36, 64, 100]
+print(len(result))  # 50</code></pre>
+    <p>
+      이것이 <strong>리스트 컴프리헨션(List Comprehension)</strong>입니다.
+      코드가 "의도"처럼 읽힙니다. 그게 핵심입니다.
     </p>
     <p>
-      이번 주에는 두 가지 핵심 개념을 분해합니다.
+      이 문법은 우연히 생긴 게 아닙니다.
+      1990년대 함수형 프로그래밍 언어 <strong>Haskell</strong>에서 영감을 받았습니다.
+      Haskell의 리스트 컴프리헨션: <code>[x^2 | x &lt;- [1..100], even x]</code>
+      — 수학의 집합 표기법 <code>{x² | x ∈ {1..100}, x는 짝수}</code>을 코드로 옮긴 것입니다.
+      Guido van Rossum은 2000년 <strong>PEP 202</strong>에서 이것을 Python에 도입했습니다.
+      이유: "list comprehensions provide a more concise way to create lists in situations where
+      <code>map()</code> and <code>filter()</code> would currently be used."
     </p>
-    <ul>
-      <li><strong>컴프리헨션(Comprehension)</strong>: 리스트/딕셔너리/세트를 만드는 간결한 문법 — 내부에서 무슨 일이 일어나는가</li>
-      <li><strong>제너레이터(Generator)</strong>: "게으른 계산" — 필요할 때만 값을 만드는 이터레이터</li>
-    </ul>
-    <div class="callout callout-tip">
-      <strong>핵심 질문:</strong><br>
-      왜 파이썬은 "게으른(Lazy)" 평가를 제공하는가? 1억 개의 숫자를 다 메모리에 올리지 않고도 처리할 수 있는 방법이 있다면 — 그것이 제너레이터입니다.
+    <p>
+      이제 다른 문제입니다. 1부터 <strong>1억</strong>까지 중 짝수의 제곱이 필요합니다.
+      한 번에 다 구해서 메모리에 올리면?
+    </p>
+<pre><code>import sys
+
+# 이 코드는 실행하지 마세요 — 메모리 수 GB를 소비합니다
+# result = [i ** 2 for i in range(1, 100_000_001) if i % 2 == 0]
+# 5천만 개 × 8바이트(int 포인터) + 객체 오버헤드 = 약 3.2 GB
+
+# 대신 작은 예로 크기를 확인합니다
+small = [i ** 2 for i in range(100_000)]
+print(f"리스트 크기: {sys.getsizeof(small):,} bytes")   # 800,984 bytes</code></pre>
+    <p>
+      전부 만들어 놓고 쓰는 방식의 한계입니다.
+      그런데 이 값들이 필요한 게 <strong>하나씩, 순서대로</strong>라면?
+      <strong>제너레이터(Generator)</strong>는 요청할 때만, 하나씩, 그때그때 계산합니다.
+    </p>
+<pre><code>import sys
+
+gen = (i ** 2 for i in range(1, 100_000_001) if i % 2 == 0)
+print(f"제너레이터 크기: {sys.getsizeof(gen)} bytes")   # 200 bytes — 1억이든 1조든 동일!
+print(next(gen))   # 4      (첫 번째 값만 계산)
+print(next(gen))   # 16     (두 번째 값만 계산)
+print(next(gen))   # 36     (세 번째 값만 계산)</code></pre>
+    <div class="callout callout-warning">
+      <strong>이번 주 핵심 질문</strong><br>
+      컴프리헨션은 for문을 "축약"한 것인가, 아니면 다른 무언가인가?<br>
+      제너레이터는 왜 메모리를 적게 쓰는가? 계산은 어디서 일어나는가?<br>
+      <code>yield</code>는 어떻게 함수를 "멈추게" 하는가?
     </div>
   </div>
 </section>
 
-<!-- ==================== 02. 리스트 컴프리헨션 ==================== -->
-<section id="listcomp">
-  <h2>리스트 컴프리헨션 — 왜 빠른가</h2>
+<!-- ==================== 02 리스트 컴프리헨션 ==================== -->
+<section id="list-comp">
+  <h2>02 — 리스트 컴프리헨션: for문보다 나은 게 뭔가</h2>
 
-  <!-- 초급 -->
-  <div class="level-section elementary">
-    <span class="level-badge level-elementary">초급</span>
-    <h3>레시피로 만드는 리스트</h3>
+  <div class="why-box">
+    <h3>핵심 비유: 마트 주문서</h3>
     <p>
-      리스트 컴프리헨션(List Comprehension)은 <strong>레시피(Recipe)</strong>처럼 생각하세요.
-      "사과들이 있는데, 각각을 씻어서 담아라" — 이게 컴프리헨션입니다.
+      마트에서 장을 볼 때 두 가지 방법이 있습니다.<br>
+      <strong>방법1 (for문)</strong>: 마트 안을 돌아다니며 필요한 것을 하나씩 카트에 담는다.<br>
+      <strong>방법2 (컴프리헨션)</strong>: 주문서를 한 번에 작성한다 — "사과 중 빨간 것만 2kg씩 포장해줘."<br>
+      리스트 컴프리헨션은 방법2입니다. 주문서(표현식)로 리스트를 <em>선언적으로</em> 만듭니다.
     </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># 형식: [표현식 for 변수 in 이터러블]
-#         무엇을    어떤변수  어디서 가져올지
-
-fruits = ['apple', 'banana', 'cherry']
-
-# for 루프 버전
-upper_loop = []
-for fruit in fruits:
-    upper_loop.append(fruit.upper())
-print(upper_loop)   # ['APPLE', 'BANANA', 'CHERRY']
-
-# 컴프리헨션 버전
-upper_comp = [fruit.upper() for fruit in fruits]
-print(upper_comp)   # ['APPLE', 'BANANA', 'CHERRY']</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-['APPLE', 'BANANA', 'CHERRY']
-['APPLE', 'BANANA', 'CHERRY']
-    </div>
-
-    <p>조건을 추가하면 필터링도 됩니다:</p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># 형식: [표현식 for 변수 in 이터러블 if 조건]
-numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-fruits = ['apple', 'banana', 'cherry']
-
-# 짝수만 골라서 제곱
-evens_sq = [n**2 for n in numbers if n % 2 == 0]
-print(evens_sq)   # [4, 16, 36, 64, 100]
-
-# 5글자 이상인 과일만
-long_fruits = [f for f in fruits if len(f) >= 6]
-print(long_fruits)   # ['banana', 'cherry']</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[4, 16, 36, 64, 100]
-['banana', 'cherry']
-    </div>
-
-    <div class="callout callout-tip">
-      <strong>지금 바로 해봐:</strong> 1~20 중 3의 배수만 골라 리스트로 만들어 보세요.
-      <div class="code-block" style="margin-top:8px;">
-        <div class="code-header">
-          <span class="code-label">Python</span>
-          <button class="copy-btn">복사</button>
-        </div>
-        <pre><code class="language-python"># 1~20 중 3의 배수만
-multiples_of_3 = [n for n in range(1, 21) if n % 3 == 0]
-print(multiples_of_3)   # [3, 6, 9, 12, 15, 18]
-
-# 숫자를 문자열로 변환하면서
-as_str = [f"#{n}" for n in range(1, 21) if n % 3 == 0]
-print(as_str)   # ['#3', '#6', '#9', '#12', '#15', '#18']</code></pre>
-      </div>
-    </div>
   </div>
 
-  <!-- 중급 -->
-  <div class="level-section intermediate">
-    <span class="level-badge level-intermediate">중급</span>
-    <h3>컴프리헨션의 동작 원리 — De-sugaring</h3>
+  <div class="level-section elementary">
+    <div class="level-badge">초급</div>
+    <h3>먼저, 불편함을 느껴봅시다</h3>
+    <p>1부터 10까지 중 짝수만 모아야 합니다. 지금까지 배운 방법으로:</p>
+<pre><code># 빈 리스트를 만든다
+evens = []
+
+# 하나씩 확인한다
+for n in range(1, 11):
+    if n % 2 == 0:
+        evens.append(n)
+
+print(evens)   # [2, 4, 6, 8, 10]</code></pre>
+    <p>작동합니다. 하지만 이걸 프로그램에서 5번 써야 한다면?</p>
+<pre><code># 짝수 모으기
+evens = []
+for n in range(1, 11):
+    if n % 2 == 0:
+        evens.append(n)
+
+# 3의 배수 모으기 — 또 4줄
+threes = []
+for n in range(1, 11):
+    if n % 3 == 0:
+        threes.append(n)
+
+# 제곱수 모으기 — 또 4줄
+squares = []
+for n in range(1, 11):
+    squares.append(n ** 2)</code></pre>
     <p>
-      리스트 컴프리헨션은 사실 <strong>Syntactic Sugar</strong>(문법적 설탕)입니다.
-      파이썬 인터프리터는 내부에서 이것을 특별한 스코프를 가진 코드로 변환합니다.
+      패턴이 보이시나요? <strong>빈 리스트 → for → 조건 → append</strong>.
+      매번 4줄씩 반복입니다. 빈 리스트 만드는 걸 잊거나, append를 빠뜨리면 버그입니다.
     </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># 이 컴프리헨션은
-result = [x**2 for x in range(5)]
+    <p>컴프리헨션은 이 패턴을 <strong>한 줄</strong>로 만듭니다:</p>
+<pre><code>evens   = [n for n in range(1, 11) if n % 2 == 0]
+threes  = [n for n in range(1, 11) if n % 3 == 0]
+squares = [n ** 2 for n in range(1, 11)]
 
-# 개념적으로 이렇게 동작합니다:
-def _listcomp_impl(_iter):
-    _result = []
-    for x in _iter:
-        _result.append(x**2)
-    return _result
-
-result_equiv = _listcomp_impl(range(5))
-print(result)         # [0, 1, 4, 9, 16]
-print(result_equiv)   # [0, 1, 4, 9, 16]</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[0, 1, 4, 9, 16]
-[0, 1, 4, 9, 16]
-    </div>
-
+print(evens)    # [2, 4, 6, 8, 10]
+print(threes)   # [3, 6, 9]
+print(squares)  # [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]</code></pre>
     <p>
-      중요한 점: 컴프리헨션은 <strong>자체 스코프</strong>를 가집니다.
-      안에서 쓴 변수 <code>x</code>는 바깥으로 누출되지 않습니다.
+      코드가 "무엇을 만드는지"를 바로 보여줍니다. 빈 리스트 초기화도, append도 필요 없습니다.
     </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">x = "outer"
 
-result = [x for x in range(3)]   # 컴프리헨션 내부의 x
-print(result)   # [0, 1, 2]
-print(x)        # "outer" ← 바깥 x가 오염되지 않음!
+    <h3>for문과 컴프리헨션 나란히 비교</h3>
+<pre><code># for문 방식 — 카트에 하나씩 담기
+cart = []
+fruits = ["사과", "바나나", "사과", "딸기", "사과"]
+for fruit in fruits:
+    if fruit == "사과":
+        cart.append(fruit)
+print(cart)   # ['사과', '사과', '사과']
 
-# Python 2에서는 x가 2로 바뀌었습니다 (Python 3에서 수정됨)
-# Python 3 공식 문서: "The iteration variable is local to the comprehension"</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[0, 1, 2]
-outer
-    </div>
+# 컴프리헨션 방식 — 주문서 한 장
+cart = [fruit for fruit in fruits if fruit == "사과"]
+print(cart)   # ['사과', '사과', '사과']</code></pre>
 
-    <p><strong>왜 for 루프보다 빠른가?</strong> 두 가지 이유가 있습니다:</p>
-    <ol>
-      <li><code>list.append()</code> 메서드를 매 반복마다 속성 조회(attribute lookup)하는 비용을 아낍니다. 컴프리헨션은 내부적으로 <code>LIST_APPEND</code> 바이트코드를 직접 씁니다.</li>
-      <li>컴프리헨션은 전용 코드 오브젝트로 컴파일되어, 루프 변수 누출을 막는 격리된 실행 환경을 가집니다.</li>
-    </ol>
-
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import timeit
-
-# 성능 비교 (실제 측정값)
-t_comp = timeit.timeit('[x*2 for x in range(1000)]', number=10000)
-t_loop = timeit.timeit(
-    stmt='''
-result = []
-for x in range(1000):
-    result.append(x*2)
-''',
-    number=10000
-)
-
-print(f"컴프리헨션: {t_comp:.4f}s")
-print(f"for 루프:   {t_loop:.4f}s")
-print(f"for 루프가 {t_loop/t_comp:.2f}배 더 느림")
-# 실행 결과: 약 1.3배 차이 (환경마다 다름)</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과 (예시):</div>
-컴프리헨션: 0.3887s
-for 루프:   0.5073s
-for 루프가 1.30배 더 느림
-    </div>
+    <p>리스트 컴프리헨션의 구조는 영어 문장처럼 읽힙니다:</p>
+<pre><code># [표현식 for 변수 in 이터러블 if 조건]
+#  ↑ 뭘 넣을지  ↑ 하나씩 꺼낸다  ↑ 조건 필터
+[fruit for fruit in fruits if fruit == "사과"]
+# "fruits에서 하나씩 꺼내서 사과인 것만 모은 리스트"</code></pre>
 
     <div class="callout callout-warning">
-      <strong>함정: 컴프리헨션 안에서 walrus 연산자 <code>:=</code> 주의</strong><br>
-      Python 3.8+의 walrus 연산자(<code>:=</code>)는 컴프리헨션 안에서 사용하면 바깥 스코프로 값을 <em>유출</em>합니다.
-      이것은 컴프리헨션의 "스코프 격리" 원칙의 예외입니다.
-      <div class="code-block" style="margin-top:8px;">
-        <div class="code-header">
-          <span class="code-label">Python</span>
-          <button class="copy-btn">복사</button>
-        </div>
-        <pre><code class="language-python">last = None
+      <strong>초급 주의: if와 else의 위치가 다릅니다</strong>
+<pre><code># 조건 필터 (if만) — for 뒤에
+evens = [x for x in range(10) if x % 2 == 0]
+print(evens)   # [0, 2, 4, 6, 8]
 
-results = [last := x for x in range(5)]
-print(results)   # [0, 1, 2, 3, 4]
-print(last)      # 4 ← 바깥으로 유출됨!
+# 조건 표현식 (if-else) — 표현식 자리(앞)에
+labels = [x if x % 2 == 0 else -1 for x in range(5)]
+print(labels)  # [0, -1, 2, -1, 4]
+# 짝수는 그대로, 홀수는 -1로</code></pre>
+      if-else가 함께 오면 표현식(앞쪽)에 씁니다. if만 있으면 필터(뒤쪽)에 씁니다.
+    </div>
 
-# 이것은 의도된 동작이지만,
-# 무심코 쓰면 예상치 못한 부작용을 일으킵니다.
-# 꼭 필요한 경우에만 신중히 사용하세요.</code></pre>
-      </div>
+    <div class="callout callout-info">
+      <strong>지금 바로 해봐</strong>
+<pre><code>numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+# 1. 3의 배수만 골라라
+multiples_of_3 = [n for n in numbers if n % 3 == 0]
+print(multiples_of_3)  # [3, 6, 9]
+
+# 2. 각 숫자를 제곱하라
+squares = [n ** 2 for n in numbers]
+print(squares)         # [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+
+# 3. 짝수는 제곱, 홀수는 그대로
+mixed = [n ** 2 if n % 2 == 0 else n for n in numbers]
+print(mixed)           # [1, 4, 3, 16, 5, 36, 7, 64, 9, 100]</code></pre>
     </div>
   </div>
 
-  <!-- 고급 -->
-  <div class="level-section advanced">
-    <span class="level-badge level-advanced">고급</span>
-    <h3>바이트코드로 보는 컴프리헨션</h3>
+  <div class="level-section intermediate">
+    <div class="level-badge">중급</div>
+    <h3>속도보다 "의도의 명확성"이 핵심</h3>
     <p>
-      Python 공식 문서의 표현을 빌리면, 컴프리헨션은
-      <em>"nested scopes that are compiled as a separate code object"</em>입니다.
-      <code>dis</code> 모듈로 직접 확인해봅시다.
+      컴프리헨션이 for문보다 빠르다는 말을 들어봤을 겁니다.
+      직접 측정해 봅시다:
     </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import dis
+<pre><code>import timeit
 
-# 리스트 컴프리헨션 바이트코드
-print("=== 리스트 컴프리헨션 ===")
-dis.dis('[x*2 for x in lst]')
-
-# 주요 바이트코드 설명:
-# GET_ITER        → iter(lst) 호출
-# BUILD_LIST      → 빈 리스트 [] 생성
-# FOR_ITER        → next() 호출, StopIteration이면 루프 탈출
-# STORE_FAST      → x = <next value>
-# BINARY_OP (*)   → x * 2 계산
-# LIST_APPEND     → result.append(x*2) — 이것이 핵심!
-# JUMP_BACKWARD   → 루프 시작으로 돌아감
-# RETURN_VALUE    → 완성된 리스트 반환</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과 (CPython 3.12+):</div>
-=== 리스트 컴프리헨션 ===
-  1           GET_ITER
-              LOAD_FAST_AND_CLEAR  (x)
-              SWAP
-              BUILD_LIST           0
-              SWAP
-         >>   FOR_ITER             7 (to 32)
-              STORE_FAST           (x)
-              LOAD_FAST            (x)
-              LOAD_CONST           2
-              BINARY_OP            (* )
-              LIST_APPEND          2
-              JUMP_BACKWARD        9 (to FOR_ITER)
-         >>   END_FOR
-              RETURN_VALUE
-    </div>
-    <p>
-      <code>LIST_APPEND</code>가 핵심입니다. 이것은 일반 <code>list.append()</code>와 달리
-      <strong>속성 조회 없이</strong> 바이트코드 수준에서 직접 리스트에 원소를 추가합니다.
-      <code>LOAD_GLOBAL</code> → <code>LOAD_ATTR</code> → <code>CALL</code> 3단계 과정이 1단계로 줄어드는 것입니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import dis
-
-# for 루프 + append 바이트코드와 비교
-def loop_version(lst):
+# for문 방식
+def for_loop():
     result = []
-    for x in lst:
-        result.append(x * 2)   # 여기서 result.append를 매번 조회
+    for i in range(100_000):
+        if i % 2 == 0:
+            result.append(i ** 2)
     return result
 
-dis.dis(loop_version)
-# LOAD_FAST       result
-# LOAD_ATTR       append       ← 속성 조회 비용!
-# LOAD_FAST       x
-# LOAD_CONST      2
-# BINARY_OP
-# CALL_FUNCTION   1            ← 함수 호출 비용!
-# POP_TOP</code></pre>
-    </div>
+# 컴프리헨션 방식
+def comprehension():
+    return [i ** 2 for i in range(100_000) if i % 2 == 0]
 
-    <p>
-      중첩 컴프리헨션(Nested Comprehension)도 직관적으로 읽을 수 있습니다.
-      핵심은 <strong>for절의 순서가 바깥 → 안쪽</strong>이라는 것입니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+t_for = timeit.timeit(for_loop, number=50)
+t_comp = timeit.timeit(comprehension, number=50)
 
-# 중첩 컴프리헨션으로 행렬 평탄화
-flat = [elem for row in matrix for elem in row]
-print(flat)   # [1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-# 읽는 방법: for row in matrix → for elem in row → elem 수집
-# 동등한 for 루프:
-flat2 = []
-for row in matrix:      # 바깥 for
-    for elem in row:    # 안쪽 for
-        flat2.append(elem)
-print(flat2)   # [1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-# 행렬 전치 (Transpose)
-transposed = [[row[i] for row in matrix] for i in range(3)]
-print(transposed)   # [[1, 4, 7], [2, 5, 8], [3, 6, 9]]</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[1, 2, 3, 4, 5, 6, 7, 8, 9]
-[1, 2, 3, 4, 5, 6, 7, 8, 9]
-[[1, 4, 7], [2, 5, 8], [3, 6, 9]]
-    </div>
-  </div>
-
-  <!-- 전공자 -->
-  <div class="level-section expert">
-    <span class="level-badge level-expert">전공자</span>
-    <h3>Part A: CPython 컴프리헨션 구현</h3>
-    <p>
-      CPython에서 리스트 컴프리헨션은 <code>compile.c</code>의 <code>compiler_listcomp()</code>에서 처리됩니다.
-      <strong>Python 3.12 이전</strong>에는 별도의 코드 오브젝트(code object)로 컴파일되어
-      <code>MAKE_FUNCTION</code> → <code>GET_ITER</code> → <code>CALL</code> 순으로 실행됐지만,
-      <strong>Python 3.12+</strong>부터는 인라인(inline) 최적화로 바이트코드가 단순화되었습니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import dis, sys
-
-print(f"Python {sys.version_info.major}.{sys.version_info.minor}")
-
-# Python 3.12+: 컴프리헨션이 인라인으로 컴파일됨
-# MAKE_FUNCTION/CALL 없이 직접 FOR_ITER + LIST_APPEND 패턴
-dis.dis('[x**2 for x in range(5)]')
-
-# 핵심 바이트코드 (Python 3.12):
-# GET_ITER              → iter(range(5)) 호출
-# LOAD_FAST_AND_CLEAR x → 루프 변수 x를 임시로 확보 (스코프 격리)
-# BUILD_LIST            → 빈 리스트 생성
-# FOR_ITER              → next() 호출
-# STORE_FAST x          → x에 저장
-# BINARY_OP **          → x**2 계산
-# LIST_APPEND           → C 레벨 PyList_Append() 직접 호출 (append() 조회 없음)
-# JUMP_BACKWARD         → 루프 반복
-# STORE_FAST x          → 루프 변수 복원 (스코프 격리 해제)</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과 (예시):</div>
-Python 3.12
-  1     GET_ITER
-        LOAD_FAST_AND_CLEAR x
-        SWAP
-        BUILD_LIST
-        SWAP
-   &gt;&gt;  FOR_ITER    (to end)
-        STORE_FAST x
-        LOAD_FAST x
-        LOAD_CONST 2
-        BINARY_OP **
-        LIST_APPEND 2
-        JUMP_BACKWARD
-    </div>
-
-    <p>
-      Python 3.12의 인라인 컴프리헨션은 <code>LOAD_FAST_AND_CLEAR</code>로 루프 변수를
-      임시 보존/복원하여 스코프 격리를 구현합니다. 별도 프레임 없이도 외부 변수가 오염되지 않습니다.
-    </p>
-
-    <h3>Part B: CPython의 LIST_APPEND vs CALL_METHOD</h3>
-    <p>
-      CPython 바이트코드 평가 루프(<code>ceval.c</code>의 <code>_PyEval_EvalFrameDefault()</code>)에서
-      <code>LIST_APPEND</code>는 스택에서 값을 꺼내 <code>PyList_Append()</code>를 직접 C 레벨에서 호출합니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># CPython ceval.c에서의 LIST_APPEND 구현 (의사코드):
-# TARGET(LIST_APPEND) {
-#     PyObject *v = POP();
-#     PyObject *list = PEEK(oparg);   // 스택에 있는 리스트 직접 참조
-#     err = PyList_Append(list, v);   // C 레벨 직접 호출
-#     Py_DECREF(v);
-#     ...
-# }
-
-# 반면 일반 append 호출은:
-# LOAD_FAST result       → result 객체 로드
-# LOAD_ATTR append       → result.append 속성 조회 (tp_getattro)
-# LOAD_FAST x            → x 로드
-# CALL_FUNCTION 1        → method_call → listappend_call → PyList_Append
-
-# 결론: 컴프리헨션은 Python 레이어의 dispatch 비용을 완전히 생략
-
-# 실제 벤치마크로 검증
-import timeit, sys
-
-sizes = [100, 1000, 10000]
-for size in sizes:
-    t_comp = timeit.timeit(
-        f'[x*2 for x in range({size})]', number=5000
-    )
-    t_loop = timeit.timeit(
-        f'r=[]; [r.append(x*2) for x in range({size})]', number=5000
-    )
-    print(f"size={size:5d}: comp={t_comp:.4f}s  loop(append)={t_loop:.4f}s")</code></pre>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== 03. dict / set 컴프리헨션 ==================== -->
-<section id="dict-set-comp">
-  <h2>dict / set 컴프리헨션</h2>
-
-  <!-- 초급 -->
-  <div class="level-section elementary">
-    <span class="level-badge level-elementary">초급</span>
-    <h3>괄호만 다르다 — {key: value}, {value}</h3>
-    <p>
-      리스트 컴프리헨션에서 괄호만 바꾸면 딕셔너리와 세트도 만들 수 있습니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">words = ['apple', 'banana', 'cherry', 'date']
-
-# 딕셔너리 컴프리헨션: {key: value for ...}
-word_lengths = {w: len(w) for w in words}
-print(word_lengths)
-# {'apple': 5, 'banana': 6, 'cherry': 6, 'date': 4}
-
-# 세트 컴프리헨션: {value for ...}
-unique_lengths = {len(w) for w in words}
-print(unique_lengths)
-# {4, 5, 6} ← 순서 없음, 중복 없음
-
-# 딕셔너리 뒤집기
-d = {'a': 1, 'b': 2, 'c': 3}
-reversed_d = {v: k for k, v in d.items()}
-print(reversed_d)
-# {1: 'a', 2: 'b', 3: 'c'}</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-{'apple': 5, 'banana': 6, 'cherry': 6, 'date': 4}
-{4, 5, 6}
-{1: 'a', 2: 'b', 3: 'c'}
-    </div>
-
-    <div class="callout callout-tip">
-      <strong>지금 바로 해봐:</strong> 학생 성적 딕셔너리에서 70점 이상인 학생만 골라 새 딕셔너리를 만들어 보세요.
-      <div class="code-block" style="margin-top:8px;">
-        <div class="code-header">
-          <span class="code-label">Python</span>
-          <button class="copy-btn">복사</button>
-        </div>
-        <pre><code class="language-python">scores = {'Alice': 85, 'Bob': 62, 'Carol': 91, 'Dave': 55, 'Eve': 78}
-
-# 70점 이상만 골라서
-passing = {name: score for name, score in scores.items() if score >= 70}
-print(passing)
-# {'Alice': 85, 'Carol': 91, 'Eve': 78}
-
-# 점수를 문자 등급으로 변환
-def grade(score):
-    if score >= 90: return 'A'
-    if score >= 80: return 'B'
-    if score >= 70: return 'C'
-    return 'F'
-
-graded = {name: grade(score) for name, score in scores.items()}
-print(graded)
-# {'Alice': 'B', 'Bob': 'F', 'Carol': 'A', 'Dave': 'F', 'Eve': 'C'}</code></pre>
-      </div>
-    </div>
-  </div>
-
-  <!-- 중급 -->
-  <div class="level-section intermediate">
-    <span class="level-badge level-intermediate">중급</span>
-    <h3>딕셔너리 컴프리헨션 실전 패턴</h3>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># 패턴 1: 두 리스트를 zip으로 묶어 딕셔너리 생성
-keys = ['name', 'age', 'city']
-values = ['Alice', 30, 'Seoul']
-record = {k: v for k, v in zip(keys, values)}
-print(record)   # {'name': 'Alice', 'age': 30, 'city': 'Seoul'}
-
-# 패턴 2: 키 변환 (소문자화)
-raw = {'Name': 'Alice', 'AGE': 30, 'City': 'Seoul'}
-normalized = {k.lower(): v for k, v in raw.items()}
-print(normalized)   # {'name': 'Alice', 'age': 30, 'city': 'Seoul'}
-
-# 패턴 3: 값 필터링 + 변환 동시에
-inventory = {'apple': 0, 'banana': 5, 'cherry': 0, 'date': 3}
-in_stock = {item: qty for item, qty in inventory.items() if qty > 0}
-print(in_stock)   # {'banana': 5, 'date': 3}
-
-# 패턴 4: enumerate로 인덱스 딕셔너리
-items = ['zero', 'one', 'two', 'three']
-index_map = {word: idx for idx, word in enumerate(items)}
-print(index_map)   # {'zero': 0, 'one': 1, 'two': 2, 'three': 3}</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-{'name': 'Alice', 'age': 30, 'city': 'Seoul'}
-{'name': 'Alice', 'age': 30, 'city': 'Seoul'}
-{'banana': 5, 'date': 3}
-{'zero': 0, 'one': 1, 'two': 2, 'three': 3}
-    </div>
-  </div>
-
-  <!-- 고급 -->
-  <div class="level-section advanced">
-    <span class="level-badge level-advanced">고급</span>
-    <h3>{}의 모호성 — set comprehension vs dict comprehension</h3>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import dis
-
-# {}는 빈 딕셔너리 (빈 세트는 set()로 만들어야 함)
-print(type({}))      # <class 'dict'>
-print(type(set()))   # <class 'set'>
-
-# 세트 컴프리헨션
-s = {x for x in range(5)}
-print(type(s), s)   # <class 'set'> {0, 1, 2, 3, 4}
-
-# 딕셔너리 컴프리헨션
-d = {x: x**2 for x in range(5)}
-print(type(d), d)   # <class 'dict'> {0: 0, 1: 1, 2: 4, 3: 9, 4: 16}
-
-# 바이트코드에서의 차이
-print("\n=== set comprehension ===")
-dis.dis('{x for x in lst}')
-# BUILD_SET 0, SET_ADD — 세트 전용 추가 바이트코드
-
-print("\n=== dict comprehension ===")
-dis.dis('{x: x**2 for x in lst}')
-# BUILD_MAP 0, MAP_ADD — 딕셔너리 전용 추가 바이트코드</code></pre>
-    </div>
-    <p>
-      Python 공식 문서(Reference: Expressions): <em>"A set display yields a new mutable set object.
-      A dict display yields a new dictionary object."</em><br>
-      두 컨테이너는 모두 해시 테이블 기반이지만, 바이트코드 수준에서 <code>SET_ADD</code>와
-      <code>MAP_ADD</code>로 구분되어 처리됩니다.
-    </p>
-  </div>
-</section>
-
-<!-- ==================== 04. 제너레이터 표현식 ==================== -->
-<section id="genexpr">
-  <h2>제너레이터 표현식 vs 리스트 컴프리헨션</h2>
-
-  <!-- 초급 -->
-  <div class="level-section elementary">
-    <span class="level-badge level-elementary">초급</span>
-    <h3>뷔페 vs 주문형 식당</h3>
-    <p>
-      <strong>리스트 컴프리헨션</strong>은 뷔페입니다 — 한꺼번에 모든 음식을 준비해 테이블에 올립니다.
-      메모리에 전부 올라갑니다.
-    </p>
-    <p>
-      <strong>제너레이터 표현식</strong>은 주문형 식당입니다 — 손님이 주문할 때마다 하나씩 만들어냅니다.
-      필요한 것만 만들고, 나머지는 기다립니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import sys
-
-# 리스트 컴프리헨션 — 대괄호 []
-list_comp = [x**2 for x in range(10000)]
-print(type(list_comp))               # <class 'list'>
-print(sys.getsizeof(list_comp))      # ~85,176 bytes (모두 메모리에 있음)
-
-# 제너레이터 표현식 — 소괄호 ()
-gen_expr = (x**2 for x in range(10000))
-print(type(gen_expr))                # <class 'generator'>
-print(sys.getsizeof(gen_expr))       # ~200 bytes (공식만 있음, 값 없음)
-
-# 제너레이터는 next()로 하나씩 꺼냄
-print(next(gen_expr))   # 0
-print(next(gen_expr))   # 1
-print(next(gen_expr))   # 4</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-&lt;class 'list'&gt;
-85176
-&lt;class 'generator'&gt;
-200
-0
-1
-4
-    </div>
+print(f"for문:       {t_for:.3f}초")    # 0.369초 (실측)
+print(f"컴프리헨션:  {t_comp:.3f}초")   # 0.392초 (실측)
+# 거의 비슷하거나 컴프리헨션이 약간 느릴 수도 있음!
+# "컴프리헨션이 항상 빠르다"는 미신입니다.</code></pre>
 
     <div class="callout callout-warning">
-      <strong>함정: 제너레이터는 한 번 소진되면 재사용 불가!</strong><br>
-      리스트는 몇 번이고 다시 순회할 수 있지만, 제너레이터는 <strong>한 번만</strong> 순회됩니다.
-      소진된 뒤 다시 순회하면 아무것도 나오지 않습니다.
-      <div class="code-block" style="margin-top:8px;">
-        <div class="code-header">
-          <span class="code-label">Python</span>
-          <button class="copy-btn">복사</button>
-        </div>
-        <pre><code class="language-python">gen = (x**2 for x in range(5))
-
-print(list(gen))   # [0, 1, 4, 9, 16]  ← 소진됨
-print(list(gen))   # []                  ← 아무것도 없음!
-
-# 리스트는 다름
-lst = [x**2 for x in range(5)]
-print(list(lst))   # [0, 1, 4, 9, 16]
-print(list(lst))   # [0, 1, 4, 9, 16]  ← 다시 순회 가능</code></pre>
-      </div>
-      다시 쓰려면 새 제너레이터 표현식을 만들어야 합니다.
+      <strong>속도 차이는 크지 않습니다.</strong>
+      실측하면 컴프리헨션이 항상 빠르지 않습니다 (데이터, Python 버전에 따라 다름).
+      속도는 핵심이 아닙니다.
+      진짜 이점은:
+      <ol>
+        <li><strong>의도 명확성</strong>: 코드가 "무엇을 만드는지"를 한 눈에 보여줌</li>
+        <li><strong>스코프 격리</strong>: 루프 변수가 외부로 새지 않음 (for문은 새어나감!)</li>
+        <li><strong>버그 감소</strong>: append를 깜빡하거나 빈 리스트 초기화를 빠뜨릴 일이 없음</li>
+      </ol>
     </div>
+
+    <h3>컴프리헨션 vs map/filter</h3>
+<pre><code># 같은 작업을 세 가지로 비교
+numbers = range(10)
+
+# 1. for문
+result1 = []
+for x in numbers:
+    if x % 2 == 0:
+        result1.append(x ** 2)
+print(result1)   # [0, 4, 16, 36, 64]
+
+# 2. map + filter (함수형 스타일)
+result2 = list(map(lambda x: x ** 2, filter(lambda x: x % 2 == 0, numbers)))
+print(result2)   # [0, 4, 16, 36, 64]
+
+# 3. 컴프리헨션 (파이썬 스타일)
+result3 = [x ** 2 for x in numbers if x % 2 == 0]
+print(result3)   # [0, 4, 16, 36, 64]
+
+# Guido van Rossum: "filter(P, S)보다 [x for x in S if P(x)]가
+# 파이썬다운 코드이고, 이것이 컴프리헨션을 도입한 이유이다."</code></pre>
+
+    <details>
+      <summary>map/filter는 언제 쓰나요?</summary>
+      <div class="answer">
+        이미 정의된 함수를 적용할 때는 map이 더 간결할 수 있습니다:
+<pre><code># 이미 함수가 있을 때
+names = ["alice", "bob", "charlie"]
+
+# map이 더 간결
+print(list(map(str.upper, names)))        # ['ALICE', 'BOB', 'CHARLIE']
+
+# 컴프리헨션도 가능하지만 약간 장황
+print([name.upper() for name in names])   # ['ALICE', 'BOB', 'CHARLIE']
+
+# 일반적 규칙: 변환+필터가 함께 → 컴프리헨션
+# 단순 함수 적용 → map (또는 컴프리헨션, 취향 차이)</code></pre>
+      </div>
+    </details>
   </div>
 
-  <!-- 중급 -->
-  <div class="level-section intermediate">
-    <span class="level-badge level-intermediate">중급</span>
-    <h3>Lazy Evaluation — 무한 시퀀스와 파이프라인</h3>
-    <p>
-      제너레이터 표현식의 진짜 힘은 <strong>체이닝(chaining)</strong>입니다.
-      여러 변환을 메모리 사용 없이 파이프라인으로 연결할 수 있습니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># 파일에서 특정 줄만 처리하는 파이프라인 예시 (메모리 절약)
-# 실제 대용량 파일 처리에서 이 패턴이 핵심입니다
-
-def process_pipeline(data):
-    # 각 단계가 제너레이터 — 한 번에 하나씩만 처리
-    step1 = (line.strip() for line in data)        # 공백 제거
-    step2 = (line for line in step1 if line)        # 빈 줄 제거
-    step3 = (line.upper() for line in step2)        # 대문자 변환
-    step4 = (line for line in step3 if 'A' in line) # A 포함 줄만
-    return step4
-
-# 테스트 데이터
-data = ['  hello\n', 'apple\n', '\n', '  BANANA  \n', 'cherry\n', '']
-
-for line in process_pipeline(data):
-    print(repr(line))
-
-# 중요: 모든 단계에서 중간 리스트가 생성되지 않음!
-# 각 줄은 4개의 필터를 한 번에 통과하며 처리됨</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-'APPLE'
-'BANANA'
-    </div>
-
-    <p>제너레이터 표현식을 함수 인자로 직접 넘길 때는 괄호를 생략할 수 있습니다:</p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-# sum에 직접 넘기기 — 중간 리스트 없음
-total = sum(x**2 for x in nums if x % 2 == 0)
-print(total)   # 220
-
-# any/all과 조합 — 조건 충족 즉시 멈춤 (short-circuit)
-has_large = any(x > 8 for x in nums)   # 9를 발견하면 즉시 True 반환
-print(has_large)   # True
-
-all_positive = all(x > 0 for x in nums)
-print(all_positive)   # True</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-220
-True
-True
-    </div>
-  </div>
-
-  <!-- 고급 -->
   <div class="level-section advanced">
-    <span class="level-badge level-advanced">고급</span>
-    <h3>제너레이터 표현식 바이트코드 — RETURN_GENERATOR</h3>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import dis
+    <div class="level-badge">고급</div>
+    <h3>컴프리헨션의 De-sugaring — 내부적으로 어떻게 동작하는가</h3>
+    <p>
+      <code>[expr for x in iterable if cond]</code>는 단순 축약이 아닙니다.
+      Python은 이것을 내부적으로 다음과 동등한 코드로 변환합니다:
+    </p>
+<pre><code># 이 컴프리헨션은...
+result = [x ** 2 for x in range(5) if x % 2 == 0]
+print(result)   # [0, 4, 16]
 
-print("=== 제너레이터 표현식 ===")
-dis.dis('(x*2 for x in lst)')
+# 내부적으로 이것과 동등합니다 (De-sugaring):
+def _comprehension(iterable):
+    _result = []
+    for x in iterable:
+        if x % 2 == 0:
+            _result.append(x ** 2)
+    return _result
 
-# 핵심 차이: 제너레이터 표현식은 별도 code object를 MAKE_FUNCTION으로 만들고
-# 그 코드 오브젝트 내에 RETURN_GENERATOR 바이트코드가 있음
-#
-# RETURN_GENERATOR:
-#   현재 프레임을 generator object로 감싸고 제어를 호출자에게 넘김
-#   실행은 next()가 호출될 때까지 일시정지
-#
-# YIELD_VALUE:
-#   스택의 값을 호출자에게 전달하고 프레임 상태(지역 변수, 실행 포인터) 보존
-#
-# RESUME:
-#   next() 호출 후 재개 지점 (Python 3.11+에서 명시화됨)</code></pre>
+result = _comprehension(range(5))
+print(result)   # [0, 4, 16]</code></pre>
+
+    <div class="callout callout-info">
+      <strong>핵심:</strong> Python 3.11 이전에는 실제로 별도의 함수(code object)를 생성했습니다.
+      그래서 컴프리헨션의 루프 변수가 외부로 새지 않는 것입니다 — 함수 스코프니까.
+      Python 3.12(PEP 709)부터는 성능을 위해 인라인 처리하지만,
+      스코프 격리 동작은 동일하게 유지합니다.
     </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과 (CPython 3.12):</div>
-=== 제너레이터 표현식 ===
-  1     LOAD_CONST    &lt;code object &lt;genexpr&gt;&gt;
-        MAKE_FUNCTION 0
-        LOAD_NAME     lst
-        GET_ITER
-        CALL          0
-        RETURN_VALUE
 
-&lt;genexpr&gt; code object:
-  1     RETURN_GENERATOR
-        POP_TOP
-        RESUME        0
-        LOAD_FAST     .0
-   &gt;&gt;   FOR_ITER      ...
-        STORE_FAST    x
-        LOAD_FAST     x
-        LOAD_CONST    2
-        BINARY_OP     *
-        YIELD_VALUE   1
-        RESUME        1
-        POP_TOP
-        JUMP_BACKWARD ...
-   &gt;&gt;   END_FOR
-        RETURN_CONST  None
+    <h3>스코프 격리 vs for문의 변수 누출</h3>
+<pre><code># for문: 루프 변수가 외부로 새어나감!
+x = "외부값"
+for x in range(5):
+    pass
+print(x)   # 4  ← 외부의 x가 덮어씌워짐!
+
+# 컴프리헨션: 루프 변수가 격리됨
+x = "외부값"
+result = [x for x in range(5)]
+print(x)       # '외부값'  ← 외부 x 보존!
+print(result)  # [0, 1, 2, 3, 4]</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>왜 Python은 for문의 변수 누출을 수정하지 않았는가?</strong>
+      하위 호환성(backward compatibility) 때문입니다.
+      수백만 줄의 기존 코드가 for문의 변수 누출에 의존합니다.
+      예: <code>for line in file: ...</code> 후에 <code>line</code>을 사용하는 패턴.
+      컴프리헨션은 Python 2.0(2000년)에 새로 도입된 문법이므로
+      처음부터 스코프 격리를 올바르게 설계할 수 있었습니다.
     </div>
   </div>
 
-  <!-- 전공자 -->
   <div class="level-section expert">
-    <span class="level-badge level-expert">전공자</span>
-    <h3>Part A: PyGenObject — 제너레이터의 C 구조체</h3>
-    <p>
-      CPython에서 제너레이터 객체는 <code>Objects/genobject.c</code>의 <code>PyGenObject</code>로 구현됩니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># PyGenObject의 핵심 필드 (C 구조체):
-# typedef struct {
-#     PyObject_HEAD
-#     _PyInterpreterFrame *gi_frame_state; // 실행 프레임 (로컬 변수, 스택, IP)
-#     PyObject *gi_name;                   // 제너레이터 이름 (__name__)
-#     PyObject *gi_qualname;               // 정규화 이름 (__qualname__)
-#     _PyErr_StackItem gi_exc_state;       // 현재 예외 상태
-# } PyGenObject;
+    <div class="level-badge">전공자</div>
+    <h3>Part A: PEP 709 — 컴프리헨션 인라인 처리 (Python 3.12)</h3>
+<pre><code>import dis
 
-# Python에서 이 필드들을 확인할 수 있음
-def my_gen():
+def with_comp():
+    return [x * 2 for x in range(5)]
+
+dis.dis(with_comp)
+# Python 3.11 이전:
+#   LOAD_CONST     &lt;code object &lt;listcomp&gt;&gt;   ← 별도 code object!
+#   MAKE_FUNCTION
+#   LOAD_GLOBAL    range
+#   CALL_FUNCTION
+#
+# Python 3.12+ (PEP 709):
+#   GET_ITER
+#   LOAD_FAST_AND_CLEAR  x
+#   BUILD_LIST
+#   SWAP
+#   FOR_ITER              ← 인라인 루프!
+#     LOAD_FAST  x
+#     LOAD_CONST 2
+#     BINARY_OP  (*)
+#     LIST_APPEND
+#   END_FOR</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>Part A — PEP 709의 설계 동기:</strong>
+      Python 3.11 이전에는 컴프리헨션마다 <code>MAKE_FUNCTION</code> + <code>CALL_FUNCTION</code>이 필요했습니다.
+      이는 함수 호출 오버헤드(프레임 생성 + 해제)를 의미합니다.
+      PEP 709의 저자 Carl Meyer(Instagram/Meta)는 실측 결과
+      <strong>컴프리헨션 실행 속도가 평균 11% 향상</strong>되었다고 보고했습니다.
+      인라인 처리에서도 <code>LOAD_FAST_AND_CLEAR</code> 명령어로 임시 변수를 저장/복원하여
+      스코프 격리 의미론(semantics)을 보존합니다.
+    </div>
+
+    <h3>Part B: 왜 Python 2의 컴프리헨션은 스코프가 없었는가</h3>
+    <p>
+      Python 2에서 리스트 컴프리헨션은 <strong>for문의 문법적 축약</strong>으로 설계되었습니다.
+      for문이 루프 변수를 외부에 노출하므로, 컴프리헨션도 당연히 노출했습니다.
+      당시에는 이것이 문제가 아니었습니다 — 컴프리헨션이 새 기능이었고,
+      "for문과 동일하게 동작한다"는 것이 학습 비용을 줄여주는 장점이었습니다.
+    </p>
+    <p>
+      문제가 드러난 것은 프로젝트가 커지면서입니다.
+      컴프리헨션 안의 <code>x</code>가 바깥의 <code>x</code>를 덮어쓰는 버그가 보고되기 시작했습니다.
+      특히 <strong>중첩 컴프리헨션</strong>에서 내부 루프 변수가 외부로 새어나가면
+      원인을 찾기 극히 어려웠습니다.
+    </p>
+    <p>
+      Guido van Rossum(2009): "The loop variable in a list comprehension leaks
+      in Python 2 — this is a bug, not a feature."<br>
+      Python 3.0에서 컴프리헨션에 <strong>자체 스코프(implicit function scope)</strong>를 부여해 수정했습니다.
+      이것이 가능했던 이유: Python 3는 하위 호환성을 깰 수 있는 유일한 기회였기 때문입니다.
+      for문의 변수 누출은 수백만 줄의 기존 코드가 의존하므로 수정 불가였지만,
+      컴프리헨션은 비교적 새 기능이라 수정 비용이 낮았습니다.
+    </p>
+    <p>
+      <strong>교훈:</strong> "단순함을 위해 기존 동작을 재사용"하는 설계가
+      나중에 "의외의 동작"이라는 비용으로 돌아올 수 있습니다.
+      Python 3의 스코프 격리는 "명시적이 암시적보다 낫다(Zen of Python)"의 실제 적용입니다.
+    </p>
+<pre><code># Python 2 (설계 실수):
+# x = "외부"
+# [x for x in range(5)]  → x == 4  (외부 x가 덮어씌워짐)
+
+# Python 3 (수정):
+# x = "외부"
+# [x for x in range(5)]  → x == "외부"  (스코프 격리)
+
+# 실제 영향을 확인하는 코드:
+x = "외부값"
+result = [x for x in range(5)]
+print(x)       # '외부값' (Python 3에서 보존)
+print(result)  # [0, 1, 2, 3, 4]</code></pre>
+  </div>
+</section>
+
+<!-- ==================== 03 딕셔너리 & 세트 컴프리헨션 ==================== -->
+<section id="dict-set-comp">
+  <h2>03 — 딕셔너리 &amp; 세트 컴프리헨션</h2>
+
+  <div class="level-section elementary">
+    <div class="level-badge">초급</div>
+    <h3>딕셔너리 컴프리헨션</h3>
+<pre><code># 학생 이름 → 이름 길이 딕셔너리
+names = ["Alice", "Bob", "Charlie", "David"]
+name_lengths = {name: len(name) for name in names}
+print(name_lengths)   # {'Alice': 5, 'Bob': 3, 'Charlie': 7, 'David': 5}
+
+# 숫자 → 제곱 딕셔너리
+squares = {n: n**2 for n in range(1, 6)}
+print(squares)   # {1: 1, 2: 4, 3: 9, 4: 16, 5: 25}</code></pre>
+
+    <h3>세트 컴프리헨션</h3>
+<pre><code># 중복이 자동으로 제거됩니다
+words = ["hello", "world", "hello", "python", "world"]
+unique_lengths = {len(w) for w in words}
+print(unique_lengths)   # {5, 6}  (hello=5, world=5, python=6)</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>{} vs set():</strong>
+      빈 중괄호 <code>{}</code>는 빈 딕셔너리입니다. 빈 세트는 <code>set()</code>으로 만듭니다.
+<pre><code>print(type({}))      # &lt;class 'dict'&gt;
+print(type(set()))   # &lt;class 'set'&gt;</code></pre>
+    </div>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge">중급</div>
+    <h3>딕셔너리 뒤집기와 키 중복</h3>
+<pre><code># 딕셔너리 키-값 뒤집기
+original = {"a": 1, "b": 2, "c": 3}
+flipped = {v: k for k, v in original.items()}
+print(flipped)   # {1: 'a', 2: 'b', 3: 'c'}
+
+# 키 중복 시 마지막 값이 남습니다
+scores = {"철수": 85, "영희": 90, "민수": 85}
+grade_to_name = {score: name for name, score in scores.items()}
+print(grade_to_name)   # {85: '민수', 90: '영희'}
+# 85 키가 중복 → "철수"가 "민수"로 덮어씌워짐!</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>키 중복 함정:</strong>
+      딕셔너리는 키가 유일해야 합니다. 같은 키가 여러 번 나오면 마지막 값만 남습니다.
+      "데이터가 사라졌는데 에러가 안 난다"는 점이 위험합니다.
+    </div>
+
+    <h3>실용 패턴: 조건부 딕셔너리 생성</h3>
+<pre><code># 환경설정에서 None이 아닌 값만 추출
+config = {"host": "localhost", "port": 8080, "debug": None, "workers": 4}
+active_config = {k: v for k, v in config.items() if v is not None}
+print(active_config)   # {'host': 'localhost', 'port': 8080, 'workers': 4}
+
+# 두 리스트를 딕셔너리로 병합
+keys = ["name", "age", "city"]
+values = ["철수", 25, "서울"]
+person = {k: v for k, v in zip(keys, values)}
+print(person)   # {'name': '철수', 'age': 25, 'city': '서울'}</code></pre>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge">고급</div>
+    <h3>컴프리헨션 간 성능 비교</h3>
+<pre><code>import timeit
+
+N = 100_000
+
+# 리스트 컴프리헨션 vs 생성자 + list()
+t_comp = timeit.timeit(lambda: [x**2 for x in range(N)], number=10)
+t_map  = timeit.timeit(lambda: list(map(lambda x: x**2, range(N))), number=10)
+
+print(f"컴프리헨션: {t_comp:.3f}초")   # 약 0.8초
+print(f"map+list:   {t_map:.3f}초")    # 약 1.0초
+# 컴프리헨션이 약 20% 빠름 — lambda 호출 오버헤드가 없으므로</code></pre>
+
+    <details>
+      <summary>왜 컴프리헨션이 map+lambda보다 빠른가요?</summary>
+      <div class="answer">
+        <code>map(lambda x: x**2, ...)</code>는 매 원소마다 Python 함수 호출(CALL_FUNCTION)이 발생합니다.
+        함수 호출에는 프레임 생성/해제 오버헤드가 있습니다.
+        컴프리헨션은 바이트코드 수준에서 인라인 루프이므로 이 오버헤드가 없습니다.
+        단, <code>map(int, strings)</code>처럼 <strong>C 구현 함수</strong>를 쓰면 map이 더 빠를 수 있습니다 —
+        C 함수는 Python 함수 호출 오버헤드가 없기 때문입니다.
+      </div>
+    </details>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge">전공자</div>
+    <h3>Part A: 딕셔너리 컴프리헨션의 바이트코드</h3>
+<pre><code>import dis
+
+def dict_comp():
+    return {k: k**2 for k in range(5)}
+
+dis.dis(dict_comp)
+# Python 3.12+:
+#   BUILD_MAP  0
+#   LOAD_GLOBAL  range
+#   ...
+#   FOR_ITER
+#     LOAD_FAST  k
+#     LOAD_FAST  k
+#     BINARY_OP  (**)
+#     MAP_ADD              ← LIST_APPEND 대신 MAP_ADD
+#   END_FOR</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>Part A:</strong> 리스트 컴프리헨션은 <code>LIST_APPEND</code>,
+      딕셔너리 컴프리헨션은 <code>MAP_ADD</code>,
+      세트 컴프리헨션은 <code>SET_ADD</code> 바이트코드를 사용합니다.
+      세 종류 모두 Python 3.12+에서 인라인 처리됩니다(PEP 709).
+      <code>MAP_ADD</code>는 <code>dict.__setitem__</code>과 동일하게 해시 테이블에 키-값 쌍을 삽입합니다.
+    </div>
+
+    <h3>Part B: 수학적 기원 — 집합 빌더 표기법</h3>
+    <p>
+      컴프리헨션은 수학의 <strong>집합 빌더 표기법(Set-builder notation)</strong>에서 유래합니다:
+      <code>S = {x² | x ∈ ℕ, x는 짝수}</code>.
+      이를 프로그래밍에 처음 도입한 것은 SETL(1969년)이고,
+      현대 형태는 Miranda(1985) → Haskell(1990) → Python(2000, PEP 202)으로 계승되었습니다.
+    </p>
+    <p>
+      Python의 딕셔너리/세트 컴프리헨션은 Python 2.7/3.0(PEP 274)에서 추가되었습니다 —
+      리스트 컴프리헨션보다 7년 늦게. 필요성이 충분히 입증된 후 추가하는
+      Python의 보수적 설계 철학("We need to resist the temptation to add features." — Zen of Python)을 보여줍니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 04 중첩 컴프리헨션 ==================== -->
+<section id="nested">
+  <h2>04 — 중첩 컴프리헨션과 스코프 격리</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-badge">중급</div>
+    <h3>2중 for — 읽는 순서가 핵심</h3>
+<pre><code># 구구단 2~4단
+table = [(i, j, i*j) for i in range(2, 5) for j in range(1, 10)]
+print(table[:5])
+# [(2, 1, 2), (2, 2, 4), (2, 3, 6), (2, 4, 8), (2, 5, 10)]
+print(len(table))   # 27  (3단 × 9줄)
+
+# 읽는 순서: 위에서 아래로 (왼쪽 for → 오른쪽 for)
+# for i in range(2, 5):        ← 바깥 루프
+#     for j in range(1, 10):   ← 안쪽 루프
+#         result.append((i, j, i*j))</code></pre>
+
+    <h3>행렬 평탄화</h3>
+<pre><code>matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+# 2차원 → 1차원
+flat = [x for row in matrix for x in row]
+print(flat)   # [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+# De-sugaring:
+# for row in matrix:
+#     for x in row:
+#         result.append(x)</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>가독성 규칙:</strong>
+      2중 컴프리헨션까지는 괜찮지만, 3중 이상은 for문을 쓰세요.
+      컴프리헨션의 존재 이유는 "의도가 명확해지는 것"입니다.
+      복잡해서 읽기 어려우면 목적에 반합니다.
+    </div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge">고급</div>
+    <h3>walrus 연산자(:=)의 스코프 누출</h3>
+<pre><code># 일반 컴프리헨션 — 변수 격리
+result = [x for x in range(5)]
+# x는 외부에 영향 없음
+
+# walrus 연산자(:=) — 의도적 누출!
+result = [y := x ** 2 for x in range(5)]
+print(result)   # [0, 1, 4, 9, 16]
+print(y)        # 16  ← y가 외부로 새어나옴!</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>왜 walrus는 새어나가는가?</strong>
+      PEP 572(Python 3.8)의 설계 결정입니다.
+      walrus 연산자의 목적 자체가 "컴프리헨션 안에서 계산한 중간 결과를
+      바깥에서도 쓸 수 있게 하는 것"입니다.
+      예: <code>[y := f(x) for x in data if y &gt; 0]</code> — f(x)를 한 번만 호출하고
+      조건문과 결과 리스트에서 모두 사용하는 패턴.
+    </div>
+
+    <details>
+      <summary>walrus의 실용적 사용 예</summary>
+      <div class="answer">
+<pre><code>import re
+
+# walrus 없이: 정규식 결과를 두 번 계산
+results = [re.search(r'\d+', s).group()
+           for s in ["abc123", "def", "ghi456"]
+           if re.search(r'\d+', s)]
+print(results)   # ['123', '456']
+
+# walrus로: 한 번만 계산
+results = [m.group()
+           for s in ["abc123", "def", "ghi456"]
+           if (m := re.search(r'\d+', s))]
+print(results)   # ['123', '456']</code></pre>
+      </div>
+    </details>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge">전공자</div>
+    <h3>Part A: walrus 스코프 누출의 CPython 구현</h3>
+    <div class="callout callout-warning">
+      <strong>Part A:</strong>
+      일반 컴프리헨션 변수는 <code>LOAD_FAST</code>/<code>STORE_FAST</code>로 로컬 프레임에 저장됩니다.
+      walrus 연산자(<code>:=</code>)의 변수는 <code>STORE_FAST</code> 대신
+      <code>STORE_NAME</code> 또는 <code>STORE_DEREF</code>(enclosing scope)를 사용합니다.
+      이것이 값이 외부 스코프로 전달되는 메커니즘입니다.
+      Python 3.12의 인라인 컴프리헨션에서는 <code>LOAD_FAST_AND_CLEAR</code>로
+      일반 변수만 격리하고 walrus 변수는 그대로 둡니다.
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 05 제너레이터 함수 & yield ==================== -->
+<section id="generator-func">
+  <h2>05 — 제너레이터 함수 &amp; yield</h2>
+
+  <div class="why-box">
+    <h3>핵심 비유: 자판기 (Vending Machine)</h3>
+    <p>
+      리스트는 <strong>과일 바구니</strong>입니다 — 모든 과일이 이미 담겨 있고, 바구니가 클수록 무겁습니다.<br>
+      제너레이터는 <strong>자판기</strong>입니다 — 버튼을 누를 때마다(next()) 과일이 하나씩 나옵니다.
+      자판기 안에 모든 과일이 미리 만들어져 있는 게 아닙니다 — <em>주문 시 즉석 제조</em>입니다.
+    </p>
+    <p>
+      <code>yield</code>는 자판기의 <strong>배출구</strong>입니다 — 과일을 내보내고 다음 주문까지 대기합니다.
+    </p>
+  </div>
+
+  <div class="level-section elementary">
+    <div class="level-badge">초급</div>
+    <h3>먼저, 문제를 느껴봅시다</h3>
+    <p>피보나치 수열에서 1000보다 작은 수만 필요합니다. 리스트로 만들면:</p>
+<pre><code># 리스트 방식 — 일단 많이 만들어 놓고 잘라야 함
+all_fibs = []
+a, b = 0, 1
+for _ in range(1000):   # 몇 개 필요한지 모르니 넉넉하게?
+    all_fibs.append(a)
+    a, b = b, a + b
+
+# 1000 미만만 필터
+small_fibs = [x for x in all_fibs if x &lt; 1000]
+print(small_fibs)
+# [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987]</code></pre>
+    <p>
+      <strong>문제:</strong> "몇 개 만들어야 충분한지" 미리 알 수 없습니다.
+      1000개를 만들었지만 실제로 쓴 건 17개뿐이고, 나머지 983개는 쓸모없는 계산이었습니다.
+      1억 미만이 필요하다면? 미리 만들 수조차 없습니다.
+    </p>
+    <p>
+      제너레이터는 이 문제를 해결합니다 — <strong>요청할 때마다 하나씩</strong> 만듭니다.
+    </p>
+
+    <h3>yield가 있으면 제너레이터</h3>
+<pre><code># 일반 함수: return으로 값을 반환하고 종료
+def normal_func():
+    return 1
+
+result = normal_func()
+print(result)        # 1
+print(type(result))  # &lt;class 'int'&gt;
+
+# 제너레이터 함수: yield로 값을 반환하고 일시 정지
+def gen_func():
     yield 1
     yield 2
     yield 3
 
-g = my_gen()
-print("gi_code:     ", g.gi_code)       # 코드 오브젝트
-print("gi_frame:    ", g.gi_frame)      # 실행 프레임 (실행 전)
-print("gi_running:  ", g.gi_running)    # 현재 실행 중?
-print("gi_suspended:", g.gi_suspended)  # 일시정지 상태?
+result = gen_func()
+print(result)        # &lt;generator object gen_func at 0x...&gt;
+print(type(result))  # &lt;class 'generator'&gt;</code></pre>
 
-next(g)   # 첫 yield까지 실행
-
-print("\n--- next(g) 호출 후 ---")
-print("gi_suspended:", g.gi_suspended)  # True — yield에서 멈춤
-print("gi_frame:    ", g.gi_frame)      # 프레임이 여전히 살아있음!</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-gi_code:      &lt;code object my_gen at 0x...&gt;
-gi_frame:     &lt;frame at 0x..., file '...', line 1, code my_gen&gt;
-gi_running:   False
-gi_suspended: False
-
---- next(g) 호출 후 ---
-gi_suspended: True
-gi_frame:     &lt;frame at 0x..., file '...', line 2, code my_gen&gt;
-    </div>
-
-    <h3>Part B: CSP와 코루틴 이론의 연결</h3>
-    <p>
-      제너레이터는 Python의 <strong>코루틴(Coroutine)</strong> 모델의 기반입니다.
-      <code>yield</code>로 값을 방출하고, <code>send()</code>로 값을 수신하는 양방향 통신이
-      <strong>CSP(Communicating Sequential Processes)</strong> 모델과 유사합니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># send()로 제너레이터에 값 전달 (PEP 342, Python 2.5+)
-def accumulator():
-    total = 0
-    while True:
-        value = (yield total)  # yield가 표현식으로 값을 받음
-        if value is None:
-            break
-        total += value
-
-acc = accumulator()
-next(acc)          # 초기화 (첫 yield까지 실행)
-print(acc.send(10))   # 10
-print(acc.send(20))   # 30
-print(acc.send(5))    # 35
-
-# 이 패턴이 asyncio의 기반:
-# async def foo():
-#     result = await bar()   ← 내부적으로 yield from / send() 메커니즘
-#
-# Python의 async/await는 제너레이터 기반 코루틴의 문법적 개선
-# (PEP 492: Coroutines with async and await syntax, Python 3.5)</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-10
-30
-35
-    </div>
     <div class="callout callout-warning">
-      <strong>함정: send()의 첫 호출에는 반드시 None을 전달해야 합니다</strong><br>
-      제너레이터는 처음 시작될 때 아직 어떤 <code>yield</code>에도 도달하지 않았습니다.
-      이 상태에서 <code>send(값)</code>을 호출하면 <code>TypeError</code>가 발생합니다.
-      반드시 <code>next(gen)</code> 또는 <code>gen.send(None)</code>으로 첫 번째 <code>yield</code>까지 진행시킨 뒤에야 실제 값을 <code>send()</code>할 수 있습니다.
-      <div class="code-block" style="margin-top:8px;">
-        <div class="code-header">
-          <span class="code-label">Python</span>
-          <button class="copy-btn">복사</button>
-        </div>
-        <pre><code class="language-python">def accumulator():
+      <strong>가장 흔한 혼동:</strong>
+      <code>gen_func()</code>을 호출하면 <em>함수가 실행되지 않습니다!</em>
+      제너레이터 <em>객체</em>만 생성됩니다. 실제 실행은 <code>next()</code>를 호출할 때 시작됩니다.
+    </div>
+
+    <h3>next()로 하나씩 꺼내기</h3>
+<pre><code>def countdown(n):
+    print(f"카운트다운 시작! ({n}부터)")
+    while n &gt; 0:
+        yield n     # 값을 반환하고 여기서 멈춤
+        n -= 1
+    print("발사!")
+
+gen = countdown(3)
+# 아직 아무것도 출력되지 않음!
+
+print(next(gen))   # 카운트다운 시작! (3부터)
+                   # 3   ← 첫 yield에서 멈춤
+
+print(next(gen))   # 2   ← 두 번째 yield에서 멈춤
+
+print(next(gen))   # 1   ← 세 번째 yield에서 멈춤
+
+# print(next(gen))  # 발사!
+                    # StopIteration 발생!  ← 더 이상 yield 없음</code></pre>
+
+    <h3>for문은 next()를 자동으로 호출합니다</h3>
+<pre><code>def countdown(n):
+    while n &gt; 0:
+        yield n
+        n -= 1
+
+# for문이 next()를 반복 호출하고 StopIteration을 catch합니다
+for num in countdown(5):
+    print(num, end=" ")
+# 5 4 3 2 1</code></pre>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge">중급</div>
+
+    <div class="why-box">
+      <h3>핵심 비유: 책갈피 (Bookmark)</h3>
+      <p>
+        일반 함수는 책을 처음부터 끝까지 읽고 덮습니다.<br>
+        제너레이터 함수는 <strong>책갈피</strong>를 꽂아둡니다.
+        <code>yield</code>에서 멈추면 지역 변수, 실행 위치가 모두 보존됩니다.
+        <code>next()</code>를 호출하면 책갈피에서 다시 읽기 시작합니다.
+      </p>
+    </div>
+
+    <h3>지역 변수가 보존됩니다</h3>
+<pre><code>def accumulator():
     total = 0
     while True:
-        value = (yield total)
+        value = yield total   # total을 반환하고 멈춤
         if value is None:
             break
         total += value
 
-acc = accumulator()
+gen = accumulator()
+print(next(gen))      # 0   (total = 0, 첫 yield에서 멈춤)
+# gen은 여전히 total = 0을 기억합니다</code></pre>
 
-# 잘못된 사용 — 첫 호출에 None이 아닌 값을 send()
-# acc.send(10)   # TypeError: can't send non-None value to a just-started generator
+    <h3>메모리 비교: 리스트 vs 제너레이터</h3>
+<pre><code>import sys
 
-# 올바른 사용 — 먼저 next() 또는 send(None)으로 초기화
-next(acc)          # 또는 acc.send(None) — 첫 yield까지 실행
-print(acc.send(10))   # 10  ← 이제부터 실제 값 전달 가능</code></pre>
-      </div>
-      코루틴을 자동으로 초기화하려면 <code>@functools.wraps</code>와 함께 래퍼 데코레이터를 쓰거나,
-      함수 시작 부분에 <code>next(gen)</code>을 호출하는 팩토리 함수를 사용하세요.
+# 10만 개의 제곱수
+lst = [x ** 2 for x in range(100_000)]
+gen = (x ** 2 for x in range(100_000))
+
+lst_size = sys.getsizeof(lst)
+gen_size = sys.getsizeof(gen)
+
+print(f"리스트 크기:     {lst_size:>10,} bytes")    # 800,984 bytes
+print(f"제너레이터 크기: {gen_size:>10,} bytes")    #     200 bytes
+print(f"비율: 리스트가 {lst_size / gen_size:,.0f}배 더 큼")  # 4,005배
+
+# 합계는 동일
+print(sum(lst))                            # 333328333350000
+print(sum(x ** 2 for x in range(100_000))) # 333328333350000</code></pre>
+
+    <div class="callout callout-info">
+      <strong>왜 200바이트인가?</strong>
+      제너레이터 객체에는 "현재까지의 계산 상태"만 저장됩니다:
+      코드 참조, 현재 프레임(로컬 변수 + 실행 위치), 그리고 약간의 메타데이터.
+      100만 개를 처리하든 1조 개를 처리하든 이 크기는 동일합니다.
     </div>
+
+    <h3>무한 시퀀스</h3>
+<pre><code>def fibonacci():
+    """무한 피보나치 수열"""
+    a, b = 0, 1
+    while True:       # 무한 루프지만 yield가 있으므로 OK
+        yield a
+        a, b = b, a + b
+
+# 무한인데 어떻게 쓰는가? → 필요한 만큼만 꺼냅니다
+fib = fibonacci()
+first_10 = [next(fib) for _ in range(10)]
+print(first_10)   # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+
+# itertools.islice로도 가능
+import itertools
+fib = fibonacci()
+print(list(itertools.islice(fib, 15)))
+# [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377]</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>무한 제너레이터에 list() 금지!</strong>
+<pre><code># 절대 하지 마세요:
+# list(fibonacci())   # ← 무한 루프! 메모리 폭발!</code></pre>
+    </div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge">고급</div>
+    <h3>제너레이터 소진과 재사용</h3>
+<pre><code>def simple():
+    yield 1
+    yield 2
+    yield 3
+
+gen = simple()
+print(list(gen))   # [1, 2, 3]
+print(list(gen))   # []  ← 이미 소진됨! 빈 리스트
+
+# 재사용하려면 새로 만들어야 합니다
+gen2 = simple()
+print(list(gen2))  # [1, 2, 3]
+
+# 소진 여부 확인
+gen3 = simple()
+print(next(gen3))           # 1
+print(gen3.gi_frame)        # &lt;frame object at 0x...&gt;  ← 살아있음
+list(gen3)                  # [2, 3]  ← 나머지 소비
+print(gen3.gi_frame)        # None  ← 소진됨</code></pre>
+
+    <h3>Iterable vs Iterator — 핵심 구분</h3>
+<pre><code># Iterable: __iter__를 구현 → iter()로 Iterator를 만들 수 있는 객체
+# Iterator: __iter__ + __next__를 구현 → next()로 값을 꺼낼 수 있는 객체
+
+# 리스트는 Iterable이지만 Iterator가 아닙니다
+lst = [1, 2, 3]
+# next(lst)  # TypeError: 'list' object is not an iterator
+
+# iter()로 Iterator를 만듭니다
+it = iter(lst)
+print(next(it))   # 1
+print(next(it))   # 2
+
+# 제너레이터는 Iterable이자 Iterator입니다
+gen = (x for x in range(3))
+print(iter(gen) is gen)   # True  ← 자기 자신을 반환!
+
+# 직접 구현해보면:
+class MyRange:
+    """Iterable (Iterator 아님)"""
+    def __init__(self, n):
+        self.n = n
+    def __iter__(self):
+        return MyRangeIterator(self.n)   # 매번 새 Iterator 반환
+
+class MyRangeIterator:
+    """Iterator"""
+    def __init__(self, n):
+        self.n = n
+        self.current = 0
+    def __iter__(self):
+        return self   # Iterator는 자기 자신 반환
+    def __next__(self):
+        if self.current >= self.n:
+            raise StopIteration
+        value = self.current
+        self.current += 1
+        return value
+
+r = MyRange(3)
+print(list(r))   # [0, 1, 2]
+print(list(r))   # [0, 1, 2]  ← 여러 번 순회 가능! (매번 새 Iterator)
+
+gen = (x for x in range(3))
+print(list(gen))  # [0, 1, 2]
+print(list(gen))  # []  ← 소진됨! (Iterator이므로 1회용)</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>핵심 구분:</strong>
+      <strong>Iterable</strong>: <code>iter()</code>를 호출할 수 있음 (list, dict, str, range).
+      여러 번 순회 가능 — 매번 새 Iterator를 생성하므로.<br>
+      <strong>Iterator</strong>: <code>next()</code>를 호출할 수 있음 (generator, map, filter, file).
+      한 번만 순회 가능 — 소진되면 끝.
+    </div>
+
+    <h3>제너레이터의 De-sugaring: for문이 어떻게 동작하는가</h3>
+<pre><code># for num in countdown(3): print(num)
+# 이것은 내부적으로 다음과 동등합니다:
+
+_iter = iter(countdown(3))    # __iter__() → 자기 자신 반환
+while True:
+    try:
+        num = next(_iter)     # __next__() → 다음 yield까지 실행
+    except StopIteration:
+        break
+    print(num)
+# 3
+# 2
+# 1</code></pre>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge">전공자</div>
+    <h3>Part A: CPython의 yield 구현 — YIELD_VALUE와 프레임 저장</h3>
+<pre><code>import dis
+
+def simple():
+    yield 1
+    yield 2
+
+dis.dis(simple)
+# 바이트코드:
+#   RESUME                   0
+#   LOAD_CONST               1 (1)
+#   YIELD_VALUE              1        ← 값 반환 + 프레임 저장
+#   RESUME                   1        ← 재개 지점
+#   POP_TOP
+#   LOAD_CONST               2 (2)
+#   YIELD_VALUE              1
+#   RESUME                   1
+#   POP_TOP
+#   LOAD_CONST               0 (None)
+#   RETURN_VALUE</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>Part A — YIELD_VALUE 명령어의 4단계:</strong>
+      <ol>
+        <li>스택 최상위 값을 <code>gi_frame</code>의 반환값으로 설정</li>
+        <li><code>f_lasti</code>(마지막 명령어 오프셋)를 현재 위치로 저장</li>
+        <li>프레임을 비활성화(suspended)하고 호출자에게 제어 반환</li>
+        <li><code>next()</code> 재호출 시 <code>f_lasti</code> 다음 명령어(<code>RESUME</code>)부터 실행</li>
+      </ol>
+      <strong>왜 이렇게 설계했는가:</strong>
+      제너레이터는 Python의 코루틴 시스템의 기반입니다.
+      PEP 342(2005)에서 <code>send()</code>와 <code>throw()</code>를 추가해 양방향 통신을 지원했고,
+      이것이 PEP 492(2015)의 <code>async/await</code>로 발전했습니다.
+      "yield가 프레임을 저장한다"는 메커니즘이 비동기 프로그래밍의 기초입니다.
+    </div>
+
+    <h3>Part B: CO_GENERATOR 플래그와 코드 오브젝트</h3>
+<pre><code>def gen_func():
+    yield 1
+
+def normal_func():
+    return 1
+
+# 코드 오브젝트의 플래그로 구분
+print(f"제너레이터: {gen_func.__code__.co_flags:#06x}")   # 0x0120
+print(f"일반 함수:  {normal_func.__code__.co_flags:#06x}")  # 0x0043
+
+# CO_GENERATOR = 0x0020
+CO_GENERATOR = 0x0020
+print(bool(gen_func.__code__.co_flags &amp; CO_GENERATOR))     # True
+print(bool(normal_func.__code__.co_flags &amp; CO_GENERATOR))  # False</code></pre>
     <p>
-      CSP 모델(Tony Hoare, 1978)에서 프로세스들은 채널을 통해 통신합니다.
-      Python 제너레이터의 <code>yield</code>/<code>send()</code>는 단일 채널 CSP의 Python 구현입니다.
-      Go의 goroutine + channel, Erlang의 Actor 모델과 개념적으로 연결됩니다.
-      Python 3.4의 <code>asyncio</code>는 제너레이터 기반 이벤트 루프로, 이 개념의 실용적 구현입니다.
+      CPython은 함수 호출 시 <code>co_flags</code>를 확인합니다.
+      <code>CO_GENERATOR</code> 플래그가 설정되어 있으면 함수 본문을 실행하지 않고
+      <code>PyGenObject</code>를 생성하여 반환합니다.
+      이것이 "제너레이터 함수를 호출하면 실행되지 않는" 이유의 CPython 구현입니다.
     </p>
   </div>
 </section>
 
-<!-- ==================== 05. yield ==================== -->
-<section id="yield">
-  <h2>yield — 함수가 일시정지하는 원리</h2>
+<!-- ==================== 06 yield from & send ==================== -->
+<section id="yield-advanced">
+  <h2>06 — yield from &amp; send: 양방향 통신</h2>
 
-  <!-- 초급 -->
-  <div class="level-section elementary">
-    <span class="level-badge level-elementary">초급</span>
-    <h3>잠깐 멈추는 자판기</h3>
+  <div class="level-section advanced">
+    <div class="level-badge">고급</div>
+    <h3>yield from — 서브 제너레이터로 위임</h3>
+<pre><code>def inner():
+    yield 1
+    yield 2
+    yield 3
+
+# yield from 없이:
+def outer_verbose():
+    for item in inner():
+        yield item
+    yield 4
+
+# yield from으로 간결하게:
+def outer():
+    yield from inner()   # inner()의 모든 yield를 위임
+    yield 4
+
+print(list(outer()))   # [1, 2, 3, 4]</code></pre>
+
+    <h3>재귀 제너레이터에서의 yield from</h3>
+<pre><code>def flatten(nested):
+    """임의 깊이의 중첩 리스트를 평탄화"""
+    for item in nested:
+        if isinstance(item, list):
+            yield from flatten(item)   # 재귀적 위임
+        else:
+            yield item
+
+data = [1, [2, [3, [4, [5]]], 6], [7, 8], 9]
+print(list(flatten(data)))   # [1, 2, 3, 4, 5, 6, 7, 8, 9]</code></pre>
+
+    <h3>yield from의 양방향 통신 — send/throw 자동 전달</h3>
+<pre><code>def accumulator():
+    total = 0
+    while True:
+        value = yield total
+        if value is None:
+            return total      # return 값은 yield from의 결과
+        total += value
+
+def delegator():
+    result = yield from accumulator()   # send/throw가 자동 전달됨!
+    print(f"최종 합계: {result}")
+
+gen = delegator()
+next(gen)              # 프라이밍
+print(gen.send(10))    # 10   (accumulator의 total)
+print(gen.send(20))    # 30
+print(gen.send(5))     # 35
+try:
+    gen.send(None)     # accumulator가 return → StopIteration
+except StopIteration:
+    pass
+# 최종 합계: 35</code></pre>
+
+    <div class="callout callout-info">
+      <code>yield from</code>은 단순 위임이 아닙니다. 외부에서 <code>send()</code>한 값이
+      서브제너레이터의 yield에 전달되고, <code>throw()</code>도 자동 전파됩니다.
+      서브제너레이터가 <code>return</code>하면 그 값이 <code>yield from</code>의 결과가 됩니다.
+    </div>
+
+    <h3>send() — 제너레이터에 값 보내기</h3>
+<pre><code>def running_sum():
+    total = 0
+    while True:
+        value = yield total    # total을 내보내고, 외부에서 값을 받음
+        if value is None:
+            break
+        total += value
+
+gen = running_sum()
+next(gen)              # 프라이밍 — 첫 yield까지 실행 (total=0 반환)
+print(gen.send(10))    # 10   (total = 0 + 10)
+print(gen.send(20))    # 30   (total = 10 + 20)
+print(gen.send(5))     # 35   (total = 30 + 5)</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>프라이밍(Priming):</strong>
+      <code>send()</code> 전에 반드시 <code>next(gen)</code>을 호출해야 합니다.
+      이유: 첫 yield까지 실행해야 send할 "받을 곳"이 생깁니다.
+      <code>gen.send(None)</code>도 동일합니다.
+    </div>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge">전공자</div>
+    <h3>Part A: throw()와 close() — 제너레이터 생명주기 제어</h3>
+<pre><code>def safe_gen():
+    try:
+        for i in range(100):
+            yield i
+    except GeneratorExit:
+        print("제너레이터가 닫힙니다")
+        return       # GeneratorExit 전파 방지
+    except ValueError as e:
+        print(f"ValueError 수신: {e}")
+        yield -1     # 에러 처리 후 계속 진행
+
+g = safe_gen()
+print(next(g))     # 0
+print(next(g))     # 1
+print(g.throw(ValueError, "오류!"))
+# ValueError 수신: 오류!
+# -1
+g.close()          # "제너레이터가 닫힙니다" 출력</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>Part A — throw()의 CPython 동작:</strong>
+      <code>throw(exc_type)</code>는 제너레이터의 현재 yield 지점에서
+      마치 <code>raise exc_type</code>를 실행한 것처럼 예외를 발생시킵니다.
+      <code>close()</code>는 <code>throw(GeneratorExit)</code>를 호출합니다.
+      제너레이터가 <code>GeneratorExit</code>를 무시하고 다시 yield하면
+      <code>RuntimeError</code>가 발생합니다 — "generator ignored GeneratorExit".
+    </div>
+
+    <h3>Part B: 왜 제너레이터가 코루틴으로 진화해야 했는가</h3>
     <p>
-      보통 함수는 <code>return</code>으로 끝납니다 — 값을 돌려주고 사라집니다.
-      <code>yield</code>를 쓰는 함수는 다릅니다.
-      <strong>잠깐 멈추고</strong> 값을 내보낸 뒤, 나중에 이어서 실행됩니다.
+      <strong>PEP 255 (Python 2.2)</strong>에서 <code>yield</code>가 도입되었을 때,
+      제너레이터는 "값을 하나씩 생성하는 도구"에 불과했습니다.
+      그런데 사람들이 이것을 <strong>다른 용도</strong>로 쓰기 시작했습니다 —
+      "함수를 멈추고 재개할 수 있다"는 것은 <strong>비동기 프로그래밍</strong>의 기초였기 때문입니다.
     </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># yield가 있는 함수 = 제너레이터 함수
-def count_up_to(n):
-    i = 1
-    while i <= n:
-        yield i    # i를 내보내고 여기서 일시정지
-        i += 1     # next() 호출 시 여기서 이어서 실행
+    <p>
+      <strong>문제</strong>: 네트워크 응답을 기다리는 동안 다른 일을 하고 싶은데,
+      yield는 값을 <em>내보내기만</em> 할 수 있고 <em>받을 수</em>는 없었습니다.
+      콜백 지옥(callback hell)이 유일한 대안이었습니다.
+    </p>
+    <p>
+      <strong>PEP 342 (Python 2.5)</strong>: 이 문제를 해결하기 위해
+      <code>send()</code>를 추가했습니다. 이제 제너레이터에 값을 <em>보낼 수</em> 있게 되었고,
+      <code>throw()</code>로 에러도 주입 가능해졌습니다.
+      제너레이터가 "단방향 생성기"에서 "양방향 코루틴"이 된 순간입니다.
+    </p>
+    <p>
+      <strong>하지만 또 다른 문제</strong>: 코루틴을 다른 코루틴에 위임하려면
+      <code>for x in sub(): yield x</code>를 써야 했고,
+      이 경우 <code>send()</code>가 서브코루틴에 전달되지 않았습니다.
+      <strong>PEP 380 (Python 3.3)</strong>: <code>yield from</code>이 이것을 해결합니다 —
+      send/throw가 서브제너레이터로 <strong>자동 전달</strong>됩니다.
+    </p>
+    <p>
+      <strong>마지막 문제</strong>: 제너레이터와 코루틴이 같은 <code>yield</code>를 쓰다 보니
+      "이 함수가 값을 생성하는 건지, 비동기 작업을 하는 건지" 구분이 안 되었습니다.
+      <strong>PEP 492 (Python 3.5)</strong>: <code>async def</code>/<code>await</code>를 도입해
+      코루틴을 제너레이터에서 <strong>문법적으로 분리</strong>했습니다.
+    </p>
+    <p>
+      <strong>핵심:</strong> 각 PEP은 "이전 단계의 한계"를 극복하기 위해 나왔습니다.
+      send가 없었다면 양방향 통신이 불가능하고,
+      yield from이 없었다면 코루틴 위임이 불가능하고,
+      async/await가 없었다면 코루틴과 제너레이터의 혼동이 계속되었을 것입니다.
+      15주차의 asyncio는 이 진화의 최종 결과물입니다.
+    </p>
+  </div>
+</section>
 
-# 호출하면 제너레이터 객체가 반환됨 (실행은 아직 안 됨)
-gen = count_up_to(3)
-print(type(gen))   # <class 'generator'>
+<!-- ==================== 07 제너레이터 표현식 ==================== -->
+<section id="genexpr">
+  <h2>07 — 제너레이터 표현식: 괄호 하나의 차이</h2>
 
-# next()로 하나씩 꺼냄
-print(next(gen))   # 1  ← yield 1에서 멈춤
-print(next(gen))   # 2  ← yield 2에서 멈춤
-print(next(gen))   # 3  ← yield 3에서 멈춤
-# print(next(gen)) # StopIteration 발생 (더 이상 없음)
+  <div class="level-section intermediate">
+    <div class="level-badge">중급</div>
+    <h3>[] vs () — 리스트 vs 제너레이터</h3>
+<pre><code>import sys
 
-# for 루프는 자동으로 StopIteration을 처리함
-for n in count_up_to(5):
-    print(n, end=' ')
-# 출력: 1 2 3 4 5</code></pre>
+# 리스트 컴프리헨션 — [] 사용
+lst = [x ** 2 for x in range(1000)]
+print(f"리스트:     {sys.getsizeof(lst):>6,} bytes")   # 8,856 bytes
+
+# 제너레이터 표현식 — () 사용
+gen = (x ** 2 for x in range(1000))
+print(f"제너레이터: {sys.getsizeof(gen):>6,} bytes")   #   200 bytes
+
+# 합계는 같음
+print(sum([x ** 2 for x in range(1000)]))   # 332833500
+print(sum(x ** 2 for x in range(1000)))     # 332833500
+# 괄호 생략 가능: sum() 안에서 자동으로 제너레이터 표현식</code></pre>
+
+    <div class="callout callout-info">
+      <strong>함수 인수로 넘길 때 괄호 생략 가능:</strong>
+<pre><code># 이 두 줄은 동일합니다
+result = sum((x**2 for x in range(10)))
+result = sum(x**2 for x in range(10))    # 이중 괄호 불필요
+print(result)   # 285</code></pre>
     </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-&lt;class 'generator'&gt;
-1
-2
-3
-1 2 3 4 5
+
+    <h3>언제 리스트, 언제 제너레이터?</h3>
+    <div class="callout callout-warning">
+      <strong>결정 기준:</strong>
+      <ul>
+        <li>결과를 <strong>여러 번 사용</strong>하거나 <strong>인덱싱</strong>이 필요 → <strong>리스트</strong></li>
+        <li>결과를 <strong>한 번만 순회</strong>하거나 데이터가 <strong>매우 큼</strong> → <strong>제너레이터</strong></li>
+        <li><code>len()</code>, 슬라이싱이 필요 → <strong>리스트</strong> (제너레이터는 지원 안 함)</li>
+      </ul>
     </div>
 
-    <div class="callout callout-tip">
-      <strong>지금 바로 해봐:</strong> 피보나치 수열을 무한히 생성하는 제너레이터를 만들어보세요.
-      <div class="code-block" style="margin-top:8px;">
-        <div class="code-header">
-          <span class="code-label">Python</span>
-          <button class="copy-btn">복사</button>
-        </div>
-        <pre><code class="language-python">def fibonacci():
-    """무한 피보나치 수열 제너레이터"""
+<pre><code># 제너레이터는 인덱싱, len 불가
+gen = (x for x in range(10))
+# gen[0]    # TypeError: 'generator' object is not subscriptable
+# len(gen)  # TypeError: object of type 'generator' has no len()</code></pre>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge">고급</div>
+    <h3>제너레이터 파이프라인 — 데이터 처리의 핵심 패턴</h3>
+<pre><code># 파이프라인: 단계별 처리, 중간 리스트 없음
+data = range(1_000_000)
+step1 = (x for x in data if x % 2 == 0)        # 짝수 필터
+step2 = (x ** 2 for x in step1)                 # 제곱
+step3 = (x for x in step2 if x % 3 == 0)        # 3의 배수 필터
+result = sum(step3)                              # 최종 합산
+
+print(f"결과: {result:,}")   # 55,555,388,888,555,556
+# 1백만 개를 처리했지만, 메모리에는 한 번에 1개만 있음!</code></pre>
+
+    <div class="callout callout-info">
+      <strong>파이프라인의 De-sugaring:</strong>
+      <code>sum(step3)</code>이 <code>next(step3)</code>을 호출하면,
+      step3이 <code>next(step2)</code>를 호출하고,
+      step2가 <code>next(step1)</code>을 호출합니다.
+      값이 체인을 따라 <strong>하나씩</strong> 흘러갑니다. 한 번에 모두 계산하지 않습니다.
+    </div>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge">전공자</div>
+    <h3>Part A: 제너레이터 표현식 vs 컴프리헨션 — 코드 오브젝트 차이</h3>
+<pre><code>import dis
+
+def with_list():
+    return [x for x in range(5)]
+
+def with_gen():
+    return (x for x in range(5))
+
+# Python 3.12+
+# with_list: 인라인 (별도 code object 없음)
+print(with_list.__code__.co_consts)
+# (None,)  ← 내부 code object 없음 (인라인)
+
+# with_gen: 별도 code object 존재
+print(with_gen.__code__.co_consts)
+# (None, &lt;code object &lt;genexpr&gt; ...&gt;)  ← genexpr code object 있음!</code></pre>
+
+    <div class="callout callout-warning">
+      <strong>Part A — 왜 제너레이터 표현식은 인라인되지 않는가:</strong>
+      리스트 컴프리헨션은 즉시 완료되므로 인라인이 가능합니다.
+      제너레이터 표현식은 <strong>지연 평가</strong>가 본질이므로 반드시 독립적인 프레임이 필요합니다 —
+      yield 지점에서 상태를 보존해야 하기 때문입니다.
+      이것이 PEP 709가 제너레이터 표현식을 인라인하지 않는 기술적 이유입니다.
+    </div>
+
+    <h3>Part B: CO_ASYNC_GENERATOR와 비동기 제너레이터</h3>
+<pre><code># 비동기 제너레이터 (Python 3.6+, PEP 525)
+import asyncio
+
+async def async_range(n):
+    for i in range(n):
+        yield i   # async def + yield = 비동기 제너레이터
+
+# CO_ASYNC_GENERATOR = 0x0200
+print(f"CO_ASYNC_GENERATOR flag: {async_range.__code__.co_flags &amp; 0x0200:#06x}")
+# 0x0200  ← 플래그 설정됨</code></pre>
+    <p>
+      CPython 코드 오브젝트의 플래그:
+      <code>CO_GENERATOR = 0x0020</code> (동기 제너레이터),
+      <code>CO_COROUTINE = 0x0100</code> (async def),
+      <code>CO_ASYNC_GENERATOR = 0x0200</code> (async def + yield).
+      이 플래그 조합으로 Python은 함수 호출 시 어떤 객체를 생성할지 결정합니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 08 itertools ==================== -->
+<section id="itertools">
+  <h2>08 — itertools: C로 작성된 이터레이터 도구</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-badge">중급</div>
+    <h3>핵심 itertools 함수들</h3>
+<pre><code>import itertools
+
+# count: 무한 카운터
+counter = itertools.count(start=10, step=3)
+print([next(counter) for _ in range(5)])   # [10, 13, 16, 19, 22]
+
+# cycle: 무한 반복
+colors = itertools.cycle(["빨강", "파랑", "초록"])
+print([next(colors) for _ in range(7)])
+# ['빨강', '파랑', '초록', '빨강', '파랑', '초록', '빨강']
+
+# chain: 여러 이터러블을 하나로 연결
+combined = itertools.chain([1, 2], [3, 4], [5, 6])
+print(list(combined))   # [1, 2, 3, 4, 5, 6]
+
+# islice: 이터러블에서 슬라이스 (인덱싱 불가한 것도 가능)
+gen = (x ** 2 for x in range(100))
+print(list(itertools.islice(gen, 5, 10)))   # [25, 36, 49, 64, 81]</code></pre>
+
+    <h3>실용 패턴</h3>
+<pre><code>import itertools
+
+# takewhile: 조건이 True인 동안만 가져옴
+data = [1, 3, 5, 2, 4, 6, 8]
+result = list(itertools.takewhile(lambda x: x &lt; 5, data))
+print(result)   # [1, 3]  ← 5를 만나면 즉시 중단
+
+# dropwhile: 조건이 True인 동안 건너뜀
+result = list(itertools.dropwhile(lambda x: x &lt; 5, data))
+print(result)   # [5, 2, 4, 6, 8]  ← 5부터 시작
+
+# accumulate: 누적 집계
+numbers = [1, 2, 3, 4, 5]
+print(list(itertools.accumulate(numbers)))            # [1, 3, 6, 10, 15]
+print(list(itertools.accumulate(numbers, max)))       # [1, 2, 3, 4, 5]
+print(list(itertools.accumulate(numbers, lambda a,b: a*b)))  # [1, 2, 6, 24, 120]
+
+# product: 데카르트 곱
+print(list(itertools.product("AB", "12")))
+# [('A','1'), ('A','2'), ('B','1'), ('B','2')]
+
+# combinations / permutations
+print(list(itertools.combinations("ABC", 2)))
+# [('A','B'), ('A','C'), ('B','C')]
+print(list(itertools.permutations("ABC", 2)))
+# [('A','B'), ('A','C'), ('B','A'), ('B','C'), ('C','A'), ('C','B')]</code></pre>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge">고급</div>
+    <h3>itertools로 피보나치 1000 미만</h3>
+<pre><code>import itertools
+
+def fibonacci():
     a, b = 0, 1
     while True:
         yield a
         a, b = b, a + b
 
-# 처음 10개만 사용
-fib = fibonacci()
-first_10 = [next(fib) for _ in range(10)]
-print(first_10)   # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+result = list(itertools.takewhile(lambda x: x &lt; 1000, fibonacci()))
+print(result)
+# [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987]
+print(len(result))   # 17</code></pre>
 
-# 100 미만인 피보나치만 — takewhile 사용
-import itertools
-fib2 = fibonacci()
-under_100 = list(itertools.takewhile(lambda x: x < 100, fib2))
-print(under_100)
-# [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]</code></pre>
+    <details>
+      <summary>itertools.groupby 사용법</summary>
+      <div class="answer">
+<pre><code>import itertools
+
+# 데이터가 정렬되어 있어야 합니다!
+# 왜? groupby는 스트리밍 방식이라 연속된 같은 값만 묶습니다.
+# 정렬하지 않으면 같은 키가 여러 그룹으로 분산됩니다.
+data = sorted(["사과", "바나나", "사과", "딸기", "바나나", "사과"])
+for key, group in itertools.groupby(data):
+    print(f"{key}: {list(group)}")
+# 바나나: ['바나나', '바나나']
+# 사과: ['사과', '사과', '사과']
+# 딸기: ['딸기']</code></pre>
       </div>
-    </div>
+    </details>
   </div>
 
-  <!-- 중급 -->
-  <div class="level-section intermediate">
-    <span class="level-badge level-intermediate">중급</span>
-    <h3>yield vs return — 함수의 두 가지 종료 방식</h3>
-    <div class="callout callout-warning">
-      <strong>함정: yield와 return 혼용 주의</strong><br>
-      제너레이터 함수 안에서 <code>return value</code>를 쓰면 값을 반환하는 것이 아닙니다.
-      <code>StopIteration</code> 예외에 값이 첨부되어 전달됩니다.
-      <div class="code-block" style="margin-top:8px;">
-        <div class="code-header">
-          <span class="code-label">Python</span>
-          <button class="copy-btn">복사</button>
-        </div>
-        <pre><code class="language-python">def gen_with_return():
-    yield 1
-    yield 2
-    return "done"   # StopIteration("done")을 발생시킴
-
-g = gen_with_return()
-print(next(g))   # 1
-print(next(g))   # 2
-try:
-    print(next(g))   # StopIteration 발생
-except StopIteration as e:
-    print(f"StopIteration 값: {e.value}")   # "done"
-
-# for 루프는 StopIteration의 값을 버림
-for v in gen_with_return():
-    print(v)
-# 1
-# 2
-# "done"은 출력되지 않음!</code></pre>
-      </div>
-      <p>
-        <code>return "done"</code>의 값을 받으려면 <code>yield from</code>이나 <code>try/except StopIteration</code>을 써야 합니다.
-        for 루프를 쓰면 그 값은 조용히 사라집니다.
-      </p>
-    </div>
-
-    <h3>제너레이터로 데이터 파이프라인 구성하기</h3>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># 대용량 CSV 파일 처리 패턴 (제너레이터 파이프라인)
-
-def read_lines(filename):
-    """파일에서 한 줄씩 읽음"""
-    with open(filename) as f:
-        for line in f:
-            yield line.strip()
-
-def parse_csv(lines):
-    """CSV 줄을 딕셔너리로 파싱"""
-    header = None
-    for line in lines:
-        if not line:
-            continue
-        parts = line.split(',')
-        if header is None:
-            header = parts
-            continue
-        yield dict(zip(header, parts))
-
-def filter_records(records, key, min_value):
-    """조건에 맞는 레코드만 통과"""
-    for record in records:
-        if float(record.get(key, 0)) >= min_value:
-            yield record
-
-# 파이프라인 구성 — 메모리에 전체 파일을 올리지 않음
-# lines    = read_lines('big_data.csv')
-# records  = parse_csv(lines)
-# filtered = filter_records(records, 'score', 80.0)
-# for r in filtered:
-#     process(r)
-
-# 시뮬레이션 예제
-def simulate_data():
-    data = [
-        "name,score,city",
-        "Alice,85,Seoul",
-        "Bob,72,Busan",
-        "Carol,91,Seoul",
-        "Dave,55,Incheon",
-    ]
-    for line in data:
-        yield line
-
-records = parse_csv(simulate_data())
-high_scores = filter_records(records, 'score', 80)
-for r in high_scores:
-    print(r)</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-{'name': 'Alice', 'score': '85', 'city': 'Seoul'}
-{'name': 'Carol', 'score': '91', 'city': 'Seoul'}
-    </div>
-  </div>
-
-  <!-- 고급 -->
-  <div class="level-section advanced">
-    <span class="level-badge level-advanced">고급</span>
-    <h3>Python 공식 문서의 제너레이터 정의</h3>
-    <p>
-      Python functional.txt HOWTO에서:
-      <em>"A generator is a special class of function that simplifies the task of writing iterators.
-      Regular functions compute a value and return it, but generators return an iterator that
-      returns a stream of values."</em>
-    </p>
-    <p>
-      <code>yield</code> 키워드가 포함된 함수는 바이트코드 컴파일러가 감지하여
-      <strong>제너레이터 함수(generator function)</strong>로 마킹합니다.
-      이 함수를 호출하면 함수 본문을 실행하지 않고 즉시 <code>PyGenObject</code>를 반환합니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import inspect, dis
-
-def my_generator(n):
-    for i in range(n):
-        yield i * 2
-
-# 제너레이터 함수 여부 확인
-print(inspect.isgeneratorfunction(my_generator))   # True
-print(inspect.isgeneratorfunction(print))           # False
-
-# 코드 플래그로 확인
-import dis
-print(bin(my_generator.__code__.co_flags))
-# CO_GENERATOR 플래그가 세팅됨 (bit 5 = 0x20)
-
-# 제너레이터 상태 확인
-gen = my_generator(3)
-print(inspect.getgeneratorstate(gen))   # GEN_CREATED
-
-next(gen)
-print(inspect.getgeneratorstate(gen))   # GEN_SUSPENDED
-
-list(gen)
-print(inspect.getgeneratorstate(gen))   # GEN_CLOSED
-
-# 제너레이터 강제 종료
-gen2 = my_generator(100)
-next(gen2)
-gen2.close()   # GeneratorExit 예외를 제너레이터에 던짐
-print(inspect.getgeneratorstate(gen2))   # GEN_CLOSED</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-True
-False
-0b100000...  (CO_GENERATOR 플래그 포함)
-GEN_CREATED
-GEN_SUSPENDED
-GEN_CLOSED
-GEN_CLOSED
-    </div>
-  </div>
-
-  <!-- 전공자 -->
   <div class="level-section expert">
-    <span class="level-badge level-expert">전공자</span>
-    <h3>Part A: CPython에서 yield의 구현 — YIELD_VALUE 바이트코드</h3>
-    <p>
-      <code>YIELD_VALUE</code> 바이트코드가 실행되면 CPython은 다음 과정을 수행합니다:
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># CPython ceval.c의 YIELD_VALUE 처리 (의사코드):
-# TARGET(YIELD_VALUE) {
-#     assert(frame->f_back != NULL);
-#     PyObject *retval = POP();           // yield할 값을 스택에서 꺼냄
-#
-#     // 프레임 상태를 SUSPENDED로 변경
-#     frame->f_state = FRAME_SUSPENDED;
-#
-#     // 현재 인스트럭션 포인터 저장 (RESUME 위치를 가리킴)
-#     // gi_frame_state에 f_lasti 보존
-#
-#     // 제어를 호출자 프레임으로 이전
-#     DISPATCH_GENERATOR_RETURN(retval);
-# }
+    <div class="level-badge">전공자</div>
+    <h3>Part A: itertools의 C 구현 — 왜 빠른가</h3>
+    <div class="callout callout-warning">
+      <strong>Part A:</strong>
+      <code>itertools</code>의 모든 함수는 C로 구현되어 있습니다 (<code>Modules/itertoolsmodule.c</code>).
+      Python 레벨의 for 루프를 사용하지 않으므로:
+      <ol>
+        <li>바이트코드 해석 오버헤드 없음</li>
+        <li>Python 함수 호출 오버헤드 없음</li>
+        <li>C 레벨에서 직접 <code>tp_iternext</code> 슬롯을 호출</li>
+      </ol>
+      예: <code>itertools.chain</code>은 내부적으로 C의 <code>chain_next()</code>에서
+      현재 이터레이터의 <code>tp_iternext</code>를 직접 호출하고,
+      <code>StopIteration</code> 발생 시 다음 이터레이터로 전환합니다.
+      Python으로 같은 로직을 작성하면 2-5배 느립니다.
+    </div>
 
-# Python에서 프레임 상태를 직접 관찰
+    <h3>Part B: 왜 itertools는 C로만 구현되었는가</h3>
+    <p>
+      Python 표준 라이브러리 대부분은 Python으로 작성됩니다(json, collections, functools 등).
+      그런데 itertools는 <strong>전부 C</strong>입니다. 왜?
+    </p>
+    <p>
+      itertools의 함수들은 <strong>루프 안에서 수백만~수억 번 호출</strong>됩니다.
+      <code>chain</code>이 1억 개를 연결할 때, Python 함수 호출 1회의 오버헤드(~100ns)가
+      1억 번 누적되면 <strong>10초</strong>가 됩니다. C 구현은 이를 ~1초로 줄입니다.
+    </p>
+    <p>
+      이것은 Python의 설계 철학 "성능이 필요한 핵심 루프는 C로, 나머지는 Python으로"의 실천입니다.
+      같은 이유로 <code>map</code>, <code>filter</code>, <code>zip</code>, <code>range</code>도 C 구현입니다.
+      사용자가 작성하는 코드는 가독성 좋은 Python이지만,
+      <strong>그 코드가 호출하는 기반 도구</strong>는 성능을 위해 C로 만드는 계층 구조입니다.
+    </p>
+<pre><code>import timeit
+
+# Python으로 chain을 구현하면:
+def py_chain(*iterables):
+    for it in iterables:
+        yield from it
+
+data = [list(range(1000)) for _ in range(100)]
+
+t_c = timeit.timeit(lambda: list(itertools.chain(*data)), number=100)
+t_py = timeit.timeit(lambda: list(py_chain(*data)), number=100)
+
+print(f"C 구현(itertools.chain): {t_c:.3f}초")   # ~0.3초
+print(f"Python 구현(py_chain):   {t_py:.3f}초")   # ~0.5초
+# C가 약 1.5~2배 빠름</code></pre>
+  </div>
+</section>
+
+<!-- ==================== 09 Lazy Evaluation ==================== -->
+<section id="lazy">
+  <h2>09 — Lazy Evaluation: 계산을 미루는 철학</h2>
+
+  <div class="why-box">
+    <h3>핵심 비유: 주문 즉시 제조 vs 미리 만들어두기</h3>
+    <p>
+      <strong>Eager (즉시 평가)</strong>: 뷔페 — 모든 음식을 미리 만들어 놓음. 빠르게 가져갈 수 있지만 남으면 낭비.<br>
+      <strong>Lazy (지연 평가)</strong>: 오마카세 — 손님이 한 접시 먹을 때마다 다음 접시를 만듦. 낭비 없지만 대기.
+    </p>
+    <p>
+      리스트는 뷔페, 제너레이터는 오마카세입니다.
+      데이터가 클수록, 전부 필요하지 않을수록 오마카세가 유리합니다.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge">중급</div>
+    <h3>Lazy vs Eager — 실제 메모리 비교</h3>
+<pre><code>import sys
+import tracemalloc
+
+tracemalloc.start()
+
+# Eager: 모든 값을 즉시 생성
+eager = [x ** 2 for x in range(1_000_000)]
+eager_size = tracemalloc.get_traced_memory()[1]  # 피크 메모리
+
+tracemalloc.stop()
+tracemalloc.start()
+
+# Lazy: 필요한 만큼만 생성
+lazy = sum(x ** 2 for x in range(1_000_000))
+lazy_size = tracemalloc.get_traced_memory()[1]
+
+tracemalloc.stop()
+
+print(f"Eager 피크 메모리: {eager_size:>12,} bytes")   # 40,448,200 bytes (실측)
+print(f"Lazy 피크 메모리:  {lazy_size:>12,} bytes")    # ~       400 bytes
+print(f"결과 동일: {sum(eager) == lazy}")                # True</code></pre>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge">고급</div>
+    <h3>Python의 다른 Lazy 요소들</h3>
+<pre><code># range()도 Lazy입니다
 import sys
+r = range(1_000_000_000)  # 10억
+print(sys.getsizeof(r))   # 48 bytes  ← 시작/끝/스텝만 저장
+print(500_000 in r)        # True  ← O(1) 멤버십 검사
 
-def trace_gen():
-    print(f"  yield 전 frame: {sys._getframe().f_lineno}번 줄")
-    yield 42
-    print(f"  재개 후 frame: {sys._getframe().f_lineno}번 줄")
-    yield 99
+# map(), filter()도 Lazy
+mapped = map(str.upper, ["hello", "world"])
+print(type(mapped))   # &lt;class 'map'&gt;
+print(next(mapped))   # HELLO  ← 하나만 계산
 
-g = trace_gen()
-print("first next():")
-val = next(g)
-print(f"  반환값: {val}")
-print("second next():")
-val2 = next(g)
-print(f"  반환값: {val2}")</code></pre>
-    </div>
+# dict.keys(), dict.values(), dict.items()는 뷰(View) — Lazy
+d = {"a": 1, "b": 2, "c": 3}
+keys = d.keys()
+d["d"] = 4            # 딕셔너리 수정
+print(list(keys))     # ['a', 'b', 'c', 'd']  ← 실시간 반영!</code></pre>
 
-    <h3>Part B: 제너레이터 기반 비동기 — asyncio와의 연결</h3>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># asyncio의 이벤트 루프는 제너레이터의 단순화된 버전
-# async/await를 제너레이터로 이해하기
-
-# 이것은 async def와 동등한 구 스타일 코루틴
-import asyncio
-
-# 현대적 방식 (Python 3.5+)
-async def modern_coro():
-    await asyncio.sleep(0)  # 이벤트 루프에 제어 양보
-    return "done"
-
-# 구 방식 (Python 3.4 이전, 제너레이터 기반)
-# @asyncio.coroutine
-# def old_coro():
-#     yield from asyncio.sleep(0)
-#     return "done"
-
-# async def는 CO_COROUTINE 플래그를 갖는 특수 함수
-import inspect
-print(inspect.iscoroutinefunction(modern_coro))   # True
-
-# 코루틴 객체도 제너레이터처럼 send()가 있음
-coro = modern_coro()
-print(type(coro))   # <class 'coroutine'>
-# asyncio.run(modern_coro())으로 실행
-
-# 핵심: yield → yield from → await 의 진화
-# 모두 "제어를 일시적으로 호출자에게 넘기고 나중에 재개"라는
-# 동일한 메커니즘 위에 있음</code></pre>
-    </div>
-  </div>
-</section>
-
-<!-- ==================== 06. yield from ==================== -->
-<section id="yield-from">
-  <h2>yield from — 제너레이터 위임</h2>
-
-  <!-- 중급 -->
-  <div class="level-section intermediate">
-    <span class="level-badge level-intermediate">중급</span>
-    <h3>서브 제너레이터에 위임하기</h3>
-    <p>
-      <code>yield from</code>은 다른 이터러블의 모든 값을 대신 내보냅니다.
-      여러 이터러블을 이어 붙이거나, 재귀적 제너레이터를 만들 때 쓰입니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># yield from 없이 여러 이터러블 이어붙이기 — 번거로움
-def chain_old(*iterables):
-    for it in iterables:
-        for item in it:   # 내부 for 루프 필요
-            yield item
-
-# yield from으로 단순화
-def chain_new(*iterables):
-    for it in iterables:
-        yield from it     # 이터러블 전체를 위임
-
-result = list(chain_new([1, 2], 'AB', range(3, 6)))
-print(result)   # [1, 2, 'A', 'B', 3, 4, 5]
-
-# 재귀적 트리 순회 (Python 공식 문서 예제)
-def flatten(lst):
-    """중첩 리스트를 평탄화"""
-    for item in lst:
-        if isinstance(item, list):
-            yield from flatten(item)   # 재귀 위임
-        else:
-            yield item
-
-nested = [1, [2, [3, 4], 5], [6, 7]]
-print(list(flatten(nested)))   # [1, 2, 3, 4, 5, 6, 7]</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[1, 2, 'A', 'B', 3, 4, 5]
-[1, 2, 3, 4, 5, 6, 7]
+    <div class="callout callout-info">
+      <strong>Python의 Lazy 요소 목록:</strong>
+      <code>range</code>, <code>map</code>, <code>filter</code>, <code>zip</code>,
+      <code>enumerate</code>, <code>reversed</code>, <code>dict.keys()</code>/<code>values()</code>/<code>items()</code>,
+      <code>itertools.*</code>, 제너레이터, 파일 객체(<code>open()</code>).
     </div>
   </div>
 
-  <!-- 고급 -->
-  <div class="level-section advanced">
-    <span class="level-badge level-advanced">고급</span>
-    <h3>yield from의 완전한 의미 (PEP 380)</h3>
-    <p>
-      <code>yield from expr</code>은 단순한 반복이 아닙니다.
-      <strong>서브제너레이터의 모든 값을 위임</strong>하고,
-      <strong>서브제너레이터의 return 값을 받아옵니다.</strong>
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># yield from의 return 값 수신
-def subgen():
-    yield 1
-    yield 2
-    return "subgen_result"   # StopIteration("subgen_result")
-
-def delegating():
-    result = yield from subgen()   # return 값을 받음
-    print(f"서브제너레이터 결과: {result}")
-    yield 99
-
-g = delegating()
-print(next(g))   # 1 (subgen의 yield 1)
-print(next(g))   # 2 (subgen의 yield 2)
-print(next(g))   # 출력: "서브제너레이터 결과: subgen_result", 그리고 99
-
-# PEP 380 (Python 3.3+): yield from의 완전한 의미론
-# 1. 서브제너레이터의 모든 값을 위임자(delegating generator)를 통해 외부로 전달
-# 2. send()와 throw()도 서브제너레이터로 투명하게 전달
-# 3. 서브제너레이터의 StopIteration.value가 yield from 표현식의 값이 됨</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-1
-2
-서브제너레이터 결과: subgen_result
-99
-    </div>
-    <div class="callout callout-warning">
-      <strong>함정: yield from의 return 값은 yield된 값이 아닙니다</strong><br>
-      <code>yield from subgen()</code>의 결과값(<code>result = yield from subgen()</code>)은
-      서브제너레이터가 <code>yield</code>한 값이 아니라, 서브제너레이터의 <strong><code>return</code> 값</strong>입니다.
-      <code>yield</code>한 값은 외부 호출자에게 바로 전달되고, 위임한 제너레이터에는 전달되지 않습니다.
-      <div class="code-block" style="margin-top:8px;">
-        <div class="code-header">
-          <span class="code-label">Python</span>
-          <button class="copy-btn">복사</button>
-        </div>
-        <pre><code class="language-python">def subgen():
-    yield 1      # 외부 호출자에게 전달 — delegating()은 이 값을 못 봄
-    yield 2      # 외부 호출자에게 전달
-    return "FINAL"   # 이것만 delegating()의 result에 담김
-
-def delegating():
-    result = yield from subgen()
-    print(f"result = {result!r}")  # "FINAL" — yield 값이 아님!
-    yield 99
-
-g = delegating()
-print(next(g))   # 1  ← subgen의 yield 1 (delegating은 이 값을 모름)
-print(next(g))   # 2  ← subgen의 yield 2
-print(next(g))   # result = 'FINAL', 그리고 99</code></pre>
-      </div>
-      <code>yield from</code>의 <em>반환값</em>은 오직 서브제너레이터의 <code>return</code>에서만 옵니다.
-      서브제너레이터가 명시적 <code>return</code> 없이 끝나면 <code>result</code>는 <code>None</code>입니다.
-    </div>
-
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import dis
-
-def using_yield_from():
-    yield from [1, 2, 3]
-
-dis.dis(using_yield_from)
-# 핵심 바이트코드:
-# GET_YIELD_FROM_ITER   → 서브이터러블을 이터레이터로 변환
-# LOAD_CONST None
-# SEND                  → send(None)로 서브제너레이터 시작/재개
-# YIELD_VALUE           → 서브제너레이터 값을 외부로 전달
-# RESUME
-# JUMP_BACKWARD_NO_INTERRUPT → 루프 (SEND로 돌아감)
-# END_SEND              → 서브제너레이터 완료, return 값 스택에 남김</code></pre>
-    </div>
-  </div>
-
-  <!-- 전공자 -->
   <div class="level-section expert">
-    <span class="level-badge level-expert">전공자</span>
-    <h3>Part A: SEND 바이트코드와 yield from의 투명성</h3>
-    <p>
-      CPython 3.12에서 <code>yield from</code>은 <code>SEND</code> 바이트코드로 구현됩니다.
-      <code>SEND</code>는 서브제너레이터에 값을 보내고 결과를 스택에 쌓습니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># send()가 yield from을 통해 서브제너레이터에 투명하게 전달됨
-def inner():
-    received = yield "inner_first"
-    print(f"inner received: {received}")
-    yield "inner_second"
-
-def outer():
-    result = yield from inner()
-    yield "outer_after"
-
-g = outer()
-print(next(g))          # "inner_first" (inner의 yield)
-print(g.send("hello"))  # inner received: hello → "inner_second"
-print(next(g))          # "outer_after"
-
-# send("hello")가 outer()를 통과해 inner()의 yield로 전달됨
-# 이것이 yield from의 "투명한 위임" — PEP 380의 핵심</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-inner_first
-inner received: hello
-inner_second
-outer_after
-    </div>
-  </div>
-</section>
-
-<!-- ==================== 07. itertools ==================== -->
-<section id="itertools">
-  <h2>itertools — 무한한 도구상자</h2>
-
-  <!-- 중급 -->
-  <div class="level-section intermediate">
-    <span class="level-badge level-intermediate">중급</span>
-    <h3>제너레이터 기반 표준 라이브러리</h3>
-    <p>
-      <code>itertools</code>는 제너레이터를 활용한 효율적인 이터레이터 도구 모음입니다.
-      Python 공식 문서에서: <em>"This module implements a number of iterator building blocks
-      inspired by constructs from APL, Haskell, and SML."</em>
-    </p>
-
-    <h4>무한 이터레이터</h4>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import itertools
-
-# count(start, step) — 무한 카운터
-counter = itertools.count(1, 2)   # 1, 3, 5, 7, ...
-print([next(counter) for _ in range(5)])   # [1, 3, 5, 7, 9]
-
-# cycle(iterable) — 무한 반복
-traffic = itertools.cycle(['RED', 'YELLOW', 'GREEN'])
-lights = [next(traffic) for _ in range(7)]
-print(lights)   # ['RED', 'YELLOW', 'GREEN', 'RED', 'YELLOW', 'GREEN', 'RED']
-
-# repeat(obj, times) — 반복
-print(list(itertools.repeat('hello', 3)))   # ['hello', 'hello', 'hello']</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[1, 3, 5, 7, 9]
-['RED', 'YELLOW', 'GREEN', 'RED', 'YELLOW', 'GREEN', 'RED']
-['hello', 'hello', 'hello']
-    </div>
-
-    <h4>끊기/선택 이터레이터</h4>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import itertools
-
-# islice(iterable, stop) — 이터레이터 슬라이싱
-inf = itertools.count(0)
-print(list(itertools.islice(inf, 0, 10, 2)))   # [0, 2, 4, 6, 8]
-
-# takewhile — 조건이 참인 동안만
-data = [1, 3, 5, 7, 10, 12, 3]   # 10부터 짝수
-print(list(itertools.takewhile(lambda x: x % 2 == 1, data)))   # [1, 3, 5, 7]
-
-# dropwhile — 조건이 참인 동안 건너뛰기
-print(list(itertools.dropwhile(lambda x: x % 2 == 1, data)))   # [10, 12, 3]
-
-# compress — 선택자 마스크
-data2 = ['A', 'B', 'C', 'D', 'E']
-mask = [1, 0, 1, 0, 1]
-print(list(itertools.compress(data2, mask)))   # ['A', 'C', 'E']
-
-# chain — 이터러블 이어붙이기
-print(list(itertools.chain([1, 2], 'AB', range(3, 5))))   # [1, 2, 'A', 'B', 3, 4]</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[0, 2, 4, 6, 8]
-[1, 3, 5, 7]
-[10, 12, 3]
-['A', 'C', 'E']
-[1, 2, 'A', 'B', 3, 4]
-    </div>
-
-    <h4>조합 이터레이터</h4>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import itertools
-
-# product — 데카르트 곱 (중첩 for 루프 대체)
-suits = ['♠', '♥']
-ranks = ['A', 'K']
-print(list(itertools.product(suits, ranks)))
-# [('♠', 'A'), ('♠', 'K'), ('♥', 'A'), ('♥', 'K')]
-
-# permutations — 순열
-print(list(itertools.permutations('ABC', 2)))
-# [('A', 'B'), ('A', 'C'), ('B', 'A'), ('B', 'C'), ('C', 'A'), ('C', 'B')]
-
-# combinations — 조합
-print(list(itertools.combinations('ABC', 2)))
-# [('A', 'B'), ('A', 'C'), ('B', 'C')]
-
-# groupby — 연속된 같은 키끼리 묶기
-data = [('a', 1), ('a', 2), ('b', 3), ('b', 4), ('a', 5)]
-for key, group in itertools.groupby(data, key=lambda x: x[0]):
-    print(key, list(group))</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[('♠', 'A'), ('♠', 'K'), ('♥', 'A'), ('♥', 'K')]
-[('A', 'B'), ('A', 'C'), ('B', 'A'), ('B', 'C'), ('C', 'A'), ('C', 'B')]
-[('A', 'B'), ('A', 'C'), ('B', 'C')]
-a [('a', 1), ('a', 2)]
-b [('b', 3), ('b', 4)]
-a [('a', 5)]
-    </div>
-
-    <div class="callout callout-tip">
-      <strong>지금 바로 해봐:</strong> <code>itertools.count()</code>로 짝수만 무한히 생성하는 이터레이터를 만들고, 처음 5개를 출력해보세요.
-      <div class="code-block" style="margin-top:8px;">
-        <div class="code-header">
-          <span class="code-label">Python</span>
-          <button class="copy-btn">복사</button>
-        </div>
-        <pre><code class="language-python">import itertools
-
-# count(0, 2)로 짝수 무한 생성
-even_counter = itertools.count(0, 2)
-first_5_evens = list(itertools.islice(even_counter, 5))
-print(first_5_evens)   # [0, 2, 4, 6, 8]
-
-# 제너레이터 표현식과 조합
-evens = (x for x in itertools.count(0) if x % 2 == 0)
-print(list(itertools.islice(evens, 5)))   # [0, 2, 4, 6, 8]</code></pre>
-      </div>
-    </div>
-  </div>
-
-  <!-- 고급 -->
-  <div class="level-section advanced">
-    <span class="level-badge level-advanced">고급</span>
-    <h3>itertools 레시피 — 공식 문서의 고급 패턴</h3>
-    <p>
-      Python 공식 문서(itertools)에는 직접 구현해볼 수 있는 "Recipes"가 있습니다.
-      이 레시피들은 <code>itertools</code>의 힘을 극대화합니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import itertools
-
-# 레시피 1: batched — 고정 크기 청크로 나누기 (Python 3.12 내장)
-# Python 3.11 이하에서 직접 구현:
-def batched(iterable, n):
-    """iterable을 n개씩 묶어 튜플로 반환"""
-    it = iter(iterable)
-    while batch := tuple(itertools.islice(it, n)):
-        yield batch
-
-print(list(batched(range(10), 3)))
-# [(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]
-
-# 레시피 2: sliding_window
-def sliding_window(iterable, n):
-    """슬라이딩 윈도우"""
-    from collections import deque
-    it = iter(iterable)
-    window = deque(itertools.islice(it, n), maxlen=n)
-    if len(window) == n:
-        yield tuple(window)
-    for x in it:
-        window.append(x)
-        yield tuple(window)
-
-print(list(sliding_window('ABCDEF', 3)))
-# [('A', 'B', 'C'), ('B', 'C', 'D'), ('C', 'D', 'E'), ('D', 'E', 'F')]
-
-# 레시피 3: pairwise (Python 3.10+ 내장)
-def pairwise(iterable):
-    """연속된 쌍"""
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return zip(a, b)
-
-print(list(pairwise('ABCD')))
-# [('A', 'B'), ('B', 'C'), ('C', 'D')]</code></pre>
-    </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[(0, 1, 2), (3, 4, 5), (6, 7, 8), (9,)]
-[('A', 'B', 'C'), ('B', 'C', 'D'), ('C', 'D', 'E'), ('D', 'E', 'F')]
-[('A', 'B'), ('B', 'C'), ('C', 'D')]
-    </div>
+    <div class="level-badge">전공자</div>
+    <h3>Part A: 왜 Python은 기본이 Eager인가 — Haskell과의 결정적 차이</h3>
     <div class="callout callout-warning">
-      <strong>함정: itertools.tee()의 메모리 비용</strong><br>
-      <code>itertools.tee(it, n)</code>은 하나의 이터레이터를 n개로 복제합니다.
-      하지만 한쪽 이터레이터가 앞서 나가면, 차이만큼의 값을 <strong>버퍼에 저장</strong>합니다.
-      두 이터레이터의 진행 차이가 크면 메모리를 많이 씁니다.
-      tee보다는 원래 이터러블을 다시 순회하거나 리스트로 구체화하는 것이 나을 수 있습니다.
+      <strong>Part A:</strong>
+      Haskell은 <strong>기본이 Lazy</strong>입니다 — <code>let x = 1/0</code>이 에러를 내지 않습니다.
+      <code>x</code>를 실제로 사용할 때 비로소 평가되고, 사용하지 않으면 영원히 에러 없습니다.
+      이것이 가능한 이유: Haskell은 <strong>순수 함수형</strong>이라 부작용이 없어서
+      "언제 평가하든 결과가 같다"는 보장이 있기 때문입니다.
     </div>
+    <p>
+      Python은 왜 이 방식을 선택하지 않았는가? 구체적 사례를 봅시다:
+    </p>
+<pre><code># Python에서 Lazy가 기본이면 생기는 문제
+results = []
+for i in range(5):
+    results.append(lambda: print(f"작업 {i}"))
+
+# Eager: 여기서 이미 i=4
+# Lazy라면: print가 "필요할 때" 실행되므로 "작업 4"가 5번?
+# 부작용(print)의 실행 순서가 예측 불가해짐
+
+# Python에서 부작용은 일상입니다:
+# - print(), file.write(), db.commit(), requests.post()
+# - 이것들의 실행 순서가 예측 불가하면 프로그램을 만들 수 없습니다</code></pre>
+    <p>
+      <strong>Guido van Rossum의 선택:</strong>
+      "Python은 실용적 언어이다. 대부분의 코드에 부작용이 있으므로
+      실행 순서를 코드 순서와 일치시켜야 한다.
+      Lazy가 필요한 곳에서만 명시적으로 제너레이터를 쓰면 된다."
+      — 이것이 "Explicit is better than implicit"(Zen of Python)의 실제 적용입니다.
+    </p>
+
+    <h3>Part B: 왜 파이프라인 패턴이 현대 데이터 처리의 기초인가</h3>
+    <p>
+      1970년대 Doug McIlroy가 Unix 파이프(<code>|</code>)를 발명했을 때의 핵심 통찰:
+      "데이터를 한 번에 다 처리하지 말고, <strong>스트림으로 흘려보내라.</strong>"
+      <code>cat data | grep pattern | sort | head -10</code> —
+      각 명령이 이전 명령의 출력을 <strong>한 줄씩</strong> 읽어 처리합니다.
+      수 GB 파일도 메모리에 올리지 않고 처리 가능합니다.
+    </p>
+    <p>
+      Python의 제너레이터 파이프라인은 이 철학의 직접적 계승입니다.
+      그리고 이 패턴이 현대 데이터 엔지니어링의 기초가 된 이유:
+    </p>
+    <ul>
+      <li><strong>Apache Kafka</strong>: 이벤트를 스트림으로 처리. 전체를 메모리에 올리지 않음</li>
+      <li><strong>Spark Streaming</strong>: 실시간 데이터를 마이크로 배치로 파이프라인 처리</li>
+      <li><strong>Python Dask</strong>: Lazy 연산 그래프를 만들고, <code>.compute()</code>할 때 비로소 실행</li>
+    </ul>
+    <p>
+      이 모든 시스템의 공통 원리: <strong>"전부 만들어서 넘기지 말고, 필요한 만큼만 흘려보내라."</strong>
+      제너레이터의 <code>yield</code>는 이 원리의 가장 단순한 구현입니다.
+    </p>
   </div>
 </section>
 
-<!-- ==================== 08. AI와 제너레이터 ==================== -->
-<section id="ai-generators">
-  <h2>AI와 제너레이터</h2>
+<!-- ==================== 10 AI 연결 ==================== -->
+<section id="ai">
+  <h2>10 — AI는 이걸 어떻게 하는가</h2>
 
-  <!-- 초급 -->
-  <div class="level-section elementary">
-    <span class="level-badge level-elementary">초급</span>
-    <h3>ChatGPT가 글자를 하나씩 내보내는 이유</h3>
-    <p>
-      ChatGPT가 응답할 때 텍스트가 한꺼번에 나타나지 않고 글자 단위로 흘러나옵니다.
-      이것이 바로 <strong>스트리밍(Streaming)</strong>이고, 제너레이터와 같은 원리입니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import time
-
-# ChatGPT 스트리밍을 제너레이터로 시뮬레이션
-def ai_stream_response(prompt):
-    """AI가 응답을 토큰 단위로 생성하는 것을 시뮬레이션"""
-    # 실제 AI는 확률 분포에서 다음 토큰을 샘플링함
-    response = f"안녕하세요! '{prompt}'에 대한 답변입니다. "
-    tokens = response.split(' ')
-
-    for token in tokens:
-        time.sleep(0.1)   # 토큰 생성 시간 시뮬레이션
-        yield token + ' '
-
-# 스트리밍 출력
-print("AI 응답 시작:")
-for token in ai_stream_response("파이썬이란"):
-    print(token, end='', flush=True)
-print()
-
-# 만약 스트리밍이 없다면?
-# — 전체 응답이 생성될 때까지 사용자는 기다려야 함
-# — 제너레이터 덕분에 첫 토큰을 즉시 볼 수 있음</code></pre>
-    </div>
-    <p>
-      AI 모델 API(OpenAI, Anthropic 등)는 실제로 <code>stream=True</code> 옵션으로
-      응답을 제너레이터처럼 순서대로 전달합니다.
-      내부적으로 Server-Sent Events(SSE) 프로토콜을 쓰지만,
-      Python 라이브러리는 이것을 제너레이터로 래핑합니다.
-    </p>
+  <div class="callout callout-info">
+    <strong>AI 코드 생성에서의 컴프리헨션과 제너레이터:</strong>
+    AI 모델은 for 루프보다 컴프리헨션을 선호하는 경향이 있습니다 — 학습 데이터에서
+    "파이썬다운" 코드가 더 높은 평가를 받기 때문입니다.
   </div>
 
-  <!-- 중급 -->
-  <div class="level-section intermediate">
-    <span class="level-badge level-intermediate">중급</span>
-    <h3>AI 코드 생성에서 컴프리헨션 패턴</h3>
-    <p>
-      AI(GitHub Copilot, ChatGPT 등)가 Python 코드를 생성할 때 컴프리헨션 패턴을 선호합니다.
-      왜냐하면 학습 데이터에서 컴프리헨션이 "좋은 Python 코드"의 지표이기 때문입니다.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># AI가 생성하는 전형적인 데이터 처리 코드
-import json
+  <h3>AI가 생성하는 전형적 패턴</h3>
+<pre><code># AI가 자주 생성하는 코드
+# 패턴 1: 데이터 변환
+names = ["alice", "bob", "charlie"]
+upper_names = [name.upper() for name in names]
 
-# 가상의 API 응답
-api_response = {
-    "users": [
-        {"id": 1, "name": "Alice", "active": True, "score": 85},
-        {"id": 2, "name": "Bob", "active": False, "score": 72},
-        {"id": 3, "name": "Carol", "active": True, "score": 91},
-        {"id": 4, "name": "Dave", "active": True, "score": 55},
+# 패턴 2: 조건부 필터링
+valid_users = [u for u in users if u.is_active and u.age &gt;= 18]
+
+# 패턴 3: 딕셔너리 변환 (API 응답 처리)
+response = [{"name": "A", "value": 1}, {"name": "B", "value": 2}]
+lookup = {item["name"]: item["value"] for item in response}
+
+# 패턴 4: 대용량 데이터 처리에 제너레이터
+def process_large_file(filepath):
+    with open(filepath) as f:
+        for line in f:                    # 파일도 이터레이터 (Lazy!)
+            if not line.startswith("#"):
+                yield line.strip().split(",")</code></pre>
+
+  <div class="callout callout-warning">
+    <strong>AI 코드 검증 포인트:</strong>
+    <ol>
+      <li><strong>대용량에 리스트 컴프리헨션?</strong> → 메모리 문제 확인. 제너레이터로 바꿔야 할 수 있음</li>
+      <li><strong>복잡한 3중 컴프리헨션?</strong> → 가독성 확인. for문이 더 나을 수 있음</li>
+      <li><strong>제너레이터를 두 번 사용?</strong> → 소진 후 재사용 버그 확인</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ==================== 11 실습 & 연습문제 ==================== -->
+<section id="practice">
+  <h2>11 — 실습 &amp; 연습문제</h2>
+
+  <h3>실습: 제너레이터 파이프라인으로 로그 분석</h3>
+<pre><code>import itertools
+
+# 가상 로그 데이터
+def fake_log_lines():
+    logs = [
+        "2024-01-01 INFO: 서버 시작",
+        "2024-01-01 ERROR: DB 연결 실패",
+        "2024-01-01 INFO: 재시도 중",
+        "2024-01-01 ERROR: 타임아웃",
+        "2024-01-01 WARN: 메모리 부족",
+        "2024-01-01 INFO: 복구 완료",
+        "2024-01-01 ERROR: 인증 실패",
     ]
-}
+    yield from logs
 
-# AI가 한 줄로 처리하는 패턴
-active_high_scorers = [
-    {"id": u["id"], "name": u["name"]}
-    for u in api_response["users"]
-    if u["active"] and u["score"] >= 70
-]
-print(active_high_scorers)
-# [{'id': 1, 'name': 'Alice'}, {'id': 3, 'name': 'Carol'}]
+# 파이프라인: ERROR만 필터 → 메시지 추출 → 대문자 변환
+lines = fake_log_lines()
+errors = (line for line in lines if "ERROR" in line)
+messages = (line.split(": ", 1)[1] for line in errors)
+upper_msgs = (msg.upper() for msg in messages)
 
-# 대용량 데이터는 제너레이터로
-def process_large_dataset(records):
-    """수백만 건의 레코드를 메모리 효율적으로 처리"""
-    return (
-        {"id": r["id"], "name": r["name"].upper()}
-        for r in records
-        if r["active"] and r["score"] >= 70
-    )</code></pre>
+print(list(upper_msgs))
+# ['DB 연결 실패', '타임아웃', '인증 실패']</code></pre>
+
+  <h3>연습문제</h3>
+
+  <details>
+    <summary>문제 1 (초급): 기본 컴프리헨션</summary>
+    <div class="answer">
+      1~20 중 3의 배수의 제곱으로 이루어진 리스트를 만드세요.
+<pre><code>result = [x**2 for x in range(1, 21) if x % 3 == 0]
+print(result)   # [9, 36, 81, 144, 225, 324]</code></pre>
     </div>
-    <div class="output-block">
-      <div class="output-label">실행 결과:</div>
-[{'id': 1, 'name': 'Alice'}, {'id': 3, 'name': 'Carol'}]
+  </details>
+
+  <details>
+    <summary>문제 2 (초급): 딕셔너리 컴프리헨션</summary>
+    <div class="answer">
+      리스트의 각 단어를 키로, 글자 수를 값으로 하는 딕셔너리를 만드세요.
+<pre><code>words = ["apple", "banana", "cherry", "date"]
+result = {w: len(w) for w in words}
+print(result)   # {'apple': 5, 'banana': 6, 'cherry': 6, 'date': 4}</code></pre>
     </div>
-  </div>
-</section>
+  </details>
 
-<!-- ==================== 09. 연습문제 ==================== -->
-<section id="exercises">
-  <h2>연습문제 (12문제)</h2>
-
-  <!-- 초급 1 -->
-  <div class="exercise-block level-elem">
-    <span class="level-badge level-elementary">초급 1</span>
-    <h3>컴프리헨션으로 변환</h3>
-    <p>다음 for 루프를 리스트 컴프리헨션 한 줄로 바꾸세요:</p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python"># 변환할 코드
-result = []
-for word in ['hello', 'world', 'python', 'is', 'great']:
-    if len(word) > 4:
-        result.append(word.upper())
-
-print(result)   # ['HELLO', 'WORLD', 'PYTHON', 'GREAT']
-
-# 한 줄로 변환하세요:
-result2 = ___
-print(result2)  # 같은 결과</code></pre>
-    </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python">result2 = [word.upper() for word in ['hello', 'world', 'python', 'is', 'great'] if len(word) > 4]
-print(result2)   # ['HELLO', 'WORLD', 'PYTHON', 'GREAT']
-
-# 구조: [표현식 for 변수 in 이터러블 if 조건]
-# 표현식: word.upper()
-# 변수: word
-# 이터러블: ['hello', ...]
-# 조건: len(word) > 4</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 초급 2 -->
-  <div class="exercise-block level-elem">
-    <span class="level-badge level-elementary">초급 2</span>
-    <h3>딕셔너리 컴프리헨션</h3>
-    <p>1~10 숫자를 키로, 그 세제곱을 값으로 갖는 딕셔너리를 컴프리헨션으로 만드세요:</p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">cubes = ___
-
-print(cubes[1])    # 1
-print(cubes[3])    # 27
-print(cubes[10])   # 1000
-print(len(cubes))  # 10</code></pre>
-    </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python">cubes = {n: n**3 for n in range(1, 11)}
-
-print(cubes[1])    # 1
-print(cubes[3])    # 27
-print(cubes[10])   # 1000
-print(len(cubes))  # 10</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 초급 3 -->
-  <div class="exercise-block level-elem">
-    <span class="level-badge level-elementary">초급 3</span>
-    <h3>제너레이터로 홀수 생성</h3>
-    <p>1부터 시작하는 홀수를 무한히 생성하는 제너레이터 함수를 작성하고, 처음 5개를 출력하세요:</p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">def odd_numbers():
-    """홀수를 무한히 생성하는 제너레이터"""
-    # 구현하세요
-    pass
-
-gen = odd_numbers()
-for _ in range(5):
-    print(next(gen), end=' ')
-# 출력: 1 3 5 7 9</code></pre>
-    </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python">def odd_numbers():
-    n = 1
-    while True:
+  <details>
+    <summary>문제 3 (초급): 첫 번째 제너레이터</summary>
+    <div class="answer">
+      n부터 1까지 카운트다운하는 제너레이터를 만드세요.
+<pre><code>def countdown(n):
+    while n &gt; 0:
         yield n
-        n += 2
+        n -= 1
 
-gen = odd_numbers()
-for _ in range(5):
-    print(next(gen), end=' ')
-# 출력: 1 3 5 7 9
-
-# 또는 itertools.count를 활용
-import itertools
-odd_gen = (n for n in itertools.count(1, 2))
-print(list(itertools.islice(odd_gen, 5)))   # [1, 3, 5, 7, 9]</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 중급 4 -->
-  <div class="exercise-block level-inter">
-    <span class="level-badge level-intermediate">중급 4</span>
-    <h3>파이프라인 구성</h3>
-    <p>
-      다음 데이터를 제너레이터 파이프라인으로 처리하세요:
-      문자열 리스트에서 공백을 제거하고, 빈 문자열은 버리고, 소문자로 변환한 뒤,
-      5글자 이상인 것만 남기세요. 중간 리스트를 만들지 말고 제너레이터 체인으로 구성하세요.
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">raw_data = ['  Hello  ', 'PYTHON', '', '  World  ', 'Hi', '  GENERATOR  ', ' a ']
-
-# 제너레이터 파이프라인으로 처리
-step1 = ___   # 공백 제거
-step2 = ___   # 빈 문자열 제거
-step3 = ___   # 소문자 변환
-step4 = ___   # 5글자 이상만
-
-print(list(step4))
-# ['hello', 'python', 'world', 'generator']</code></pre>
+print(list(countdown(5)))   # [5, 4, 3, 2, 1]</code></pre>
     </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python">raw_data = ['  Hello  ', 'PYTHON', '', '  World  ', 'Hi', '  GENERATOR  ', ' a ']
+  </details>
 
-step1 = (s.strip() for s in raw_data)
-step2 = (s for s in step1 if s)
-step3 = (s.lower() for s in step2)
-step4 = (s for s in step3 if len(s) >= 5)
+  <details>
+    <summary>문제 4 (중급): 행렬 전치 (transpose)</summary>
+    <div class="answer">
+<pre><code>matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+transposed = [[row[i] for row in matrix] for i in range(len(matrix[0]))]
+print(transposed)   # [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
 
-print(list(step4))
-# ['hello', 'python', 'world', 'generator']
-
-# 한 줄로 합칠 수도 있음:
-result = (s.lower() for s in
-          (s.strip() for s in raw_data)
-          if s.strip() and len(s.strip()) >= 5)
-# 하지만 각 단계를 분리하는 것이 더 읽기 쉬움</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 중급 5 -->
-  <div class="exercise-block level-inter">
-    <span class="level-badge level-intermediate">중급 5</span>
-    <h3>제너레이터 소진 확인</h3>
-    <p>다음 코드의 출력을 예측하고, 왜 그렇게 되는지 설명하세요:</p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">def count_three():
-    print("시작")
-    yield 1
-    print("1 출력 후")
-    yield 2
-    print("2 출력 후")
-    yield 3
-    print("종료")
-
-gen = count_three()
-
-# 질문 1: gen을 만들었을 때 "시작"이 출력되는가?
-# 답: ___
-
-val = next(gen)
-# 질문 2: 이 시점에 무엇이 출력되는가?
-# 답: ___
-
-print(f"받은 값: {val}")
-
-for remaining in gen:
-    print(f"남은 값: {remaining}")
-# 질문 3: for 루프에서 무엇이 출력되는가?
-# 답: ___</code></pre>
+# zip으로도 가능
+transposed2 = [list(row) for row in zip(*matrix)]
+print(transposed2)  # [[1, 4, 7], [2, 5, 8], [3, 6, 9]]</code></pre>
     </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python">def count_three():
-    print("시작")
-    yield 1
-    print("1 출력 후")
-    yield 2
-    print("2 출력 후")
-    yield 3
-    print("종료")
+  </details>
 
-gen = count_three()
-# "시작"이 출력되지 않음! gen을 만드는 것은 제너레이터 객체만 생성
-# 실행은 next()를 호출해야 시작됨
+  <details>
+    <summary>문제 5 (중급): 무한 피보나치 + takewhile</summary>
+    <div class="answer">
+<pre><code>import itertools
 
-val = next(gen)
-# "시작" 출력 (첫 yield까지 실행)
-# val = 1
+def fibonacci():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
 
-print(f"받은 값: {val}")
-# "받은 값: 1" 출력
-
-for remaining in gen:
-    print(f"남은 값: {remaining}")
-# "1 출력 후"   ← for가 next(gen)을 호출하면 재개
-# "남은 값: 2"
-# "2 출력 후"
-# "남은 값: 3"
-# "종료"
-
-# 핵심: 제너레이터 함수의 print()는 yield를 넘어갈 때 실행됨</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 중급 6 -->
-  <div class="exercise-block level-inter">
-    <span class="level-badge level-intermediate">중급 6</span>
-    <h3>yield from으로 트리 평탄화</h3>
-    <p>
-      임의 깊이로 중첩된 리스트를 평탄화하는 <code>flatten()</code> 제너레이터를 <code>yield from</code>을 사용해 구현하세요:
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">def flatten(iterable):
-    """임의 깊이의 중첩 이터러블을 평탄화"""
-    # yield from 사용
-    pass
-
-nested = [1, [2, [3, [4, 5]], 6], 7, [8, 9]]
-print(list(flatten(nested)))   # [1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-deep = [[[[1]], [2]], [3]]
-print(list(flatten(deep)))   # [1, 2, 3]</code></pre>
+result = list(itertools.takewhile(lambda x: x &lt; 1000, fibonacci()))
+print(result)
+# [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987]</code></pre>
     </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python">def flatten(iterable):
-    for item in iterable:
-        if isinstance(item, (list, tuple)):
-            yield from flatten(item)   # 재귀 위임
-        else:
-            yield item
+  </details>
 
-nested = [1, [2, [3, [4, 5]], 6], 7, [8, 9]]
-print(list(flatten(nested)))   # [1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-deep = [[[[1]], [2]], [3]]
-print(list(flatten(deep)))   # [1, 2, 3]
-
-# yield from이 없으면?
-def flatten_no_yfrom(iterable):
-    for item in iterable:
-        if isinstance(item, (list, tuple)):
-            for sub in flatten_no_yfrom(item):  # 내부 for 루프 필요
-                yield sub
-        else:
-            yield item</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 중급 7 -->
-  <div class="exercise-block level-inter">
-    <span class="level-badge level-intermediate">중급 7</span>
-    <h3>itertools로 슬라이딩 윈도우 합계</h3>
-    <p>
-      리스트와 윈도우 크기 k를 받아, 연속 k개 숫자의 합을 순서대로 반환하는 제너레이터를
-      <code>itertools</code>를 활용해 구현하세요:
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import itertools
-from collections import deque
-
-def sliding_sum(lst, k):
-    """연속 k개의 합을 순서대로 yield"""
-    # 구현하세요
-    pass
-
-print(list(sliding_sum([1, 2, 3, 4, 5], 3)))
-# [6, 9, 12]   (1+2+3, 2+3+4, 3+4+5)
-
-print(list(sliding_sum([10, 20, 30], 2)))
-# [30, 50]</code></pre>
+  <details>
+    <summary>문제 6 (중급): 세트 컴프리헨션으로 중복 제거</summary>
+    <div class="answer">
+<pre><code>sentences = ["hello world", "python is great", "hello python"]
+unique_words = {word for sentence in sentences for word in sentence.split()}
+print(sorted(unique_words))
+# ['great', 'hello', 'is', 'python', 'world']</code></pre>
     </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python">import itertools
-from collections import deque
+  </details>
 
-def sliding_sum(lst, k):
-    it = iter(lst)
-    window = deque(itertools.islice(it, k), maxlen=k)
-    if len(window) == k:
-        yield sum(window)
-    for x in it:
-        window.append(x)
-        yield sum(window)
+  <details>
+    <summary>문제 7 (중급): 스코프 격리 확인</summary>
+    <div class="answer">
+<pre><code>x = 10
+result = [x for x in range(5)]
+print(x)       # 10  ← 컴프리헨션 루프 변수가 외부에 영향 없음
+print(result)  # [0, 1, 2, 3, 4]
 
-print(list(sliding_sum([1, 2, 3, 4, 5], 3)))   # [6, 9, 12]
-print(list(sliding_sum([10, 20, 30], 2)))        # [30, 50]
-
-# deque(maxlen=k)를 쓰면 자동으로 오래된 원소가 제거됨
-# itertools.islice로 첫 k개를 효율적으로 채움</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 고급/전공자 8 -->
-  <div class="exercise-block level-adv">
-    <span class="level-badge level-advanced">고급 8</span>
-    <h3>dis.dis로 차이 분석</h3>
-    <p>
-      아래 세 가지 코드의 바이트코드를 <code>dis.dis()</code>로 확인하고,
-      <code>LIST_APPEND</code>, <code>YIELD_VALUE</code>, <code>MAP_ADD</code>가
-      각각 어디서 나타나는지, 그리고 왜 다른 바이트코드를 쓰는지 설명하세요:
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import dis
-
-# 분석할 세 코드
-code_a = '[x**2 for x in range(10)]'
-code_b = '(x**2 for x in range(10))'
-code_c = '{x: x**2 for x in range(10)}'
-
-for label, code in [('list comp', code_a),
-                    ('gen expr', code_b),
-                    ('dict comp', code_c)]:
-    print(f"\n=== {label} ===")
-    dis.dis(code)
-
-# 질문:
-# 1. LIST_APPEND vs YIELD_VALUE vs MAP_ADD — 각각 언제 쓰이는가?
-# 2. 제너레이터 표현식만 RETURN_GENERATOR를 갖는 이유는?
-# 3. Python 3.12에서 list/dict 컴프리헨션은 인라인화되었지만
-#    제너레이터 표현식은 여전히 별도 code object를 쓰는 이유는?</code></pre>
+# for문이라면:
+x = 10
+for x in range(5): pass
+print(x)       # 4  ← 외부 x가 덮어씌워짐!</code></pre>
     </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python"># 답변 요약 (Python 3.12 기준):
+  </details>
 
-# 1. 바이트코드 차이:
-# - LIST_APPEND: C 레벨에서 PyList_Append() 직접 호출. 리스트 컴프리헨션 전용.
-# - YIELD_VALUE: 스택 값을 호출자에게 전달하고 프레임 상태 보존 후 일시정지.
-# - MAP_ADD: C 레벨에서 PyDict_SetItem() 직접 호출. 딕셔너리 컴프리헨션 전용.
+  <details>
+    <summary>문제 8 (중급): 리스트 vs 제너레이터 메모리 비교</summary>
+    <div class="answer">
+<pre><code>import sys
 
-# 2. RETURN_GENERATOR가 제너레이터 표현식에만 있는 이유:
-# - 제너레이터 표현식은 호출 시 PyGenObject를 반환해야 함 (실행 지연)
-# - RETURN_GENERATOR는 현재 프레임을 generator 객체로 래핑하고
-#   즉시 제어를 호출자에게 돌려줌
-# - 리스트/딕셔너리 컴프리헨션은 즉시 결과를 반환하므로 불필요
+N = 100_000
+lst = [i ** 2 for i in range(N)]
+gen = (i ** 2 for i in range(N))
 
-# 3. Python 3.12 중요 변경점 — 인라인 컴프리헨션:
-# - Python 3.12+에서 list/dict/set 컴프리헨션은 별도 code object 없이 인라인 처리
-# - LOAD_FAST_AND_CLEAR로 루프 변수를 임시 보존해 스코프 격리를 유지
-# - 반면 제너레이터 표현식은 여전히 별도 code object + MAKE_FUNCTION 사용
-#   (지연 실행 특성상 별도 프레임이 필요)
+print(f"리스트 크기:     {sys.getsizeof(lst):>10,} bytes")   # 800,984 bytes
+print(f"제너레이터 크기: {sys.getsizeof(gen):>10,} bytes")   #     200 bytes
 
-import dis
-dis.dis('[x**2 for x in range(10)]')
-# Python 3.12: LOAD_FAST_AND_CLEAR + LIST_APPEND (인라인, 별도 code object 없음)
-
-dis.dis('(x**2 for x in range(10))')
-# 내부 code object에서 YIELD_VALUE, RETURN_GENERATOR 확인
-
-dis.dis('{x: x**2 for x in range(10)}')
-# Python 3.12: LOAD_FAST_AND_CLEAR + MAP_ADD (인라인)</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 전공자 9 -->
-  <div class="exercise-block level-exp">
-    <span class="level-badge level-expert">전공자 9</span>
-    <h3>PyGenObject 상태 추적</h3>
-    <p>
-      제너레이터의 실행 상태(<code>GEN_CREATED</code>, <code>GEN_SUSPENDED</code>,
-      <code>GEN_CLOSED</code>)를 <code>inspect</code> 모듈로 추적하는 코드를 작성하세요.
-      그리고 <code>gi_frame</code>이 각 상태에서 어떻게 변하는지 확인하세요:
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import inspect
-
-def my_gen():
-    yield 1
-    yield 2
-
-# 상태를 단계별로 출력:
-# 1. gen 생성 직후
-# 2. next(gen) 한 번 후
-# 3. 모두 소진 후 (StopIteration 발생 후)
-# 4. gen.close() 후
-
-# 각 상태에서 gi_frame, gi_suspended, inspect.getgeneratorstate()를 출력하세요</code></pre>
+# 합계는 동일
+lst_sum = sum(lst)
+gen_sum = sum(i ** 2 for i in range(N))   # gen은 이미 소진됨에 주의!
+print(f"같은 결과: {lst_sum == gen_sum}")   # True</code></pre>
     </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python">import inspect
+  </details>
 
-def my_gen():
-    yield 1
-    yield 2
+  <details>
+    <summary>문제 9 (고급): 재귀 제너레이터로 평탄화</summary>
+    <div class="answer">
+<pre><code>def flatten(obj):
+    if isinstance(obj, list):
+        for item in obj:
+            yield from flatten(item)
+    else:
+        yield obj
 
-gen = my_gen()
-print("=== GEN_CREATED ===")
-print(f"state: {inspect.getgeneratorstate(gen)}")  # GEN_CREATED
-print(f"gi_frame: {gen.gi_frame}")                  # 프레임 존재
-print(f"gi_suspended: {gen.gi_suspended}")          # False
-
-next(gen)
-print("\n=== GEN_SUSPENDED (yield 1 이후) ===")
-print(f"state: {inspect.getgeneratorstate(gen)}")  # GEN_SUSPENDED
-print(f"gi_frame: {gen.gi_frame}")                  # 프레임 여전히 존재
-print(f"gi_suspended: {gen.gi_suspended}")          # True
-print(f"현재 줄번호: {gen.gi_frame.f_lineno}")      # yield 2 라인
-
-try:
-    next(gen)  # yield 2
-    next(gen)  # StopIteration
-except StopIteration:
-    pass
-
-print("\n=== GEN_CLOSED (소진 후) ===")
-print(f"state: {inspect.getgeneratorstate(gen)}")  # GEN_CLOSED
-print(f"gi_frame: {gen.gi_frame}")                  # None! 프레임 해제됨
-print(f"gi_suspended: {gen.gi_suspended}")          # False
-
-# 핵심 관찰:
-# - GEN_CREATED: 프레임 있음, 아직 실행 안 됨
-# - GEN_SUSPENDED: 프레임 있음, yield에서 일시정지
-# - GEN_CLOSED: 프레임 None, 메모리 해제됨
-# gi_frame이 None이 되면 제너레이터가 차지하던 로컬 변수 메모리가 해제</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 전공자 10 -->
-  <div class="exercise-block level-exp">
-    <span class="level-badge level-expert">전공자 10</span>
-    <h3>throw()와 close() — 제너레이터 예외 주입</h3>
-    <p>
-      <code>gen.throw(ExcType)</code>와 <code>gen.close()</code>가 내부적으로 어떻게 동작하는지 확인하세요.
-      <code>GeneratorExit</code>가 어떤 경로로 전달되는지 설명하고,
-      <code>try/finally</code>로 자원 정리를 보장하는 제너레이터를 구현하세요:
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">def managed_gen():
-    """close() 호출 시 GeneratorExit를 받아 정리하는 제너레이터"""
-    # 구현하세요
-    # 1. 자원 획득 메시지 출력
-    # 2. 값을 yield
-    # 3. GeneratorExit 수신 시 "자원 해제" 출력 후 종료
-    pass
-
-gen = managed_gen()
-print(next(gen))   # 첫 값
-print(next(gen))   # 두 번째 값
-gen.close()        # "자원 해제" 출력되어야 함
-
-# 질문: gen.close()가 내부적으로 gen.throw(GeneratorExit)를 호출하는가?</code></pre>
+nested = [1, [2, [3, [4, [5]]], 6], [7, 8], 9]
+print(list(flatten(nested)))   # [1, 2, 3, 4, 5, 6, 7, 8, 9]</code></pre>
     </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python">def managed_gen():
-    print("자원 획득")
-    try:
-        n = 0
-        while True:
-            yield n
-            n += 1
-    except GeneratorExit:
-        print("자원 해제")  # close() 호출 시 여기 진입
-        # GeneratorExit를 잡은 뒤 return하거나 다시 raise해야 함
-        # yield하면 RuntimeError 발생
+  </details>
 
-gen = managed_gen()
-print(next(gen))   # 자원 획득 / 0
-print(next(gen))   # 1
-gen.close()        # 자원 해제
-
-# gen.close() 동작:
-# 1. 내부적으로 gen.throw(GeneratorExit)를 호출
-# 2. 제너레이터에서 StopIteration 또는 GeneratorExit 발생 → 정상
-# 3. 다른 예외 발생 → 그 예외가 호출자에게 전파
-# 4. 제너레이터가 값을 yield → RuntimeError("generator ignored GeneratorExit")
-
-# CPython 구현: Objects/genobject.c gen_close() 참조
-# _gen_throw() 함수가 throw/close 공통 로직을 처리</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 전공자 11 -->
-  <div class="exercise-block level-exp">
-    <span class="level-badge level-expert">전공자 11</span>
-    <h3>send()로 양방향 제너레이터 구현</h3>
-    <p>
-      <code>send()</code>를 사용하여 양방향으로 통신하는 <strong>이동 평균(running average) 제너레이터</strong>를 구현하세요.
-      값을 <code>send()</code>로 넣으면 현재까지의 평균을 <code>yield</code>로 돌려주어야 합니다.
-      이것이 CSP 모델의 Python 구현임을 설명하는 주석도 추가하세요:
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">def running_average():
-    """send()로 값을 받아 현재 평균을 yield하는 코루틴"""
-    # 구현하세요
-    pass
-
-avg = running_average()
-next(avg)          # 초기화 (첫 yield까지 실행)
-print(avg.send(10))   # 10.0
-print(avg.send(20))   # 15.0
-print(avg.send(30))   # 20.0
-print(avg.send(40))   # 25.0</code></pre>
-    </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python">def running_average():
-    """
-    CSP(Communicating Sequential Processes) 모델의 Python 구현.
-    이 코루틴은 채널(yield/send)을 통해 호출자와 양방향 통신.
-    - 호출자가 send(value)로 값을 채널에 넣으면
-    - 코루틴이 처리 후 yield를 통해 결과를 채널로 돌려줌
-    """
+  <details>
+    <summary>문제 10 (전공자): send()로 이동 평균 구현</summary>
+    <div class="answer">
+<pre><code>def running_average():
     total = 0
     count = 0
     average = None
     while True:
-        value = (yield average)   # 현재 평균 방출 후 값 수신
+        value = yield average
         if value is None:
             break
         total += value
         count += 1
         average = total / count
 
-avg = running_average()
-next(avg)          # 초기화 — 첫 yield까지 실행 (average=None 방출)
-print(avg.send(10))   # 10.0
-print(avg.send(20))   # 15.0
-print(avg.send(30))   # 20.0
-print(avg.send(40))   # 25.0
-
-# 정리:
-# next(avg)  → yield None (초기화, average=None)
-# send(10)   → value=10, total=10, count=1, average=10.0 → yield 10.0
-# send(20)   → value=20, total=30, count=2, average=15.0 → yield 15.0
-# asyncio의 await는 이 send() 메커니즘의 문법적 추상화</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <!-- 전공자 12 -->
-  <div class="exercise-block level-exp">
-    <span class="level-badge level-expert">전공자 12</span>
-    <h3>itertools.chain vs yield from — 내부 차이</h3>
-    <p>
-      <code>itertools.chain(*iterables)</code>와 <code>yield from</code> 재귀를 동일한 목적(다단계 이터러블 연결)에 사용할 때,
-      CPython 내부 구현 관점에서의 차이를 분석하세요.
-      C 확장 vs Python 제너레이터 프레임 관점에서 설명하세요:
-    </p>
-    <div class="code-block">
-      <div class="code-header">
-        <span class="code-label">Python</span>
-        <button class="copy-btn">복사</button>
-      </div>
-      <pre><code class="language-python">import itertools
-import sys
-
-# 방법 A: itertools.chain
-def concat_chain(*iters):
-    return itertools.chain(*iters)
-
-# 방법 B: yield from
-def concat_yield(*iters):
-    for it in iters:
-        yield from it
-
-data = [range(1000), range(1000, 2000), range(2000, 3000)]
-
-a = concat_chain(*data)
-b = concat_yield(*data)
-
-# 질문:
-# 1. 두 방법의 메모리 사용량 차이는?
-# 2. itertools.chain이 C로 구현된 것이 왜 성능상 유리한가?
-# 3. yield from이 StopIteration을 처리하는 방식은?</code></pre>
+g = running_average()
+next(g)              # 프라이밍
+print(g.send(10))    # 10.0
+print(g.send(20))    # 15.0
+print(g.send(30))    # 20.0
+print(g.send(0))     # 15.0</code></pre>
     </div>
-    <details class="answer">
-      <summary>힌트 / 정답 보기</summary>
-      <div class="answer-content">
-        <div class="answer-body">
-          <pre><code class="language-python"># 1. 메모리 사용량:
-# 두 방법 모두 지연 평가 → 한 번에 전체를 메모리에 올리지 않음
-# 실질적 메모리 차이는 오버헤드에 있음:
-# - itertools.chain: C 구조체(chainobject) — 수십 바이트
-# - yield from 제너레이터: PyGenObject + PyFrameObject — 수백 바이트
+  </details>
 
-import sys
-import itertools
+  <details>
+    <summary>문제 11 (전공자): 바이트코드 차이 분석</summary>
+    <div class="answer">
+<pre><code>import dis
 
-chain_obj = itertools.chain(range(1000), range(1000))
-def gen():
-    yield from range(1000)
-    yield from range(1000)
-gen_obj = gen()
+def f1(): return [x for x in range(5)]
+def f2(): return (x for x in range(5))
 
-print(sys.getsizeof(chain_obj))   # 약 72 바이트
-print(sys.getsizeof(gen_obj))     # 약 200 바이트 (PyGenObject 포함)
+# f1: Python 3.12에서는 인라인 (별도 code object 없음)
+print(f1.__code__.co_consts)   # (None,)
 
-# 2. itertools.chain의 C 구현 이점:
-# - Python 레벨 함수 호출 오버헤드 없음
-# - PyIter_Next() 직접 호출 (C API) → CALL 바이트코드 없음
-# - StopIteration을 C 레벨에서 처리 → 예외 객체 생성/소멸 없음
+# f2: 제너레이터는 항상 별도 code object 필요
+print(f2.__code__.co_consts)
+# (None, &lt;code object &lt;genexpr&gt;&gt;)
 
-# 3. yield from의 StopIteration 처리 (PEP 380):
-# yield from expr 은 다음과 동치:
-#   _i = iter(expr)
-#   while True:
-#       try:
-#           _y = next(_i)
-#       except StopIteration as _e:
-#           _r = _e.value   # return 값 캡처
-#           break
-#       else:
-#           yield _y
-# Python 3.7+: StopIteration이 제너레이터 내부에서 발생하면
-# RuntimeError로 변환 (PEP 479) — yield from은 예외
+# 이유: 제너레이터는 지연 평가가 본질이므로
+# 독립적 프레임이 반드시 필요함</code></pre>
+    </div>
+  </details>
 
-# 결론: 대용량 단순 연결 → itertools.chain
-#        복잡한 로직 필요 → yield from</code></pre>
-        </div>
-      </div>
-    </details>
-  </div>
+  <details>
+    <summary>문제 12 (전공자): 파이프라인 메모리 분석</summary>
+    <div class="answer">
+<pre><code>data = range(1_000_000)
+step1 = (x for x in data if x % 2 == 0)        # 짝수 필터
+step2 = (x ** 2 for x in step1)                 # 제곱
+step3 = (x for x in step2 if x % 3 == 0)        # 3의 배수 필터
+result = sum(step3)  # ← 여기서 비로소 계산 시작
+
+# sum이 next(step3) 호출 → step3이 next(step2) 호출 → step2가 next(step1) 호출
+# 값이 체인을 따라 하나씩 흘러감
+
+# 메모리에 동시에 있는 최대 원소 수: 1개
+# 100만 개를 처리하지만 메모리는 O(1)
+
+print(f"결과: {result:,}")   # 55,555,388,888,555,556</code></pre>
+    </div>
+  </details>
 </section>
 
-<!-- ==================== 10. 이번 주 정리 ==================== -->
+<!-- ==================== 12 요약 & 용어집 ==================== -->
 <section id="summary">
-  <h2>이번 주 정리</h2>
-  <div class="summary-grid">
-    <div class="summary-card">
-      <h3>리스트 컴프리헨션</h3>
-      <ul>
-        <li><code>[표현식 for 변수 in 이터러블 if 조건]</code></li>
-        <li>Python 3.12+: 인라인 컴파일 — <code>LOAD_FAST_AND_CLEAR</code>로 스코프 격리</li>
-        <li><code>LIST_APPEND</code> 바이트코드로 for 루프보다 약 30% 빠름</li>
-        <li>walrus <code>:=</code>는 바깥 스코프로 누출됨 — 주의</li>
-      </ul>
-    </div>
-    <div class="summary-card">
-      <h3>dict / set 컴프리헨션</h3>
-      <ul>
-        <li><code>{k: v for ...}</code> — 딕셔너리</li>
-        <li><code>{v for ...}</code> — 세트</li>
-        <li><code>MAP_ADD</code> / <code>SET_ADD</code> 바이트코드 사용</li>
-        <li><code>{}</code>는 빈 딕셔너리, 빈 세트는 <code>set()</code></li>
-      </ul>
-    </div>
-    <div class="summary-card">
-      <h3>제너레이터 표현식</h3>
-      <ul>
-        <li><code>(표현식 for 변수 in 이터러블)</code></li>
-        <li>Lazy Evaluation — 필요할 때만 계산</li>
-        <li>메모리 200 bytes vs 리스트 85,000+ bytes</li>
-        <li>한 번 소진되면 재사용 불가</li>
-      </ul>
-    </div>
-    <div class="summary-card">
-      <h3>yield / 제너레이터 함수</h3>
-      <ul>
-        <li><code>yield</code>가 있으면 제너레이터 함수</li>
-        <li>호출하면 <code>PyGenObject</code> 반환 (실행 안 됨)</li>
-        <li>프레임(로컬 변수, IP) 보존 — <code>gi_frame</code></li>
-        <li><code>return value</code>는 <code>StopIteration(value)</code></li>
-      </ul>
-    </div>
-    <div class="summary-card">
-      <h3>yield from</h3>
-      <ul>
-        <li>서브 이터러블 전체를 위임</li>
-        <li>서브제너레이터의 return 값을 받아옴</li>
-        <li><code>send()</code>/<code>throw()</code> 투명하게 전달</li>
-        <li><code>asyncio</code>의 <code>await</code> 기반</li>
-      </ul>
-    </div>
-    <div class="summary-card">
-      <h3>itertools</h3>
-      <ul>
-        <li>무한: <code>count()</code>, <code>cycle()</code>, <code>repeat()</code></li>
-        <li>끊기: <code>islice()</code>, <code>takewhile()</code>, <code>dropwhile()</code></li>
-        <li>조합: <code>chain()</code>, <code>product()</code>, <code>combinations()</code></li>
-        <li>모든 함수가 이터레이터 반환 — 메모리 효율</li>
-      </ul>
-    </div>
+  <h2>12 — 요약 &amp; 용어집</h2>
+
+  <h3>핵심 개념 요약표</h3>
+  <table>
+    <thead>
+      <tr><th>개념</th><th>한 줄 요약</th><th>핵심 특징</th><th>주의사항</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>리스트 컴프리헨션</td>
+        <td>"의도처럼 읽히는" 리스트 생성</td>
+        <td>표현식 / 스코프 격리 / 즉시 생성</td>
+        <td>if-else 위치 구분, 3중 이상 비권장</td>
+      </tr>
+      <tr>
+        <td>딕셔너리 컴프리헨션</td>
+        <td>{key: value for ...}</td>
+        <td>키 중복 시 마지막 값 유지</td>
+        <td>키 중복으로 데이터 손실 가능</td>
+      </tr>
+      <tr>
+        <td>세트 컴프리헨션</td>
+        <td>{expr for ...}</td>
+        <td>자동 중복 제거</td>
+        <td>순서 보장 안 됨, {} ≠ set()</td>
+      </tr>
+      <tr>
+        <td>스코프 격리</td>
+        <td>루프 변수가 외부로 안 새어남</td>
+        <td>외부 읽기 OK / 외부 쓰기 불가</td>
+        <td>walrus(:=)는 의도적 누출</td>
+      </tr>
+      <tr>
+        <td>제너레이터 함수</td>
+        <td>yield가 있는 함수</td>
+        <td>호출 → 즉시 실행 안 됨</td>
+        <td>한 번 소진되면 재사용 불가</td>
+      </tr>
+      <tr>
+        <td>yield</td>
+        <td>책갈피 — 멈추고 값 반환</td>
+        <td>로컬 변수, 실행 위치 보존</td>
+        <td>StopIteration으로 종료</td>
+      </tr>
+      <tr>
+        <td>yield from</td>
+        <td>다른 이터러블로 위임</td>
+        <td>재귀 제너레이터에 필수</td>
+        <td>send/throw도 자동 전달</td>
+      </tr>
+      <tr>
+        <td>제너레이터 표현식</td>
+        <td>(expr for ...) — 지연 평가</td>
+        <td>200 bytes 고정</td>
+        <td>인덱싱, len() 불가</td>
+      </tr>
+      <tr>
+        <td>itertools</td>
+        <td>C 구현 이터레이터 도구 모음</td>
+        <td>count/cycle/chain/islice</td>
+        <td>무한 이터러블에 list() 금지</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="why-box">
+    <h3>이번 주의 핵심 통찰</h3>
+    <p>
+      컴프리헨션은 "의도를 코드로" — for문보다 빠른 게 아니라,
+      <em>의도가 더 명확하고 스코프가 격리되는</em> 것이 핵심입니다.
+    </p>
+    <p>
+      제너레이터는 "계산을 미루는" 도구 — 1억 개의 숫자를 미리 만들 필요가 없습니다.
+      요청할 때마다 만들면 됩니다. 메모리는 항상 O(1)입니다.
+    </p>
   </div>
 
-  <div class="callout callout-tip" style="margin-top: 24px;">
-    <strong>핵심 판단 기준 — 언제 무엇을 쓸까:</strong>
-    <ul style="margin-top: 8px;">
-      <li>결과를 여러 번 순회해야 한다 → <strong>리스트 컴프리헨션</strong></li>
-      <li>한 번만 순회하거나 크기가 크다 → <strong>제너레이터 표현식</strong></li>
-      <li>key-value 매핑 → <strong>딕셔너리 컴프리헨션</strong></li>
-      <li>중복 없는 집합 → <strong>세트 컴프리헨션</strong></li>
-      <li>여러 이터러블을 이어붙이거나 무한 시퀀스 → <strong>itertools</strong></li>
-    </ul>
-  </div>
-</section>
-
-<!-- ==================== 11. 용어 사전 ==================== -->
-<section id="glossary">
-  <h2>용어 사전 (30개)</h2>
+  <h3>용어집 (32개)</h3>
   <div class="glossary-grid">
     <div class="glossary-item">
-      <h4>List Comprehension (리스트 컴프리헨션)</h4>
-      <p><code>[expr for var in iterable if cond]</code> 형태로 리스트를 생성하는 간결한 문법. Python 3.12+에서는 인라인 컴파일로 <code>LOAD_FAST_AND_CLEAR</code>를 통해 스코프 격리하며, <code>LIST_APPEND</code> 바이트코드로 for 루프보다 빠르게 동작.</p>
+      <span class="term">List Comprehension (리스트 컴프리헨션)</span>
+      <span class="definition"><code>[expr for var in iter if cond]</code> 형태의 리스트 생성 표현식. 변환과 필터를 한 줄에 표현</span>
     </div>
     <div class="glossary-item">
-      <h4>Dict Comprehension (딕셔너리 컴프리헨션)</h4>
-      <p><code>{k: v for ...}</code> 형태. <code>MAP_ADD</code> 바이트코드를 사용하여 효율적으로 딕셔너리를 생성.</p>
+      <span class="term">Dict Comprehension (딕셔너리 컴프리헨션)</span>
+      <span class="definition"><code>{k: v for ...}</code> 형태. 중괄호와 콜론으로 딕셔너리를 생성</span>
     </div>
     <div class="glossary-item">
-      <h4>Set Comprehension (세트 컴프리헨션)</h4>
-      <p><code>{v for ...}</code> 형태. <code>SET_ADD</code> 바이트코드를 사용. 중복을 자동 제거하며 순서가 없음.</p>
+      <span class="term">Set Comprehension (세트 컴프리헨션)</span>
+      <span class="definition"><code>{expr for ...}</code> 형태. 중복이 자동으로 제거됨</span>
     </div>
     <div class="glossary-item">
-      <h4>Generator Expression (제너레이터 표현식)</h4>
-      <p><code>(expr for var in iterable)</code> 형태. 이터레이터를 즉시 반환하며, 값을 Lazy하게 생성. 메모리 ~200 bytes로 일정.</p>
+      <span class="term">Generator Expression (제너레이터 표현식)</span>
+      <span class="definition"><code>(expr for ...)</code> 형태. 즉시 실행하지 않고 요청 시마다 계산하는 지연 평가 이터레이터</span>
     </div>
     <div class="glossary-item">
-      <h4>Generator Function (제너레이터 함수)</h4>
-      <p><code>yield</code>를 포함하는 함수. 호출하면 함수 본문이 실행되지 않고 <code>PyGenObject</code>(제너레이터 객체)를 반환.</p>
+      <span class="term">Generator Function (제너레이터 함수)</span>
+      <span class="definition">yield 문이 하나 이상 있는 함수. 호출하면 제너레이터 객체를 반환</span>
     </div>
     <div class="glossary-item">
-      <h4>Generator Object (제너레이터 객체)</h4>
-      <p>제너레이터 함수 호출 결과로 반환되는 이터레이터 객체. <code>gi_frame</code>, <code>gi_code</code>, <code>gi_running</code>, <code>gi_suspended</code> 등의 속성을 가짐.</p>
+      <span class="term">Generator Object (제너레이터 객체)</span>
+      <span class="definition">제너레이터 함수 호출의 반환값. __iter__와 __next__를 구현한 이터레이터</span>
     </div>
     <div class="glossary-item">
-      <h4>yield</h4>
-      <p>함수 실행을 일시정지하고 값을 호출자에게 전달하는 키워드. 프레임(로컬 변수, 인스트럭션 포인터)을 보존하여 나중에 재개 가능.</p>
+      <span class="term">yield</span>
+      <span class="definition">제너레이터 함수를 일시 정지하고 값을 반환하는 키워드. 재개 시 다음 줄부터 실행</span>
     </div>
     <div class="glossary-item">
-      <h4>yield from</h4>
-      <p>PEP 380에서 도입. 서브 이터러블의 모든 값을 위임하고, 서브제너레이터의 <code>return</code> 값을 수신. <code>send()</code>/<code>throw()</code>를 투명하게 전달.</p>
+      <span class="term">yield from</span>
+      <span class="definition">다른 이터러블 또는 제너레이터로 생성을 위임하는 표현식. 재귀 제너레이터에서 필수</span>
     </div>
     <div class="glossary-item">
-      <h4>Lazy Evaluation (지연 평가)</h4>
-      <p>값이 실제로 필요할 때까지 계산을 미루는 전략. 제너레이터 표현식과 <code>itertools</code>의 핵심 원리. 메모리 효율과 무한 시퀀스 처리를 가능하게 함.</p>
+      <span class="term">Lazy Evaluation (지연 평가)</span>
+      <span class="definition">필요할 때만 계산하는 전략. 제너레이터의 핵심. 메모리 O(1)</span>
     </div>
     <div class="glossary-item">
-      <h4>Eager Evaluation (즉시 평가)</h4>
-      <p>표현식을 즉시 계산하여 결과를 메모리에 저장하는 전략. 리스트 컴프리헨션이 이에 해당. 여러 번 순회가 필요할 때 적합.</p>
+      <span class="term">Eager Evaluation (즉시 평가)</span>
+      <span class="definition">표현식이 정의될 때 즉시 모든 값을 계산. 리스트 컴프리헨션의 평가 방식</span>
     </div>
     <div class="glossary-item">
-      <h4>LIST_APPEND</h4>
-      <p>CPython 바이트코드. 리스트 컴프리헨션에서 원소 추가에 사용. 일반 <code>list.append()</code>의 속성 조회·함수 호출 비용 없이 C 레벨에서 직접 <code>PyList_Append()</code>를 호출.</p>
+      <span class="term">Iterable (이터러블)</span>
+      <span class="definition">__iter__를 구현한 객체. list, dict, str, range, 제너레이터 모두 포함</span>
     </div>
     <div class="glossary-item">
-      <h4>YIELD_VALUE</h4>
-      <p>CPython 바이트코드. 스택의 값을 호출자에게 전달하고 제너레이터 프레임 상태를 <code>FRAME_SUSPENDED</code>로 변경. 인스트럭션 포인터를 다음 <code>RESUME</code> 위치에 저장.</p>
+      <span class="term">Iterator (이터레이터)</span>
+      <span class="definition">__next__를 구현한 객체. 소진될 때까지 값을 하나씩 반환</span>
     </div>
     <div class="glossary-item">
-      <h4>RETURN_GENERATOR</h4>
-      <p>CPython 3.11+ 바이트코드. 제너레이터 함수 진입 시 현재 프레임을 <code>PyGenObject</code>로 래핑하고 즉시 호출자에게 반환. 이후 <code>next()</code> 호출 시 <code>RESUME</code>에서 재개.</p>
+      <span class="term">StopIteration</span>
+      <span class="definition">이터레이터가 소진됐음을 알리는 예외. for문이 이 예외를 catch해서 루프를 종료</span>
     </div>
     <div class="glossary-item">
-      <h4>RESUME</h4>
-      <p>CPython 3.11+ 바이트코드. 제너레이터가 <code>next()</code> 또는 <code>send()</code>로 재개될 때의 진입점. 일시정지 유형(초기 진입, yield 재개, 예외 처리)을 인자로 구분.</p>
+      <span class="term">next()</span>
+      <span class="definition">이터레이터에서 다음 값을 꺼내는 내장 함수. __next__()를 호출</span>
     </div>
     <div class="glossary-item">
-      <h4>gi_frame</h4>
-      <p>제너레이터 객체의 속성. 실행 프레임(로컬 변수, 인스트럭션 포인터, 스택 등)을 가리킴. 제너레이터가 소진되면 <code>None</code>이 되어 메모리를 해제.</p>
+      <span class="term">iter()</span>
+      <span class="definition">이터러블에서 이터레이터를 만드는 내장 함수. __iter__()를 호출</span>
     </div>
     <div class="glossary-item">
-      <h4>GEN_CREATED / GEN_SUSPENDED / GEN_CLOSED</h4>
-      <p><code>inspect.getgeneratorstate()</code>가 반환하는 제너레이터 상태. 생성 직후 / yield에서 일시정지 / 소진 또는 close() 호출 후를 나타냄.</p>
+      <span class="term">send()</span>
+      <span class="definition">제너레이터에 값을 전달하는 메서드. yield 표현식의 반환값이 됨</span>
     </div>
     <div class="glossary-item">
-      <h4>send(value)</h4>
-      <p>제너레이터의 메서드. <code>next()</code>처럼 제너레이터를 재개하되, <code>yield</code> 표현식의 반환값을 <code>value</code>로 설정. PEP 342에서 도입.</p>
+      <span class="term">throw()</span>
+      <span class="definition">제너레이터 내부에 예외를 주입하는 메서드. 현재 yield 지점에서 예외 발생</span>
     </div>
     <div class="glossary-item">
-      <h4>Coroutine (코루틴)</h4>
-      <p>실행을 일시정지하고 재개할 수 있는 함수. Python에서 제너레이터(yield 기반) 또는 <code>async def</code>(네이티브 코루틴) 형태. 비동기 프로그래밍의 기반.</p>
+      <span class="term">close()</span>
+      <span class="definition">제너레이터에 GeneratorExit를 throw해서 종료시키는 메서드</span>
     </div>
     <div class="glossary-item">
-      <h4>Syntactic Sugar (문법적 설탕)</h4>
-      <p>기존 기능을 더 읽기 쉽게 표현하는 문법. 리스트 컴프리헨션은 <code>for</code> 루프 + <code>append()</code>의 syntactic sugar. 하지만 내부 최적화로 더 빠름.</p>
+      <span class="term">GeneratorExit</span>
+      <span class="definition">close()가 호출될 때 제너레이터 내부에 발생하는 예외. BaseException 서브클래스</span>
     </div>
     <div class="glossary-item">
-      <h4>Iterator Protocol (이터레이터 프로토콜)</h4>
-      <p><code>__iter__()</code>와 <code>__next__()</code> 메서드를 구현하는 규약. 제너레이터는 이 프로토콜을 자동으로 구현. <code>StopIteration</code>으로 소진을 알림.</p>
+      <span class="term">Priming (프라이밍)</span>
+      <span class="definition">send() 사용 전 첫 next() 호출로 첫 yield까지 실행하는 준비 작업</span>
     </div>
     <div class="glossary-item">
-      <h4>itertools</h4>
-      <p>Python 표준 라이브러리. APL, Haskell, SML에서 영감받은 이터레이터 도구 모음. 모든 함수가 이터레이터를 반환하여 메모리 효율적.</p>
+      <span class="term">Iterator Protocol (이터레이터 프로토콜)</span>
+      <span class="definition">__iter__ + __next__ 구현 규약. for문, next() 등의 동작 기반</span>
     </div>
     <div class="glossary-item">
-      <h4>StopIteration</h4>
-      <p>이터레이터가 소진되었음을 알리는 예외. 제너레이터의 <code>return value</code>는 <code>StopIteration(value)</code>로 전달됨. <code>for</code> 루프는 이를 조용히 처리.</p>
+      <span class="term">Scope Isolation (스코프 격리)</span>
+      <span class="definition">컴프리헨션의 루프 변수가 외부 스코프에 영향을 주지 않는 특성</span>
     </div>
     <div class="glossary-item">
-      <h4>Walrus Operator (바다코끼리 연산자)</h4>
-      <p><code>:=</code>. Python 3.8 PEP 572에서 도입. 표현식 안에서 변수에 값을 할당. 컴프리헨션 안에서 사용 시 바깥 스코프로 누출됨 — 컴프리헨션 격리 원칙의 예외.</p>
+      <span class="term">Walrus Operator (:=)</span>
+      <span class="definition">Python 3.8+ 할당 표현식. 컴프리헨션 안에서 쓰면 외부 스코프로 누출됨</span>
     </div>
     <div class="glossary-item">
-      <h4>CSP (Communicating Sequential Processes)</h4>
-      <p>Tony Hoare(1978)의 프로세스 대수. 독립 프로세스들이 채널을 통해 통신. Python의 <code>yield</code>/<code>send()</code> 코루틴 모델의 이론적 배경. Go의 goroutine+channel과 직접 연결.</p>
+      <span class="term">itertools</span>
+      <span class="definition">C로 구현된 효율적인 이터레이터 도구 모음 모듈</span>
     </div>
     <div class="glossary-item">
-      <h4>throw(type[, value[, tb]])</h4>
-      <p>제너레이터 메서드(PEP 342). <code>yield</code> 지점에서 예외를 발생시켜 제너레이터 내부에서 처리하거나, 처리되지 않으면 호출자에게 전파. <code>close()</code>는 내부적으로 <code>throw(GeneratorExit)</code>를 호출.</p>
+      <span class="term">islice()</span>
+      <span class="definition">이터러블에서 슬라이스처럼 일부를 꺼내는 itertools 도구. 무한 이터러블에서 필수</span>
     </div>
     <div class="glossary-item">
-      <h4>close()</h4>
-      <p>제너레이터 메서드. <code>GeneratorExit</code> 예외를 현재 <code>yield</code> 지점에 주입하여 제너레이터를 종료. <code>finally</code> 블록은 여전히 실행됨. 가비지 컬렉터가 제너레이터 객체를 회수할 때 자동 호출.</p>
+      <span class="term">takewhile()</span>
+      <span class="definition">조건이 True인 동안만 값을 꺼내는 itertools 도구</span>
     </div>
     <div class="glossary-item">
-      <h4>PEP 342 (Coroutines via Enhanced Generators)</h4>
-      <p>Python 2.5(2006)에서 채택. <code>yield</code>를 표현식으로 만들고 <code>send()</code>, <code>throw()</code>, <code>close()</code>를 추가. 단방향 데이터 생산자였던 제너레이터를 양방향 코루틴으로 확장.</p>
+      <span class="term">chain()</span>
+      <span class="definition">여러 이터러블을 하나로 이어주는 itertools 도구. 중간 리스트 생성 없음</span>
     </div>
     <div class="glossary-item">
-      <h4>Pipeline Pattern (파이프라인 패턴)</h4>
-      <p>제너레이터를 직렬 연결하여 데이터를 단계별로 처리하는 설계 패턴. 각 단계가 이터레이터를 입력받아 이터레이터를 출력. Unix 파이프(<code>|</code>)의 Python 구현. 메모리를 O(1)로 유지하면서 대용량 데이터 처리 가능.</p>
+      <span class="term">accumulate()</span>
+      <span class="definition">누적 집계를 계산하는 itertools 도구. 기본은 누적 합, 함수 지정 가능</span>
     </div>
     <div class="glossary-item">
-      <h4>Infinite Iterator (무한 이터레이터)</h4>
-      <p>끝이 없는 이터레이터. <code>itertools.count()</code>, <code>itertools.cycle()</code>, <code>itertools.repeat()</code> 등. 제너레이터의 Lazy Evaluation 덕분에 메모리 부담 없이 사용 가능. 반드시 <code>islice()</code>나 조건 탈출로 소비량을 제한해야 함.</p>
+      <span class="term">Pipeline (파이프라인)</span>
+      <span class="definition">제너레이터를 연결해서 데이터를 단계적으로 처리하는 패턴. 메모리 O(1)</span>
     </div>
     <div class="glossary-item">
-      <h4>itertools.tee(iterable, n=2)</h4>
-      <p>하나의 이터레이터를 n개의 독립 이터레이터로 분기. 내부적으로 <code>deque</code> 버퍼를 사용하여 선행 이터레이터의 소비 내역을 저장. 분기된 이터레이터 간 진행 차이가 클수록 메모리 사용 증가 — 원본 이터러블을 다시 순회하거나 <code>list()</code>로 구체화하는 편이 나을 수 있음.</p>
+      <span class="term">gi_frame</span>
+      <span class="definition">제너레이터 객체의 내부 프레임. 현재 실행 상태 저장. 소진되면 None</span>
+    </div>
+    <div class="glossary-item">
+      <span class="term">CO_GENERATOR</span>
+      <span class="definition">CPython 코드 오브젝트 플래그 0x0020. 이 플래그가 있으면 제너레이터 함수</span>
+    </div>
+    <div class="glossary-item">
+      <span class="term">PEP 709</span>
+      <span class="definition">Python 3.12에서 컴프리헨션을 인라인 처리로 변경. 11% 성능 향상</span>
     </div>
   </div>
-</section>
 
-<!-- ==================== 12. 다음 주 맛보기 ==================== -->
-<section id="next-week">
-  <h2>다음 주 맛보기 — Week 12: 클래스와 객체지향</h2>
-  <p>
-    이번 주에 제너레이터가 <code>__iter__()</code>와 <code>__next__()</code>를 자동으로 구현한다는 것을 배웠습니다.
-    그렇다면 <strong>직접 이 메서드를 구현하면</strong> 어떻게 될까요?
-    그것이 바로 <strong>클래스(Class)</strong>입니다.
-  </p>
-  <div class="code-block">
-    <div class="code-header">
-      <span class="code-label">Python</span>
-      <button class="copy-btn">복사</button>
-    </div>
-    <pre><code class="language-python"># 제너레이터 없이 count_up_to를 클래스로 구현하면?
-class CountUpTo:
-    def __init__(self, n):
-        self.n = n
-        self.current = 1
+  <h3>다음 주 미리보기 — 12주차: 클래스 심화 &amp; 던더 메서드</h3>
+  <div class="callout callout-info">
+    <strong>12주차에서 다룰 내용:</strong>
+<pre><code>class Vector:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
 
-    def __iter__(self):
-        return self   # 자기 자신이 이터레이터
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y)
 
-    def __next__(self):
-        if self.current > self.n:
-            raise StopIteration
-        val = self.current
-        self.current += 1
-        return val
+    def __repr__(self):
+        return f"Vector({self.x}, {self.y})"
 
-# 제너레이터와 완전히 같은 동작
-counter = CountUpTo(5)
-for n in counter:
-    print(n, end=' ')
-# 1 2 3 4 5
-
-# 질문: 왜 이렇게 복잡하게 할까?
-# 클래스로 만들면 상태를 더 세밀하게 제어할 수 있고,
-# 메서드를 추가할 수 있고, 상속도 됩니다.</code></pre>
+v1 = Vector(3, 4)
+v2 = Vector(1, 2)
+print(v1 + v2)    # Vector(4, 6)  ← __add__ 호출
+print(len(v1))    # ???           ← __len__ 필요</code></pre>
+    <strong>예고 질문:</strong>
+    <code>__init__</code>은 생성자가 아니라면, 진짜 생성자는 누구인가?
+    <code>super()</code>는 정말 부모 클래스를 호출하는가?
   </div>
-  <div class="output-block">
-    <div class="output-label">실행 결과:</div>
-1 2 3 4 5
-  </div>
-
-  <p>다음 주에 배울 것들:</p>
-  <ul>
-    <li><code>class</code>와 <code>__init__</code> — 객체를 만드는 공장</li>
-    <li>인스턴스 변수 vs 클래스 변수 — <code>self</code>가 하는 일</li>
-    <li>매직 메서드(<code>__iter__</code>, <code>__len__</code>, <code>__repr__</code>, ...) — Python이 객체를 어떻게 다루는가</li>
-    <li>상속(Inheritance) — 코드 재사용의 또 다른 방식</li>
-    <li>CPython의 <code>PyObject</code> — 모든 파이썬 객체의 C 구조체</li>
-    <li>MRO(Method Resolution Order) — 다중 상속에서 어느 메서드를 쓸까</li>
-  </ul>
-
-  <p style="margin-top: 24px; font-size: 0.9rem; color: var(--text-secondary);">
-    참조:
-    <a href="https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions" target="_blank">Python Docs: List Comprehensions</a> ·
-    <a href="https://docs.python.org/3/howto/functional.html#generators" target="_blank">Functional Programming HOWTO: Generators</a> ·
-    <a href="https://docs.python.org/3/library/itertools.html" target="_blank">itertools — Functions creating iterators for efficient looping</a> ·
-    <a href="https://peps.python.org/pep-0342/" target="_blank">PEP 342: Coroutines via Enhanced Generators</a> ·
-    <a href="https://peps.python.org/pep-0380/" target="_blank">PEP 380: Syntax for Delegating to a Subgenerator (yield from)</a> ·
-    <a href="https://docs.python.org/3/library/dis.html" target="_blank">dis — Bytecode disassembler</a>
-  </p>
 </section>
 
 </main>
 </div>
 
-<footer class="site-footer">
-  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
-</footer>
-
-<script src="../js/highlight.js"></script>
-<script src="../js/nav.js"></script>
-<script src="../js/code-copy.js"></script>
-<script src="../js/spoiler.js"></script>
+<script src="../js/bundle.min.js"></script>
 </body>
 </html>
