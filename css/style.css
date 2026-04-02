@@ -356,6 +356,23 @@ img {
   gap: 16px;
 }
 
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all 0.2s var(--ease-out);
+  flex-shrink: 0;
+}
+.home-btn:hover {
+  background: var(--surface);
+  color: var(--accent);
+}
+
 .site-title {
   font-size: clamp(0.95rem, 2.5vw, 1.1rem);
   font-weight: 800;
