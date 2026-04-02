@@ -1,0 +1,3105 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>13주차: 데코레이터 &amp; 컨텍스트 매니저 — 함수를 포장하고 자원을 관리하라 | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-week="13">
+
+<!-- ==================== HEADER ==================== -->
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="week12.html" class="nav-btn">&larr; 이전</a>
+      <a href="week14.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main>
+
+<!-- ==================== WEEK HEADER ==================== -->
+<div class="week-header">
+  <div class="week-number">WEEK 13</div>
+  <h1 class="week-title">데코레이터 &amp; 컨텍스트 매니저 —<br>함수를 포장하고 자원을 관리하라</h1>
+  <p class="week-subtitle">
+    <code>@timer</code> 한 줄이 함수를 어떻게 바꾸는가?<br>
+    <code>with open(...)</code>은 왜 파일을 자동으로 닫는가?<br>
+    <strong>Syntactic Sugar를 분해하고</strong>, <code>__enter__</code>/<code>__exit__</code>까지 직접 구현합니다.<br>
+    Python에서 가장 우아한 두 패턴을 바이트코드 수준까지 해부합니다.
+  </p>
+</div>
+
+<!-- ==================== 목차 ==================== -->
+<details class="toc">
+  <summary>목차 — 13주차 전체 내용</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link">
+        <span class="toc-num">01</span>이번 주 이야기
+      </a>
+    </div>
+    <div class="toc-section">
+      <a href="#decorator-sugar" class="toc-section-link">
+        <span class="toc-num">02</span>@decorator — Syntactic Sugar 분해
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#decorator-chain" class="toc-section-link">
+        <span class="toc-num">03</span>데코레이터 체인 — @A @B의 순서
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#decorator-args" class="toc-section-link">
+        <span class="toc-num">04</span>인자를 받는 데코레이터 — 3중 중첩
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#functools-wraps" class="toc-section-link">
+        <span class="toc-num">05</span>functools.wraps — 정체성을 지켜라
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#context-manager" class="toc-section-link">
+        <span class="toc-num">06</span>with문 De-sugaring — __enter__/__exit__
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#contextlib" class="toc-section-link">
+        <span class="toc-num">07</span>contextlib.contextmanager — yield로 만드는 컨텍스트
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#practical" class="toc-section-link">
+        <span class="toc-num">08</span>실전: 타이머 &amp; 재시도 데코레이터
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#ai-decorators" class="toc-section-link">
+        <span class="toc-num">09</span>AI와 데코레이터
+      </a>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link">
+        <span class="toc-num">10</span>연습문제 (12문제 — 초급4 + 중급4 + 고급1 + 전공자3)
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#summary" class="toc-section-link">
+        <span class="toc-num">11</span>이번 주 정리
+      </a>
+    </div>
+    <div class="toc-section">
+      <a href="#glossary" class="toc-section-link">
+        <span class="toc-num">12</span>용어 사전 (24개)
+      </a>
+    </div>
+    <div class="toc-section">
+      <a href="#next-week" class="toc-section-link">
+        <span class="toc-num">13</span>다음 주 맛보기
+      </a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이번 주 이야기 ==================== -->
+<section id="story">
+  <h2>이번 주 이야기</h2>
+  <div class="story-block">
+    <p>
+      API 서버를 만들다 보면 이런 상황이 자주 옵니다.
+      모든 함수의 실행 시간을 측정하고 싶고, 네트워크 오류가 나면 3번은 재시도하고,
+      로그도 남겨야 합니다. 함수가 100개라면 어떻게 할까요?
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>100개 함수에 같은 코드를 반복한다면?</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python"># ❌ 반복 지옥 — 100개 함수마다 이걸 써야?
+import time
+
+def get_user(user_id):
+    start = time.perf_counter()
+    try:
+        result = _fetch_user(user_id)   # 실제 로직
+    except Exception as e:
+        print(f"[ERROR] get_user 실패: {e}")
+        raise
+    finally:
+        elapsed = time.perf_counter() - start
+        print(f"[TIMER] get_user: {elapsed:.4f}s")
+    return result
+
+def get_order(order_id):
+    start = time.perf_counter()
+    try:
+        result = _fetch_order(order_id)  # 실제 로직
+    except Exception as e:
+        print(f"[ERROR] get_order 실패: {e}")
+        raise
+    finally:
+        elapsed = time.perf_counter() - start
+        print(f"[TIMER] get_order: {elapsed:.4f}s")
+    return result
+
+# ... 이걸 98번 더?</code></pre>
+    </div>
+    <div class="callout callout-warning">
+      <strong>문제:</strong> 타이머 로직이 100곳에 퍼져 있습니다.
+      측정 방식을 바꾸려면 100곳을 수정해야 합니다.
+      <strong>데코레이터</strong>는 이 문제를 해결합니다.
+    </div>
+    <div class="code-block">
+      <div class="code-header">
+        <span>데코레이터로 해결</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import time
+import functools
+
+def timer(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        elapsed = time.perf_counter() - start
+        print(f"[TIMER] {func.__name__}: {elapsed:.4f}s")
+        return result
+    return wrapper
+
+# 이제 @timer 한 줄이면 끝
+@timer
+def get_user(user_id):
+    return _fetch_user(user_id)   # 실제 로직만
+
+@timer
+def get_order(order_id):
+    return _fetch_order(order_id)  # 실제 로직만</code></pre>
+    </div>
+    <p>
+      <code>@timer</code> 한 줄이 어떻게 함수를 변환하는가?
+      <code>with open(...)</code>은 왜 예외가 나도 파일을 닫는가?
+      오늘은 Python의 가장 우아한 두 패턴을 완전히 분해합니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 02. @decorator — Syntactic Sugar 분해 ==================== -->
+<section id="decorator-sugar">
+  <h2>@decorator — Syntactic Sugar 분해</h2>
+
+  <!-- 초급 -->
+  <div class="level-section elementary">
+    <span class="level-badge level-elementary">초급</span>
+    <h3>비유: 선물 포장지</h3>
+    <div class="callout callout-info">
+      <strong>선물 포장지 비유:</strong><br>
+      친구에게 책을 선물할 때, 책 자체는 그대로입니다.
+      다만 예쁜 포장지로 감싸면 — 겉으로는 달라 보이지만 안에 든 것은 같습니다.<br><br>
+      <strong>데코레이터 = 포장지</strong>: 원래 함수를 바꾸지 않고,
+      함수 앞뒤에 새로운 기능(타이머, 로그, 인증 확인 등)을 추가합니다.
+    </div>
+    <p>
+      <code>@</code> 기호가 하는 일은 딱 하나입니다:
+      <strong>바로 아래 함수를 데코레이터 함수에 전달하고, 그 결과로 이름을 덮어씁니다.</strong>
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>가장 단순한 데코레이터</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">def shout(func):
+    """함수를 실행하기 전에 "함수 시작!" 을 출력하는 데코레이터"""
+    def wrapper():
+        print("함수 시작!")
+        func()
+        print("함수 끝!")
+    return wrapper
+
+@shout
+def greet():
+    print("안녕하세요!")
+
+greet()</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+함수 시작!
+안녕하세요!
+함수 끝!
+    </div>
+    <div class="callout callout-tip">
+      <strong>✏️ 지금 바로 해봐:</strong> 위 코드를 그대로 실행해 보세요.
+      <code>@shout</code> 줄을 지우고 <code>greet()</code>를 실행하면 어떻게 되나요?
+      그리고 <code>greet = shout(greet)</code>로 바꿔 써도 같은 결과가 나오는지 확인하세요.
+      <pre><code class="language-python">def shout(func):
+    def wrapper():
+        print("함수 시작!")
+        func()
+        print("함수 끝!")
+    return wrapper
+
+def greet():
+    print("안녕하세요!")
+
+# @shout 와 완전히 같음
+greet = shout(greet)
+greet()</code></pre>
+    </div>
+  </div>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>@decorator = f = decorator(f) — 완전한 번역</h3>
+    <p>
+      <code>@decorator</code>는 Python 파서가 실행 전에 번역하는 <strong>Syntactic Sugar</strong>입니다.
+      번역 규칙은 단순합니다:
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>Syntactic Sugar 완전 분해</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python"># 이 코드는
+@decorator
+def f():
+    pass
+
+# 파이썬 인터프리터가 이렇게 실행합니다
+def f():
+    pass
+f = decorator(f)   # ← @decorator의 정확한 의미</code></pre>
+    </div>
+    <p>
+      <code>decorator</code>는 함수를 받아서 함수를 반환하는 <strong>고차 함수(Higher-order Function)</strong>입니다.
+      데코레이터를 직접 만들어 보겠습니다:
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>인수를 받는 함수에 데코레이터 적용</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+def log_call(func):
+    """함수 호출 시 이름과 인수를 출력하는 데코레이터"""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"호출: {func.__name__}({args}, {kwargs})")
+        result = func(*args, **kwargs)
+        print(f"반환: {result}")
+        return result
+    return wrapper
+
+@log_call
+def add(a, b):
+    """두 수의 합을 반환"""
+    return a + b
+
+@log_call
+def greet(name, greeting="안녕하세요"):
+    return f"{greeting}, {name}님!"
+
+add(3, 5)
+greet("파이썬", greeting="반갑습니다")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+호출: add((3, 5), {})
+반환: 8
+호출: greet(('파이썬',), {'greeting': '반갑습니다'})
+반환: 반갑습니다, 파이썬님!
+    </div>
+    <p>
+      핵심: wrapper 함수가 <code>*args, **kwargs</code>를 그대로 받아서 원본 함수에 전달합니다.
+      이렇게 하면 데코레이터가 <strong>어떤 함수에도 적용</strong>될 수 있습니다.
+    </p>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>데코레이터는 언제 실행되는가 — 정의 시점 vs 호출 시점</h3>
+    <p>
+      중요한 사실: <strong>데코레이터는 함수가 정의될 때 즉시 실행됩니다</strong>, 호출할 때가 아니라.
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>데코레이터 실행 시점 확인</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">def my_decorator(func):
+    print(f"[데코레이터 적용됨] {func.__name__}")   # ← 정의 시점에 실행!
+    def wrapper(*args, **kwargs):
+        print(f"[wrapper 실행] {func.__name__}")    # ← 호출 시점에 실행
+        return func(*args, **kwargs)
+    return wrapper
+
+print("--- 함수 정의 시작 ---")
+
+@my_decorator
+def hello():
+    print("hello!")
+
+@my_decorator
+def world():
+    print("world!")
+
+print("--- 함수 정의 끝, 아직 호출 안 함 ---")
+hello()
+world()</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+--- 함수 정의 시작 ---
+[데코레이터 적용됨] hello
+[데코레이터 적용됨] world
+--- 함수 정의 끝, 아직 호출 안 함 ---
+[wrapper 실행] hello
+hello!
+[wrapper 실행] world
+world!
+    </div>
+    <p>
+      이것이 모듈 임포트 시점에 자동으로 등록하는 패턴(Flask의 <code>@app.route</code> 등)이 동작하는 원리입니다.
+      데코레이터가 정의 시점에 실행되므로, 임포트하는 순간 라우트가 등록됩니다.
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>Flask 스타일 라우트 레지스트리 (원리 이해용)</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">registry = {}   # 라우트 테이블
+
+def route(path):
+    """경로를 라우트 테이블에 등록하는 데코레이터 팩토리"""
+    def decorator(func):
+        registry[path] = func   # 정의 시점에 등록!
+        return func             # 함수 자체는 변경하지 않음
+    return decorator
+
+@route("/")
+def index():
+    return "홈 페이지"
+
+@route("/about")
+def about():
+    return "소개 페이지"
+
+print(registry)
+# {'/': &lt;function index&gt;, '/about': &lt;function about&gt;}
+
+# 요청이 오면 테이블에서 함수를 꺼내 실행
+print(registry["/about"]())  # 소개 페이지</code></pre>
+    </div>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A: CPython 바이트코드 — CALL, MAKE_FUNCTION</h3>
+    <p>
+      데코레이터가 바이트코드 수준에서 어떻게 처리되는지 확인합니다.
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>데코레이터 바이트코드 분석</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import dis
+
+def my_dec(func):
+    return func
+
+source = """
+@my_dec
+def f():
+    pass
+"""
+
+# 모듈 수준 코드 컴파일 후 dis
+code = compile(source, "&lt;string&gt;", "exec")
+dis.dis(code)</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과 (Python 3.12+ 기준, 핵심 부분):</div>
+  LOAD_GLOBAL    my_dec          ← 데코레이터 함수를 스택에 올림
+  MAKE_FUNCTION  0               ← f의 code object로 함수 객체 생성
+  CALL           1               ← my_dec(f) 호출 (인수 1개)
+  STORE_NAME     f               ← 반환값을 'f'라는 이름에 저장
+    </div>
+    <p>
+      핵심: <code>@decorator</code>는 컴파일러가 특별히 처리하는 문법이 아닙니다.
+      단순히 <strong>LOAD_GLOBAL(decorator) → MAKE_FUNCTION → CALL → STORE_NAME</strong> 순서의
+      일반 바이트코드입니다. Python 컴파일러는 <code>@</code>를 보면 이 패턴으로 번역합니다.
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>Part B: 데코레이터와 Descriptor Protocol</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python"># classmethod, staticmethod는 데코레이터이면서 동시에 Descriptor
+import dis
+
+class Foo:
+    @classmethod
+    def bar(cls):
+        pass
+
+# classmethod 객체의 내부 구조
+print(type(Foo.__dict__['bar']))   # &lt;class 'classmethod'&gt;
+
+# classmethod는 __get__을 구현한 descriptor
+cm = classmethod(lambda cls: None)
+print(hasattr(cm, '__get__'))  # True
+
+# Foo.bar 접근 시 descriptor __get__ 호출 →
+# classmethod.__get__(None, Foo) → bound method 반환
+print(type(Foo.bar))   # &lt;class 'method'&gt;
+
+# 즉: @classmethod = classmethod 데코레이터(함수 래핑) + descriptor 프로토콜(__get__)</code></pre>
+    </div>
+    <p>
+      <code>classmethod</code>와 <code>staticmethod</code>는 단순 래퍼가 아닙니다.
+      이들은 <strong>Descriptor Protocol</strong>(<code>__get__</code>)을 구현하여
+      속성 접근 시점에 다르게 동작합니다.
+      <code>@classmethod def f(cls)</code>에서 <code>cls</code>가 자동으로 바인딩되는 것은
+      데코레이터가 아니라 descriptor의 <code>__get__</code>이 담당합니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. 데코레이터 체인 ==================== -->
+<section id="decorator-chain">
+  <h2>데코레이터 체인 — @A @B의 적용 순서</h2>
+
+  <!-- 초급 -->
+  <div class="level-section elementary">
+    <span class="level-badge level-elementary">초급</span>
+    <h3>양파 껍질처럼 겹겹이</h3>
+    <div class="callout callout-info">
+      <strong>양파 비유:</strong><br>
+      데코레이터를 여러 겹 쌓으면 양파 껍질처럼 됩니다.<br>
+      <code>@A</code>가 바깥 껍질, <code>@B</code>가 안쪽 껍질.<br>
+      실행할 때는 바깥부터 들어오고(A → B → 함수), 나갈 때는 안쪽부터(함수 → B → A)입니다.
+    </div>
+    <div class="code-block">
+      <div class="code-header">
+        <span>체인 순서 눈으로 확인</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">def bold(func):
+    def wrapper(*args, **kwargs):
+        print("&lt;b&gt;", end="")
+        result = func(*args, **kwargs)
+        print("&lt;/b&gt;", end="")
+        return result
+    return wrapper
+
+def italic(func):
+    def wrapper(*args, **kwargs):
+        print("&lt;i&gt;", end="")
+        result = func(*args, **kwargs)
+        print("&lt;/i&gt;", end="")
+        return result
+    return wrapper
+
+@bold
+@italic
+def greet(name):
+    print(f"Hello, {name}!", end="")
+
+greet("Python")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+&lt;b&gt;&lt;i&gt;Hello, Python!&lt;/i&gt;&lt;/b&gt;
+    </div>
+  </div>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>@A @B def f → f = A(B(f)) — 수식으로 이해</h3>
+    <div class="callout callout-warning">
+      <strong>체인 적용 순서 주의:</strong><br>
+      <code>@A</code>가 위에, <code>@B</code>가 아래에 있을 때 —
+      <strong>아래(B)가 먼저</strong> 적용되고 위(A)가 나중에 적용됩니다.<br>
+      <code>f = A(B(f))</code> — 수학의 함수 합성 f∘g와 같은 순서입니다.
+    </div>
+    <div class="code-block">
+      <div class="code-header">
+        <span>체인 = 함수 합성</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+def decorator_A(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        print("A: 시작")
+        result = func(*args, **kwargs)
+        print("A: 끝")
+        return result
+    return wrapper
+
+def decorator_B(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        print("  B: 시작")
+        result = func(*args, **kwargs)
+        print("  B: 끝")
+        return result
+    return wrapper
+
+@decorator_A
+@decorator_B
+def f():
+    print("    f: 실행")
+
+print("=== @decorator_A @decorator_B ===")
+f()
+
+print()
+
+# 완전히 동일한 코드
+def g():
+    print("    g: 실행")
+
+g = decorator_B(g)   # 먼저 B 적용
+g = decorator_A(g)   # 그 다음 A 적용 — f = A(B(original_f))
+
+print("=== decorator_A(decorator_B(g)) ===")
+g()</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+=== @decorator_A @decorator_B ===
+A: 시작
+  B: 시작
+    f: 실행
+  B: 끝
+A: 끝
+
+=== decorator_A(decorator_B(g)) ===
+A: 시작
+  B: 시작
+    g: 실행
+  B: 끝
+A: 끝
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>실전 체인 — 인증 + 로깅 + 캐시</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>실전적인 데코레이터 체인</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+import time
+
+def require_auth(func):
+    """인증 체크 데코레이터"""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # 실제로는 token 검증 등
+        token = kwargs.get('token', None)
+        if token != "secret":
+            raise PermissionError("인증 실패")
+        return func(*args, **kwargs)
+    return wrapper
+
+def log_call(func):
+    """호출 로깅 데코레이터"""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"[LOG] {func.__name__} 호출")
+        result = func(*args, **kwargs)
+        print(f"[LOG] {func.__name__} 완료: {result!r}")
+        return result
+    return wrapper
+
+def cache(func):
+    """메모이제이션 캐시 데코레이터"""
+    _cache = {}
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        key = (args, tuple(sorted(kwargs.items())))
+        if key not in _cache:
+            _cache[key] = func(*args, **kwargs)
+        else:
+            print(f"[CACHE] {func.__name__} 캐시 히트")
+        return _cache[key]
+    return wrapper
+
+# 적용 순서: cache가 가장 안, log_call 중간, require_auth가 바깥
+# 즉: require_auth(log_call(cache(get_data)))
+@require_auth
+@log_call
+@cache
+def get_data(user_id, token=None):
+    """데이터를 가져오는 함수"""
+    time.sleep(0.01)  # DB 조회 시뮬레이션
+    return {"user_id": user_id, "data": "some_data"}
+
+# 첫 번째 호출
+result = get_data(42, token="secret")
+print(result)
+print()
+
+# 두 번째 호출 — 캐시 히트
+result = get_data(42, token="secret")
+print(result)
+print()
+
+# 인증 실패
+try:
+    get_data(42, token="wrong")
+except PermissionError as e:
+    print(f"오류: {e}")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+[LOG] get_data 호출
+[LOG] get_data 완료: {'user_id': 42, 'data': 'some_data'}
+{'user_id': 42, 'data': 'some_data'}
+
+[LOG] get_data 호출
+[CACHE] get_data 캐시 히트
+[LOG] get_data 완료: {'user_id': 42, 'data': 'some_data'}
+{'user_id': 42, 'data': 'some_data'}
+
+오류: 인증 실패
+    </div>
+    <p>
+      두 번째 호출에서 <code>require_auth</code> → <code>log_call</code> → <code>cache</code> 순으로 진입했고,
+      <code>cache</code>가 캐시에서 값을 반환하므로 실제 <code>get_data</code>는 실행되지 않습니다.
+      세 번째 호출에서 <code>require_auth</code>에서 막히므로 <code>log_call</code>이나 <code>cache</code>는 아예 실행되지 않습니다.
+    </p>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A: 체인 바이트코드와 스택 동작</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>체인 바이트코드 직접 확인</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import dis
+
+source = """
+def A(f): return f
+def B(f): return f
+
+@A
+@B
+def f(): pass
+"""
+
+code = compile(source, "&lt;string&gt;", "exec")
+dis.dis(code)</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">핵심 바이트코드 (Python 3.12+):</div>
+  LOAD_GLOBAL    A        ← A를 스택에
+  LOAD_GLOBAL    B        ← B를 스택에 (스택: [A, B])
+  MAKE_FUNCTION  0        ← f의 함수 객체 생성 (스택: [A, B, f])
+  CALL           1        ← B(f) 호출 — B가 소비 (스택: [A, B(f)])
+  CALL           1        ← A(B(f)) 호출 — A가 소비 (스택: [A(B(f))])
+  STORE_NAME     f        ← 'f'에 저장
+    </div>
+    <p>
+      CPython의 평가 스택(evaluation stack)에서 데코레이터들이 먼저 올라가고,
+      MAKE_FUNCTION이 함수 객체를 만든 후, CALL을 아래 데코레이터부터 실행합니다.
+      즉 스택 구조상 <strong>아래 데코레이터가 먼저 호출</strong>되는 것은 자연스러운 결과입니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 04. 인자를 받는 데코레이터 ==================== -->
+<section id="decorator-args">
+  <h2>인자를 받는 데코레이터 — 3중 중첩 함수</h2>
+
+  <!-- 초급 -->
+  <div class="level-section elementary">
+    <span class="level-badge level-elementary">초급</span>
+    <h3>설정 가능한 포장지</h3>
+    <div class="callout callout-info">
+      <strong>포장지 색상 선택 비유:</strong><br>
+      보통 데코레이터는 포장지를 하나만 가집니다.<br>
+      그런데 <code>@repeat(3)</code>처럼 "몇 번 반복할지"를 지정하려면,
+      포장지 공장(팩토리)에서 원하는 포장지를 먼저 만든 다음, 그 포장지로 함수를 감쌉니다.
+    </div>
+    <div class="code-block">
+      <div class="code-header">
+        <span>인자를 받는 데코레이터 기본 예시</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+def repeat(n):
+    """함수를 n번 반복 실행하는 데코레이터를 만드는 팩토리"""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for _ in range(n):
+                result = func(*args, **kwargs)
+            return result
+        return wrapper
+    return decorator   # ← decorator를 반환!
+
+@repeat(3)
+def hello(name):
+    print(f"안녕, {name}!")
+
+hello("파이썬")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+안녕, 파이썬!
+안녕, 파이썬!
+안녕, 파이썬!
+    </div>
+  </div>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>3중 중첩의 번역 — @repeat(3) def f → f = repeat(3)(f)</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>3단계 번역 완전 분해</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+def repeat(n):                   # 1단계: 팩토리 — n을 받아 decorator를 반환
+    def decorator(func):         # 2단계: 데코레이터 — func을 받아 wrapper를 반환
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):  # 3단계: 실제 실행 함수
+            for _ in range(n):
+                result = func(*args, **kwargs)
+            return result
+        return wrapper
+    return decorator
+
+# @repeat(3) def hello(name) 은 아래와 완전히 같습니다:
+def hello(name):
+    print(f"안녕, {name}!")
+
+step1 = repeat(3)         # repeat(3) → decorator 반환
+step2 = step1(hello)      # decorator(hello) → wrapper 반환
+hello = step2             # hello 이름이 wrapper를 가리킴
+
+print(f"hello의 실제 함수: {hello}")
+print(f"hello.__name__: {hello.__name__}")   # functools.wraps 덕분에 'hello'
+hello("파이썬")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+hello의 실제 함수: &lt;function hello at 0x...&gt;
+hello.__name__: hello
+안녕, 파이썬!
+안녕, 파이썬!
+안녕, 파이썬!
+    </div>
+    <div class="callout callout-tip">
+      <strong>✏️ 지금 바로 해봐:</strong>
+      <code>@repeat(n)</code>에서 n이 클로저로 캡처된다는 점을 확인해 보세요.
+      <pre><code class="language-python">import functools
+
+def repeat(n):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for _ in range(n):
+                func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+say_twice = repeat(2)
+say_three = repeat(3)
+
+@say_twice
+def ping():
+    print("ping")
+
+@say_three
+def pong():
+    print("pong")
+
+ping()   # ping 2번
+pong()   # pong 3번</code></pre>
+      <code>n</code>이 클로저에 캡처되므로, <code>say_twice</code>와 <code>say_three</code>는 독립적인 <code>n</code>을 기억합니다.
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>인자 있는 데코레이터 — 선택적 인자 처리</h3>
+    <p>
+      <code>@retry</code>와 <code>@retry(max_attempts=5)</code> 둘 다 동작하게 만들려면 어떻게 할까요?
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>선택적 인자 데코레이터 패턴</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+import time
+
+def retry(func=None, *, max_attempts=3, delay=1.0, exceptions=(Exception,)):
+    """
+    @retry               → max_attempts=3 기본값
+    @retry(max_attempts=5) → 5번 시도
+    """
+    if func is None:
+        # @retry(max_attempts=5) 형태 — 팩토리로 동작
+        return functools.partial(retry, max_attempts=max_attempts,
+                                  delay=delay, exceptions=exceptions)
+
+    # @retry 형태 — func이 직접 전달됨
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        last_exc = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return func(*args, **kwargs)
+            except exceptions as e:
+                last_exc = e
+                if attempt &lt; max_attempts:
+                    print(f"[RETRY] 시도 {attempt}/{max_attempts} 실패: {e}. {delay}초 후 재시도...")
+                    time.sleep(delay)
+                else:
+                    print(f"[RETRY] {max_attempts}번 모두 실패.")
+        raise last_exc
+    return wrapper
+
+# 두 가지 형태 모두 동작
+@retry
+def unstable_a():
+    raise ValueError("A 실패")
+
+@retry(max_attempts=2, delay=0.1)
+def unstable_b():
+    raise ConnectionError("B 연결 실패")
+
+# 테스트
+try:
+    unstable_a()
+except ValueError:
+    print("A: 예외 발생")
+
+try:
+    unstable_b()
+except ConnectionError:
+    print("B: 예외 발생")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+[RETRY] 시도 1/3 실패: A 실패. 1초 후 재시도...
+[RETRY] 시도 2/3 실패: A 실패. 1초 후 재시도...
+[RETRY] 3번 모두 실패.
+A: 예외 발생
+[RETRY] 시도 1/2 실패: B 연결 실패. 0.1초 후 재시도...
+[RETRY] 2번 모두 실패.
+B: 예외 발생
+    </div>
+    <p>
+      <code>func=None</code>으로 선택적 인자를 처리하는 이 패턴은
+      <code>functools.partial</code>과 결합하여 두 가지 호출 형태를 하나의 함수로 지원합니다.
+    </p>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A: @repeat(3)의 바이트코드 — CALL 두 번</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>인자 있는 데코레이터 바이트코드</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import dis
+
+source = """
+def repeat(n): pass
+
+@repeat(3)
+def f(): pass
+"""
+
+code = compile(source, "&lt;string&gt;", "exec")
+dis.dis(code)</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">핵심 바이트코드:</div>
+  LOAD_GLOBAL    repeat      ← repeat 함수 로드
+  LOAD_CONST     3           ← 인수 3
+  CALL           1           ← repeat(3) → decorator 반환  ★ 첫 번째 CALL
+  MAKE_FUNCTION  0           ← f 함수 객체 생성
+  CALL           1           ← decorator(f) → wrapper 반환 ★ 두 번째 CALL
+  STORE_NAME     f
+    </div>
+    <p>
+      일반 데코레이터(<code>@f</code>)는 CALL이 1번이지만,
+      인자 있는 데코레이터(<code>@f(n)</code>)는 CALL이 2번입니다.
+      첫 번째 CALL이 팩토리를 호출하고, 두 번째 CALL이 반환된 decorator를 함수에 적용합니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 05. functools.wraps ==================== -->
+<section id="functools-wraps">
+  <h2>functools.wraps — 정체성을 지켜라</h2>
+
+  <!-- 초급 -->
+  <div class="level-section elementary">
+    <span class="level-badge level-elementary">초급</span>
+    <h3>포장지를 열면 원본이 보여야</h3>
+    <div class="callout callout-warning">
+      <strong>functools.wraps 없이는 정체성이 오염됩니다:</strong><br>
+      데코레이터를 적용하면 함수 이름(<code>__name__</code>)이 wrapper로 바뀌어 버립니다.
+      디버깅, 로깅, 문서화 도구가 모두 잘못된 이름을 보게 됩니다.
+    </div>
+    <div class="code-block">
+      <div class="code-header">
+        <span>functools.wraps 없을 때의 문제</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">def bad_decorator(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@bad_decorator
+def important_function():
+    """이 함수는 중요한 일을 합니다."""
+    pass
+
+# 이름이 오염됨!
+print(important_function.__name__)   # 'wrapper' ← 잘못됨!
+print(important_function.__doc__)    # None ← docstring이 사라짐!
+
+import functools
+
+def good_decorator(func):
+    @functools.wraps(func)   # ← 이 한 줄이 정체성을 보존
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@good_decorator
+def important_function():
+    """이 함수는 중요한 일을 합니다."""
+    pass
+
+print(important_function.__name__)   # 'important_function' ← 올바름!
+print(important_function.__doc__)    # '이 함수는 중요한 일을 합니다.' ← 보존!</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+wrapper
+None
+important_function
+이 함수는 중요한 일을 합니다.
+    </div>
+  </div>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>functools.wraps가 복사하는 것들</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>wraps가 보존하는 속성들</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+def my_decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@my_decorator
+def calculate(x: int, y: int) -> int:
+    """x와 y를 더한 결과를 반환합니다.
+
+    Args:
+        x: 첫 번째 정수
+        y: 두 번째 정수
+    Returns:
+        두 정수의 합
+    """
+    return x + y
+
+# wraps가 보존하는 속성들
+print(f"__name__:      {calculate.__name__}")
+print(f"__qualname__:  {calculate.__qualname__}")
+print(f"__doc__:       {calculate.__doc__[:20]}...")
+print(f"__annotations__: {calculate.__annotations__}")
+print(f"__module__:    {calculate.__module__}")
+
+# wraps는 __wrapped__도 설정해 줍니다 (원본 함수 참조)
+print(f"__wrapped__:   {calculate.__wrapped__}")
+print(f"원본 함수 직접 호출: {calculate.__wrapped__(3, 4)}")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+__name__:      calculate
+__qualname__:  calculate
+__doc__:       x와 y를 더한 결...
+__annotations__: {'x': &lt;class 'int'&gt;, 'y': &lt;class 'int'&gt;, 'return': &lt;class 'int'&gt;}
+__module__:    __main__
+__wrapped__:   &lt;function calculate at 0x...&gt;
+원본 함수 직접 호출: 7
+    </div>
+    <p>
+      <code>functools.wraps</code>가 복사하는 속성 목록은 <code>functools.WRAPPER_ASSIGNMENTS</code>에 정의되어 있습니다:
+      <code>('__module__', '__name__', '__qualname__', '__annotations__', '__doc__')</code>.
+      그리고 <code>__wrapped__</code> 속성을 추가하여 원본 함수를 추적할 수 있게 합니다.
+    </p>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>__wrapped__ 체인과 inspect.unwrap</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>데코레이터 체인에서 원본 추적</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+import inspect
+
+def decorator_A(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+def decorator_B(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@decorator_A
+@decorator_B
+def original():
+    """원본 함수입니다."""
+    return 42
+
+# __wrapped__ 체인을 따라가면 원본을 찾을 수 있음
+print(f"original.__name__: {original.__name__}")           # original
+print(f"__wrapped__ (B 래퍼): {original.__wrapped__}")     # decorator_B의 wrapper
+print(f"__wrapped__.__wrapped__ (원본): {original.__wrapped__.__wrapped__}")  # 진짜 original
+
+# inspect.unwrap이 자동으로 체인을 따라감
+true_original = inspect.unwrap(original)
+print(f"inspect.unwrap 결과: {true_original}")
+print(f"원본 함수 실행: {true_original()}")   # 42
+
+# 타입 힌트 분석 도구들이 __wrapped__ 체인을 따라가는 이유
+# — 데코레이터 안의 *args, **kwargs가 아니라 실제 시그니처를 보기 위해
+sig = inspect.signature(original)
+print(f"시그니처: {sig}")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+original.__name__: original
+__wrapped__ (B 래퍼): &lt;function original at 0x...&gt;
+__wrapped__.__wrapped__ (원본): &lt;function original at 0x...&gt;
+inspect.unwrap 결과: &lt;function original at 0x...&gt;
+원본 함수 실행: 42
+시그니처: ()
+    </div>
+    <p>
+      <code>__wrapped__</code>는 pytest, mypy, pydantic 같은 도구들이
+      데코레이터를 통해 원본 함수의 시그니처와 타입 힌트를 파악할 때 필수적으로 사용합니다.
+      <code>functools.wraps</code>를 빠뜨리면 이러한 도구들이 오작동합니다.
+    </p>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A: functools.wraps의 구현 — update_wrapper</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>functools.wraps 직접 구현 (CPython 소스 기반)</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+# functools.wraps는 update_wrapper의 partial 적용입니다
+# CPython Lib/functools.py 에서:
+WRAPPER_ASSIGNMENTS = ('__module__', '__name__', '__qualname__',
+                       '__annotations__', '__doc__')
+WRAPPER_UPDATES = ('__dict__',)
+
+def my_update_wrapper(wrapper, wrapped,
+                      assigned=WRAPPER_ASSIGNMENTS,
+                      updated=WRAPPER_UPDATES):
+    """wraps가 하는 일을 직접 구현"""
+    for attr in assigned:
+        try:
+            value = getattr(wrapped, attr)
+        except AttributeError:
+            pass
+        else:
+            setattr(wrapper, attr, value)
+    for attr in updated:
+        getattr(wrapper, attr).update(getattr(wrapped, attr, {}))
+    wrapper.__wrapped__ = wrapped   # ← 원본 참조 저장
+    return wrapper
+
+def my_wraps(wrapped, assigned=WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES):
+    """functools.wraps의 직접 구현"""
+    return functools.partial(my_update_wrapper, wrapped=wrapped,
+                             assigned=assigned, updated=updated)
+
+# 사용 테스트
+def my_decorator(func):
+    @my_wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@my_decorator
+def hello():
+    """안녕하세요!"""
+    pass
+
+print(hello.__name__)    # hello
+print(hello.__doc__)     # 안녕하세요!
+print(hello.__wrapped__) # &lt;function hello&gt;</code></pre>
+    </div>
+    <p>
+      <code>functools.wraps</code>는 결국 <code>functools.partial(update_wrapper, wrapped=func)</code>입니다.
+      <code>@my_wraps(func)</code>는 <code>wrapper = my_wraps(func)(wrapper)</code>로 번역되며,
+      이는 <code>wrapper = my_update_wrapper(wrapper, wrapped=func)</code>와 동일합니다.
+      즉, wraps 자체도 데코레이터입니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 06. with문 De-sugaring ==================== -->
+<section id="context-manager">
+  <h2>with문 De-sugaring — __enter__/__exit__ 호출 순서</h2>
+
+  <!-- 초급 -->
+  <div class="level-section elementary">
+    <span class="level-badge level-elementary">초급</span>
+    <h3>비유: 자동문이 있는 방</h3>
+    <div class="callout callout-info">
+      <strong>자동문 비유:</strong><br>
+      센서가 달린 자동문을 통해 방에 들어갑니다.<br>
+      들어갈 때: 문이 자동으로 열리고 (준비)<br>
+      나올 때: 문이 자동으로 닫힙니다 (정리)<br><br>
+      예외가 생겨서 비상구로 나가도 — 자동문은 여전히 닫힙니다.<br><br>
+      <strong>with문 = 자동문</strong>: 블록에 들어갈 때 자동으로 준비하고,
+      나올 때(정상이든 예외든) 자동으로 정리합니다.
+    </div>
+    <div class="code-block">
+      <div class="code-header">
+        <span>with문의 핵심 — 자동 정리</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python"># with 없이 파일을 열면 — 직접 닫아야 함
+f = open("example.txt", "w")
+f.write("안녕하세요")
+f.close()   # 잊으면? → 파일이 열린 채로 남아 있음
+
+# with를 쓰면 — 자동으로 닫힘
+with open("example.txt", "w") as f:
+    f.write("안녕하세요")
+# 여기서 f.close()가 자동으로 호출됨!
+# 예외가 발생해도 닫힘!
+
+# 확인
+import os
+os.remove("example.txt")  # 테스트 파일 삭제</code></pre>
+    </div>
+    <div class="callout callout-tip">
+      <strong>✏️ 지금 바로 해봐:</strong> with문이 예외 상황에서도 동작하는지 확인하세요.
+      <pre><code class="language-python">class Door:
+    def __enter__(self):
+        print("문 열림 (준비)")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print("문 닫힘 (정리)")
+        return False  # 예외를 그대로 전달
+
+with Door() as door:
+    print("방 안에서 작업 중...")
+    # raise Exception("비상 상황!")  # 주석 해제해서 예외 상황도 테스트!</code></pre>
+    </div>
+  </div>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>with문 완전 번역 — try/finally 확장</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>with문 De-sugaring</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python"># 이 코드는
+with EXPR as VAR:
+    BLOCK
+
+# 아래와 완전히 같습니다 (Python 언어 명세 기준)
+_mgr = EXPR                        # 컨텍스트 매니저 객체 저장
+_value = _mgr.__enter__()          # 진입 — as VAR에 할당될 값 반환
+_exc = True
+try:
+    try:
+        VAR = _value               # as VAR
+        BLOCK
+    except:
+        _exc = False
+        if not _mgr.__exit__(*sys.exc_info()):
+            raise                  # __exit__가 False 반환 → 예외 재발생
+finally:
+    if _exc:                       # 예외 없이 정상 종료
+        _mgr.__exit__(None, None, None)</code></pre>
+    </div>
+    <p>직접 컨텍스트 매니저를 만들어 봅니다:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>컨텍스트 매니저 직접 구현</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import time
+
+class Timer:
+    """실행 시간을 측정하는 컨텍스트 매니저"""
+
+    def __enter__(self):
+        self.start = time.perf_counter()
+        print("[Timer] 측정 시작")
+        return self          # as 뒤에 올 객체
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        elapsed = time.perf_counter() - self.start
+        print(f"[Timer] 측정 완료: {elapsed:.4f}s")
+        if exc_type is not None:
+            print(f"[Timer] 예외 발생: {exc_type.__name__}: {exc_val}")
+        return False         # 예외를 삼키지 않음 (False = 예외 전파)
+
+# 정상 실행
+with Timer() as t:
+    total = sum(range(1_000_000))
+print(f"합계: {total}")
+print()
+
+# 예외 발생 시에도 Timer가 동작하는지 확인
+try:
+    with Timer() as t:
+        print("작업 중...")
+        raise ValueError("의도적인 오류!")
+except ValueError as e:
+    print(f"예외 처리됨: {e}")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+[Timer] 측정 시작
+[Timer] 측정 완료: 0.0231s
+합계: 499999500000
+
+[Timer] 측정 시작
+작업 중...
+[Timer] 측정 완료: 0.0001s
+[Timer] 예외 발생: ValueError: 의도적인 오류!
+예외 처리됨: 의도적인 오류!
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>__exit__의 반환값 — True이면 예외를 삼킨다</h3>
+    <div class="callout callout-warning">
+      <strong>__exit__가 True를 반환하면 예외가 사라집니다:</strong><br>
+      <code>__exit__</code>가 <code>True</code>(또는 Truthy값)를 반환하면
+      블록 안에서 발생한 예외가 <strong>억제(suppress)</strong>됩니다.
+      의도치 않게 True를 반환하면 버그를 숨기는 심각한 문제가 생깁니다.
+    </div>
+    <div class="code-block">
+      <div class="code-header">
+        <span>예외 억제 vs 전파</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">class SuppressError:
+    """특정 예외를 억제하는 컨텍스트 매니저"""
+    def __init__(self, *exception_types):
+        self.exception_types = exception_types
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # exc_type이 None이면 예외 없이 정상 종료
+        if exc_type is not None and issubclass(exc_type, self.exception_types):
+            print(f"[Suppress] {exc_type.__name__} 억제됨: {exc_val}")
+            return True   # True → 예외 억제 (삼킴)
+        return False      # False/None → 예외 전파
+
+# ValueError만 억제
+with SuppressError(ValueError):
+    print("작업 1 시작")
+    raise ValueError("이 오류는 억제됩니다")
+    print("이 줄은 실행되지 않음")
+
+print("with 블록 이후 — ValueError가 억제되어 계속 실행")
+print()
+
+# TypeError는 억제 안 됨
+try:
+    with SuppressError(ValueError):
+        raise TypeError("이 오류는 전파됩니다")
+except TypeError as e:
+    print(f"TypeError 전파됨: {e}")
+
+# 표준 라이브러리의 contextlib.suppress가 같은 기능을 제공
+from contextlib import suppress
+
+with suppress(FileNotFoundError):
+    with open("존재하지않는파일.txt") as f:
+        print(f.read())
+
+print("suppress로 FileNotFoundError 억제 후 계속")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+작업 1 시작
+[Suppress] ValueError 억제됨: 이 오류는 억제됩니다
+with 블록 이후 — ValueError가 억제되어 계속 실행
+
+TypeError 전파됨: 이 오류는 전파됩니다
+suppress로 FileNotFoundError 억제 후 계속
+    </div>
+    <p>
+      <code>__exit__(exc_type, exc_val, exc_tb)</code>의 세 인수:
+      예외가 없으면 모두 <code>None</code>,
+      예외가 있으면 각각 예외 클래스, 예외 인스턴스, 트레이스백 객체입니다.
+    </p>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A: SETUP_WITH / WITH_EXCEPT_START 바이트코드</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>with문 바이트코드 분석</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import dis
+
+def example():
+    with open("test.txt", "w") as f:
+        f.write("hello")
+
+dis.dis(example)</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">핵심 바이트코드 (Python 3.12+):</div>
+  LOAD_GLOBAL     open
+  LOAD_CONST      'test.txt'
+  LOAD_CONST      'w'
+  CALL            2                ← open("test.txt", "w") 호출
+  BEFORE_WITH                     ← __enter__() 호출, 결과를 스택에
+  STORE_FAST      f               ← as f
+  ...BLOCK 코드...
+  LOAD_CONST      None
+  LOAD_CONST      None
+  LOAD_CONST      None
+  CALL            3                ← __exit__(None, None, None) — 정상 종료
+  POP_TOP
+
+  # 예외 발생 시 별도 핸들러:
+  PUSH_EXC_INFO                   ← 예외 정보 스택에 push
+  WITH_EXCEPT_START               ← __exit__(exc_type, exc_val, exc_tb) 호출
+  POP_JUMP_IF_TRUE    suppress    ← True면 예외 억제 (JUMP)
+  RERAISE                         ← False면 예외 재발생
+    </div>
+    <p>
+      Python 3.11 이전의 <code>SETUP_WITH</code> 바이트코드는
+      Python 3.12에서 <code>BEFORE_WITH</code>와 <code>WITH_EXCEPT_START</code>로 분리되었습니다.
+      이는 CPython의 예외 처리 모델이 "블록 기반"에서 "인라인 예외 테이블" 방식으로 전환된 결과입니다.
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>Part B: AOP — Aspect-Oriented Programming</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python"># AOP(관점 지향 프로그래밍) — 핵심 로직과 횡단 관심사 분리
+# 데코레이터는 Python에서 AOP를 구현하는 핵심 메커니즘
+
+# 횡단 관심사(Cross-cutting Concerns) 예시:
+# - 로깅   (@log)
+# - 인증   (@require_auth)
+# - 캐시   (@cache)
+# - 트랜잭션 (@transactional)
+# - 재시도  (@retry)
+
+# AOP 용어 대응:
+# - Advice: 언제 무엇을 할 것인가 → wrapper 함수
+# - Pointcut: 어디에 적용할 것인가 → @decorator 적용 지점
+# - Join Point: 인터셉트할 수 있는 지점 → 함수 호출 시점
+# - Aspect: Advice + Pointcut → 데코레이터 전체
+
+import functools
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+
+# Before Advice — 함수 호출 전
+def before(message):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            logging.debug(f"BEFORE {func.__name__}: {message}")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+# After Returning Advice — 정상 반환 후
+def after_returning(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        logging.debug(f"AFTER_RETURNING {func.__name__}: result={result!r}")
+        return result
+    return wrapper
+
+# Around Advice — 호출 전후 모두 (가장 강력)
+def around(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        logging.debug(f"AROUND_BEFORE {func.__name__}")
+        result = func(*args, **kwargs)
+        logging.debug(f"AROUND_AFTER {func.__name__}")
+        return result
+    return wrapper
+
+@before("사용자 검증 완료")
+@after_returning
+@around
+def process_payment(amount):
+    """결제 처리 핵심 로직만 담당 — 로깅/인증은 데코레이터가 처리"""
+    return f"결제 완료: {amount}원"
+
+result = process_payment(10000)</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 07. contextlib.contextmanager ==================== -->
+<section id="contextlib">
+  <h2>contextlib.contextmanager — yield로 만드는 컨텍스트</h2>
+
+  <!-- 초급 -->
+  <div class="level-section elementary">
+    <span class="level-badge level-elementary">초급</span>
+    <h3>클래스 없이 with문 만들기</h3>
+    <p>
+      <code>__enter__</code>/<code>__exit__</code>를 가진 클래스를 매번 만드는 것은 번거롭습니다.
+      <code>contextlib.contextmanager</code>를 쓰면 제너레이터 함수 하나로 같은 효과를 냅니다.
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>contextmanager 기본 사용법</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">from contextlib import contextmanager
+
+@contextmanager
+def greeting():
+    print("안녕하세요! (진입)")   # __enter__ 역할
+    yield                          # ← with 블록이 여기서 실행됨
+    print("잘 가세요! (종료)")    # __exit__ 역할
+
+with greeting():
+    print("  with 블록 안에서 작업 중")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+안녕하세요! (진입)
+  with 블록 안에서 작업 중
+잘 가세요! (종료)
+    </div>
+    <div class="callout callout-info">
+      <strong>yield의 역할:</strong><br>
+      <code>yield</code> 이전 코드 = <code>__enter__</code><br>
+      <code>yield</code> 자체 = with 블록에게 제어권 넘김 (<code>as</code> 뒤에 올 값을 yield하면 됨)<br>
+      <code>yield</code> 이후 코드 = <code>__exit__</code>
+    </div>
+  </div>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>yield로 값 전달 + 예외 처리</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>contextmanager — 실전 패턴</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import time
+from contextlib import contextmanager
+
+@contextmanager
+def timer(label=""):
+    """실행 시간을 측정하는 컨텍스트 매니저"""
+    start = time.perf_counter()
+    print(f"[Timer] {label} 시작")
+    try:
+        yield start          # ← as 뒤에 start가 들어옴
+    except Exception as e:
+        print(f"[Timer] {label} 오류: {e}")
+        raise
+    finally:
+        elapsed = time.perf_counter() - start
+        print(f"[Timer] {label} 완료: {elapsed:.4f}s")
+
+# as로 yield된 값을 받을 수 있음
+with timer("행렬 계산") as t:
+    result = sum(i**2 for i in range(500_000))
+    print(f"결과: {result}")
+
+print()
+
+# 예외 상황에서도 finally가 실행됨
+try:
+    with timer("오류 작업"):
+        raise RuntimeError("의도적 오류")
+except RuntimeError:
+    print("예외 처리 완료")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+[Timer] 행렬 계산 시작
+결과: 41666416666750000
+[Timer] 행렬 계산 완료: 0.0521s
+
+[Timer] 오류 작업 시작
+[Timer] 오류 작업 오류: 의도적 오류
+[Timer] 오류 작업 완료: 0.0001s
+예외 처리 완료
+    </div>
+    <div class="callout callout-tip">
+      <strong>✏️ 지금 바로 해봐:</strong>
+      임시 디렉토리를 만들고 자동으로 삭제하는 컨텍스트 매니저를 만들어 보세요.
+      <pre><code class="language-python">import os
+import shutil
+from contextlib import contextmanager
+
+@contextmanager
+def temp_directory(prefix="tmp_"):
+    """임시 디렉토리를 만들고 with 블록 종료 시 자동 삭제"""
+    path = f"{prefix}{os.getpid()}"
+    os.makedirs(path, exist_ok=True)
+    print(f"[임시 디렉토리 생성] {path}")
+    try:
+        yield path
+    finally:
+        shutil.rmtree(path, ignore_errors=True)
+        print(f"[임시 디렉토리 삭제] {path}")
+
+with temp_directory("test_") as tmpdir:
+    # 임시 파일 작성
+    filepath = os.path.join(tmpdir, "data.txt")
+    with open(filepath, "w") as f:
+        f.write("임시 데이터")
+    print(f"파일 생성: {filepath}")
+    print(f"파일 존재: {os.path.exists(filepath)}")
+
+print(f"디렉토리 존재: {os.path.exists('test_' + str(os.getpid()))}")</code></pre>
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>contextmanager의 내부 구조 — GeneratorContextManager</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>contextmanager가 만드는 것</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">from contextlib import contextmanager
+import inspect
+
+@contextmanager
+def my_ctx():
+    print("진입")
+    yield 42
+    print("종료")
+
+# contextmanager가 반환하는 것은 함수가 아님
+print(type(my_ctx))         # &lt;class 'function'&gt; — 데코레이터가 적용된 함수
+ctx_instance = my_ctx()     # 호출하면 _GeneratorContextManager 객체 생성
+print(type(ctx_instance))   # &lt;class 'contextlib._GeneratorContextManager'&gt;
+
+# _GeneratorContextManager의 __enter__, __exit__ 구현 (CPython 기반 의사코드)
+class MyGeneratorContextManager:
+    def __init__(self, gen):
+        self.gen = gen          # 제너레이터 객체 저장
+
+    def __enter__(self):
+        try:
+            return next(self.gen)   # yield 지점까지 실행, yield된 값 반환
+        except StopIteration:
+            raise RuntimeError("generator didn't yield")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            # 예외 없음 — 제너레이터 재개 (yield 이후 코드 실행)
+            try:
+                next(self.gen)
+            except StopIteration:
+                return False    # 정상 종료
+            raise RuntimeError("generator didn't stop")
+        else:
+            # 예외 발생 — 제너레이터에 예외를 throw
+            try:
+                self.gen.throw(exc_type, exc_val, exc_tb)
+            except StopIteration:
+                return True     # 예외를 삼킴 (제너레이터가 정상 종료)
+            except:
+                if sys.exc_info()[1] is not exc_val:
+                    raise       # 새로운 예외가 생겼으면 전파
+                return False    # 같은 예외면 재발생
+            raise RuntimeError("generator didn't stop after throw()")</code></pre>
+    </div>
+    <p>
+      핵심: <code>@contextmanager</code>는 제너레이터의 <code>next()</code>와 <code>throw()</code>를 활용합니다.
+      <code>__enter__</code>에서 <code>next(gen)</code>로 yield까지 실행,
+      <code>__exit__</code>에서 <code>next(gen)</code>로 나머지를 실행합니다.
+      예외가 있으면 <code>gen.throw()</code>로 예외를 제너레이터 내부로 전달합니다.
+    </p>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A: ExitStack — 동적 컨텍스트 스택</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>contextlib.ExitStack — 가변 개수의 컨텍스트 관리</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">from contextlib import ExitStack, contextmanager
+import os
+
+@contextmanager
+def managed_resource(name):
+    print(f"[{name}] 획득")
+    try:
+        yield name
+    finally:
+        print(f"[{name}] 해제")
+
+# 문제: 컨텍스트 매니저 개수가 런타임에 결정될 때
+resources = ["DB연결", "캐시연결", "큐연결"]
+
+# ExitStack: 동적으로 컨텍스트를 스택에 쌓고 역순으로 해제
+with ExitStack() as stack:
+    handles = [stack.enter_context(managed_resource(r)) for r in resources]
+    print(f"모든 자원 획득: {handles}")
+    print("작업 수행...")
+    # 예외가 발생해도 모든 자원이 역순으로 해제됨
+
+print()
+print("모든 자원 해제 완료")
+
+# ExitStack.callback: __exit__가 없는 정리 작업도 등록 가능
+with ExitStack() as stack:
+    stack.callback(print, "[callback] 파일 잠금 해제")
+    stack.callback(print, "[callback] 임시 파일 삭제")
+    print("작업 중...")
+    # 블록 종료 시 callback이 역순으로 실행됨</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+[DB연결] 획득
+[캐시연결] 획득
+[큐연결] 획득
+모든 자원 획득: ['DB연결', '캐시연결', '큐연결']
+작업 수행...
+[큐연결] 해제
+[캐시연결] 해제
+[DB연결] 해제
+
+모든 자원 해제 완료
+작업 중...
+[callback] 임시 파일 삭제
+[callback] 파일 잠금 해제
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 08. 실전 데코레이터 ==================== -->
+<section id="practical">
+  <h2>실전: 타이머 &amp; 재시도 데코레이터</h2>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>타이머 데코레이터 — 완성판</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>production-ready 타이머 데코레이터</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import time
+import functools
+
+def timer(func=None, *, label=None, precision=4):
+    """
+    실행 시간을 측정하는 데코레이터.
+
+    사용 방법:
+        @timer                        # 기본값
+        @timer(label="DB 조회")       # 레이블 지정
+        @timer(precision=2)           # 소수점 자리수 지정
+    """
+    if func is None:
+        return functools.partial(timer, label=label, precision=precision)
+
+    _label = label or func.__name__
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        try:
+            result = func(*args, **kwargs)
+            elapsed = time.perf_counter() - start
+            print(f"[Timer] {_label}: {elapsed:.{precision}f}s")
+            return result
+        except Exception as e:
+            elapsed = time.perf_counter() - start
+            print(f"[Timer] {_label}: {elapsed:.{precision}f}s (오류: {type(e).__name__})")
+            raise
+    return wrapper
+
+@timer
+def slow_sum(n):
+    """n까지의 합 계산"""
+    return sum(range(n))
+
+@timer(label="피보나치", precision=6)
+def fib(n):
+    if n &lt;= 1:
+        return n
+    return fib.__wrapped__(n-1) + fib.__wrapped__(n-2)  # 원본 함수 직접 호출
+
+print(slow_sum(1_000_000))
+print(fib(30))</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+[Timer] slow_sum: 0.0185s
+499999500000
+[Timer] 피보나치: 0.312841s
+832040
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>재시도 데코레이터 — Exponential Backoff</h3>
+    <div class="code-block">
+      <div class="code-header">
+        <span>재시도 데코레이터 — 지수 백오프 포함</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+import time
+import random
+
+def retry(func=None, *, max_attempts=3, base_delay=1.0,
+          backoff=2.0, jitter=True, exceptions=(Exception,)):
+    """
+    재시도 데코레이터 (Exponential Backoff + Jitter).
+
+    Args:
+        max_attempts: 최대 시도 횟수
+        base_delay: 첫 번째 재시도 대기 시간(초)
+        backoff: 대기 시간 배수 (지수 증가)
+        jitter: 랜덤 지터 추가 여부 (동시 요청 분산)
+        exceptions: 재시도할 예외 타입들
+    """
+    if func is None:
+        return functools.partial(retry, max_attempts=max_attempts,
+                                  base_delay=base_delay, backoff=backoff,
+                                  jitter=jitter, exceptions=exceptions)
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        delay = base_delay
+        last_exc = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return func(*args, **kwargs)
+            except exceptions as e:
+                last_exc = e
+                if attempt == max_attempts:
+                    print(f"[Retry] {func.__name__}: {max_attempts}번 모두 실패. 포기.")
+                    break
+
+                actual_delay = delay
+                if jitter:
+                    actual_delay *= (0.5 + random.random())  # 0.5~1.5배 랜덤
+
+                print(f"[Retry] {func.__name__}: 시도 {attempt}/{max_attempts} 실패 "
+                      f"({type(e).__name__}). {actual_delay:.2f}초 후 재시도...")
+                time.sleep(actual_delay)
+                delay *= backoff   # 지수 증가
+
+        raise last_exc
+
+    return wrapper
+
+# 시뮬레이션: 처음 2번은 실패, 3번째 성공
+call_count = 0
+
+@retry(max_attempts=4, base_delay=0.1, backoff=2.0, jitter=False)
+def flaky_api():
+    global call_count
+    call_count += 1
+    if call_count &lt; 3:
+        raise ConnectionError(f"연결 실패 (시도 {call_count})")
+    return "API 응답 성공!"
+
+call_count = 0
+result = flaky_api()
+print(f"최종 결과: {result}")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+[Retry] flaky_api: 시도 1/4 실패 (ConnectionError). 0.10초 후 재시도...
+[Retry] flaky_api: 시도 2/4 실패 (ConnectionError). 0.20초 후 재시도...
+최종 결과: API 응답 성공!
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 09. AI와 데코레이터 ==================== -->
+<section id="ai-decorators">
+  <h2>AI와 데코레이터 — AI가 이걸 어떻게 쓰는가</h2>
+
+  <div class="callout callout-info">
+    <strong>AI 코드 생성과 데코레이터:</strong><br>
+    AI(ChatGPT, GitHub Copilot, Claude 등)가 Python 코드를 생성할 때
+    데코레이터는 가장 자주 등장하는 패턴 중 하나입니다.
+    AI가 사용하는 대표적인 맥락들:
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span>FastAPI — AI가 자주 생성하는 패턴</span>
+      <button class="copy-btn" title="복사">복사</button>
+    </div>
+    <pre><code class="language-python"># AI가 FastAPI 코드를 생성할 때 이런 패턴을 만듭니다
+# (FastAPI 없이 원리만 보여주는 의사코드)
+
+routes = {}
+
+def get(path):
+    """GET 요청 라우트 데코레이터"""
+    def decorator(func):
+        routes[('GET', path)] = func
+        return func
+    return decorator
+
+def post(path):
+    """POST 요청 라우트 데코레이터"""
+    def decorator(func):
+        routes[('POST', path)] = func
+        return func
+    return decorator
+
+# AI가 생성한 코드에서 이런 패턴이 나오는 이유:
+# @app.get("/users/{user_id}") 는 get("/users/{user_id}")(get_user) 와 동일
+
+@get("/users")
+def list_users():
+    return [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
+
+@get("/users/{user_id}")
+def get_user(user_id: int):
+    return {"id": user_id, "name": f"User {user_id}"}
+
+@post("/users")
+def create_user(name: str):
+    return {"id": 99, "name": name}
+
+# 라우팅 테이블 확인
+for (method, path), handler in routes.items():
+    print(f"{method} {path} → {handler.__name__}")
+
+# 요청 처리 시뮬레이션
+print(routes[('GET', '/users')]())</code></pre>
+  </div>
+  <div class="output-block">
+    <div class="output-label">실행 결과:</div>
+GET /users → list_users
+GET /users/{user_id} → get_user
+POST /users → create_user
+[{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}]
+  </div>
+
+  <p>
+    AI가 <code>@app.route("/path")</code>, <code>@login_required</code>,
+    <code>@cache_result</code> 같은 코드를 생성할 때,
+    이 모든 것이 오늘 배운 <strong>"데코레이터 = f = decorator(f)"</strong> 패턴입니다.
+    AI가 생성한 코드를 읽을 수 있으려면 이 원리를 이해해야 합니다.
+  </p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span>dataclasses — 클래스 데코레이터</span>
+      <button class="copy-btn" title="복사">복사</button>
+    </div>
+    <pre><code class="language-python">from dataclasses import dataclass, field
+
+# AI가 자주 생성하는 @dataclass 패턴
+@dataclass
+class User:
+    name: str
+    age: int
+    email: str = ""
+    tags: list = field(default_factory=list)
+
+# @dataclass는 함수 데코레이터가 아니라 클래스 데코레이터
+# User = dataclass(User) 와 동일
+# __init__, __repr__, __eq__ 등을 자동 생성
+
+alice = User("Alice", 30, "alice@example.com", ["admin", "user"])
+bob = User("Bob", 25)
+
+print(alice)          # User(name='Alice', age=30, email='alice@example.com', tags=['admin', 'user'])
+print(alice == bob)   # False — __eq__ 자동 생성</code></pre>
+  </div>
+  <div class="output-block">
+    <div class="output-label">실행 결과:</div>
+User(name='Alice', age=30, email='alice@example.com', tags=['admin', 'user'])
+False
+  </div>
+</section>
+
+<!-- ==================== 10. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>연습문제 (12문제 — 초급4 + 중급4 + 고급1 + 전공자3)</h2>
+
+  <!-- 초급 1 -->
+  <div class="exercise-block level-elem">
+    <span class="level-badge level-elementary">초급 1</span>
+    <h3>첫 데코레이터 만들기</h3>
+    <p>함수 호출 전후에 구분선을 출력하는 데코레이터 <code>with_border</code>를 완성하세요:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>초급 1</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+def with_border(func):
+    """함수 실행 전후에 '---' 구분선을 출력하는 데코레이터"""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # 구현하세요
+        pass
+    return wrapper
+
+@with_border
+def say_hello(name):
+    print(f"안녕하세요, {name}님!")
+
+say_hello("파이썬")
+# 출력:
+# ---
+# 안녕하세요, 파이썬님!
+# ---</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">import functools
+
+def with_border(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        print("---")
+        result = func(*args, **kwargs)
+        print("---")
+        return result
+    return wrapper
+
+@with_border
+def say_hello(name):
+    print(f"안녕하세요, {name}님!")
+
+say_hello("파이썬")</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 초급 2 -->
+  <div class="exercise-block level-elem">
+    <span class="level-badge level-elementary">초급 2</span>
+    <h3>@decorator 번역 손으로 쓰기</h3>
+    <p>아래 코드에서 <code>@uppercase</code>를 <code>@</code> 없이 같은 결과가 나오도록 다시 작성하세요:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>초급 2</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+def uppercase(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result.upper()
+    return wrapper
+
+# 아래를 @ 없이 같은 결과로 재작성하세요
+@uppercase
+def greet(name):
+    return f"hello, {name}"
+
+print(greet("world"))   # HELLO, WORLD</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">import functools
+
+def uppercase(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result.upper()
+    return wrapper
+
+def greet(name):
+    return f"hello, {name}"
+
+greet = uppercase(greet)   # @uppercase와 완전히 동일
+
+print(greet("world"))   # HELLO, WORLD</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 초급 3 -->
+  <div class="exercise-block level-elem">
+    <span class="level-badge level-elementary">초급 3</span>
+    <h3>with문 자동문 직접 만들기</h3>
+    <p>들어갈 때와 나올 때 메시지를 출력하는 <code>AutoDoor</code> 컨텍스트 매니저를 완성하세요:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>초급 3</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">class AutoDoor:
+    """자동문 컨텍스트 매니저"""
+    def __init__(self, room_name):
+        self.room_name = room_name
+
+    def __enter__(self):
+        # 구현: "문이 열립니다. [room_name]에 들어갑니다." 출력
+        # self 반환
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # 구현: "[room_name]에서 나옵니다. 문이 닫힙니다." 출력
+        # 예외를 전파 (False 반환)
+        pass
+
+with AutoDoor("도서관") as door:
+    print("  책을 읽는 중...")
+# 출력:
+# 문이 열립니다. 도서관에 들어갑니다.
+#   책을 읽는 중...
+# 도서관에서 나옵니다. 문이 닫힙니다.</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">class AutoDoor:
+    def __init__(self, room_name):
+        self.room_name = room_name
+
+    def __enter__(self):
+        print(f"문이 열립니다. {self.room_name}에 들어갑니다.")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print(f"{self.room_name}에서 나옵니다. 문이 닫힙니다.")
+        return False
+
+with AutoDoor("도서관") as door:
+    print("  책을 읽는 중...")</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 초급 4 -->
+  <div class="exercise-block level-elem">
+    <span class="level-badge level-elementary">초급 4</span>
+    <h3>contextmanager로 인사 만들기</h3>
+    <p><code>@contextmanager</code>를 사용해 AutoDoor와 같은 동작을 하는 <code>auto_door</code> 함수를 만드세요:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>초급 4</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">from contextlib import contextmanager
+
+@contextmanager
+def auto_door(room_name):
+    """AutoDoor와 같은 동작을 yield로 구현"""
+    # 구현하세요
+    pass
+
+with auto_door("도서관"):
+    print("  책을 읽는 중...")
+# 출력:
+# 문이 열립니다. 도서관에 들어갑니다.
+#   책을 읽는 중...
+# 도서관에서 나옵니다. 문이 닫힙니다.</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from contextlib import contextmanager
+
+@contextmanager
+def auto_door(room_name):
+    print(f"문이 열립니다. {room_name}에 들어갑니다.")
+    try:
+        yield
+    finally:
+        print(f"{room_name}에서 나옵니다. 문이 닫힙니다.")
+
+with auto_door("도서관"):
+    print("  책을 읽는 중...")</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 중급 5 -->
+  <div class="exercise-block level-inter">
+    <span class="level-badge level-intermediate">중급 5</span>
+    <h3>호출 횟수 세는 데코레이터</h3>
+    <p>함수가 몇 번 호출되었는지 추적하는 <code>count_calls</code> 데코레이터를 만드세요:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>중급 5</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+def count_calls(func):
+    """함수 호출 횟수를 wrapper.call_count 속성으로 추적"""
+    # 구현하세요
+    pass
+
+@count_calls
+def add(a, b):
+    return a + b
+
+add(1, 2)
+add(3, 4)
+add(5, 6)
+
+print(f"add 호출 횟수: {add.call_count}")   # 3
+print(f"함수 이름: {add.__name__}")         # add (wraps 덕분에)</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">import functools
+
+def count_calls(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        wrapper.call_count += 1
+        return func(*args, **kwargs)
+    wrapper.call_count = 0
+    return wrapper
+
+@count_calls
+def add(a, b):
+    return a + b
+
+add(1, 2)
+add(3, 4)
+add(5, 6)
+
+print(f"add 호출 횟수: {add.call_count}")   # 3
+print(f"함수 이름: {add.__name__}")         # add</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 중급 6 -->
+  <div class="exercise-block level-inter">
+    <span class="level-badge level-intermediate">중급 6</span>
+    <h3>데코레이터 체인 순서 예측</h3>
+    <p>아래 코드의 출력을 예측하고, 왜 그 순서인지 설명하세요:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>중급 6</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+def tag(name):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            print(f"&lt;{name}&gt;", end="")
+            result = func(*args, **kwargs)
+            print(f"&lt;/{name}&gt;", end="")
+            return result
+        return wrapper
+    return decorator
+
+@tag("div")
+@tag("p")
+@tag("span")
+def content():
+    print("Hello!", end="")
+
+content()
+print()  # 줄바꿈
+
+# 질문: 출력이 무엇인가? 그리고 왜 그 순서인가?</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python"># 출력:
+# &lt;div&gt;&lt;p&gt;&lt;span&gt;Hello!&lt;/span&gt;&lt;/p&gt;&lt;/div&gt;
+
+# 번역: content = tag("div")(tag("p")(tag("span")(content)))
+# 실행 순서: div_wrapper → p_wrapper → span_wrapper → 원본 content
+# 결과:  &lt;div&gt; 출력 → &lt;p&gt; 출력 → &lt;span&gt; 출력 → Hello! 출력
+#       → &lt;/span&gt; 출력 → &lt;/p&gt; 출력 → &lt;/div&gt; 출력
+
+# 핵심: 위 데코레이터(@div)가 바깥 껍질, 아래(@span)가 안쪽 껍질
+# 호출 순서는 바깥→안, 반환 순서는 안→바깥</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 중급 7 -->
+  <div class="exercise-block level-inter">
+    <span class="level-badge level-intermediate">중급 7</span>
+    <h3>컨텍스트 매니저로 트랜잭션 구현</h3>
+    <p>
+      DB 트랜잭션을 시뮬레이션하는 <code>transaction</code> 컨텍스트 매니저를 만드세요.
+      블록이 정상 종료되면 "COMMIT", 예외가 나면 "ROLLBACK"을 출력합니다:
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>중급 7</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">from contextlib import contextmanager
+
+@contextmanager
+def transaction(db_name="database"):
+    """DB 트랜잭션 컨텍스트 매니저 (시뮬레이션)"""
+    # 구현하세요
+    # - 진입 시: "[db_name] 트랜잭션 시작" 출력
+    # - 정상 종료 시: "[db_name] COMMIT" 출력
+    # - 예외 발생 시: "[db_name] ROLLBACK (오류: ...)" 출력, 예외 재발생
+    pass
+
+# 정상 케이스
+with transaction("users_db"):
+    print("  INSERT INTO users VALUES (1, 'Alice')")
+    print("  UPDATE users SET age=30 WHERE id=1")
+
+print()
+
+# 예외 케이스
+try:
+    with transaction("orders_db"):
+        print("  INSERT INTO orders VALUES (99, 100)")
+        raise ValueError("잔액 부족!")
+except ValueError:
+    print("외부에서 예외 처리")</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from contextlib import contextmanager
+
+@contextmanager
+def transaction(db_name="database"):
+    print(f"[{db_name}] 트랜잭션 시작")
+    try:
+        yield
+        print(f"[{db_name}] COMMIT")
+    except Exception as e:
+        print(f"[{db_name}] ROLLBACK (오류: {e})")
+        raise  # 예외 재발생 — 억제하지 않음
+
+with transaction("users_db"):
+    print("  INSERT INTO users VALUES (1, 'Alice')")
+    print("  UPDATE users SET age=30 WHERE id=1")
+
+print()
+
+try:
+    with transaction("orders_db"):
+        print("  INSERT INTO orders VALUES (99, 100)")
+        raise ValueError("잔액 부족!")
+except ValueError:
+    print("외부에서 예외 처리")</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 중급 8 -->
+  <div class="exercise-block level-inter">
+    <span class="level-badge level-intermediate">중급 8</span>
+    <h3>memoize 데코레이터 구현</h3>
+    <p>
+      <code>functools.lru_cache</code>를 사용하지 않고
+      딕셔너리 기반 메모이제이션 데코레이터 <code>memoize</code>를 구현하세요:
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>중급 8</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+
+def memoize(func):
+    """딕셔너리 기반 메모이제이션 데코레이터"""
+    # cache 딕셔너리를 클로저로 유지하세요
+    # 캐시 히트 시 "[CACHE HIT] func_name(args)" 출력
+    pass
+
+@memoize
+def fib(n):
+    if n &lt;= 1:
+        return n
+    return fib(n-1) + fib(n-2)
+
+print(fib(10))   # 55 (각 n에 대해 한 번만 계산됨)
+print(fib(10))   # 55 (전부 캐시 히트)</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">import functools
+
+def memoize(func):
+    cache = {}
+    @functools.wraps(func)
+    def wrapper(*args):
+        if args in cache:
+            print(f"[CACHE HIT] {func.__name__}{args}")
+            return cache[args]
+        result = func(*args)
+        cache[args] = result
+        return result
+    return wrapper
+
+@memoize
+def fib(n):
+    if n &lt;= 1:
+        return n
+    return fib(n-1) + fib(n-2)
+
+print(fib(10))   # 55
+print(fib(10))   # 전부 캐시 히트</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 고급 9 -->
+  <div class="exercise-block level-adv">
+    <span class="level-badge level-advanced">고급 9</span>
+    <h3>타입 체크 데코레이터</h3>
+    <p>
+      함수의 <code>__annotations__</code>를 읽어 인수 타입을 런타임에 검증하는
+      <code>enforce_types</code> 데코레이터를 만드세요.
+      타입 불일치 시 <code>TypeError</code>를 발생시킵니다:
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>고급 9</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import functools
+import inspect
+
+def enforce_types(func):
+    """
+    __annotations__를 사용해 인수 타입을 런타임에 검증.
+    힌트: inspect.signature(func).parameters로 파라미터 순서를 얻을 수 있음.
+    """
+    # 구현하세요
+    pass
+
+@enforce_types
+def greet(name: str, repeat: int) -> str:
+    return name * repeat
+
+print(greet("안녕", 3))   # 안녕안녕안녕
+
+# 타입 오류
+try:
+    greet("안녕", "세 번")  # int 필요한데 str 전달
+except TypeError as e:
+    print(f"TypeError: {e}")
+
+try:
+    greet(123, 3)           # str 필요한데 int 전달
+except TypeError as e:
+    print(f"TypeError: {e}")</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">import functools
+import inspect
+
+def enforce_types(func):
+    sig = inspect.signature(func)
+    annotations = func.__annotations__
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # 위치 인수와 파라미터 이름 매핑
+        bound = sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+
+        for param_name, value in bound.arguments.items():
+            if param_name in annotations and param_name != 'return':
+                expected_type = annotations[param_name]
+                if not isinstance(value, expected_type):
+                    raise TypeError(
+                        f"인수 '{param_name}': {expected_type.__name__} 필요, "
+                        f"{type(value).__name__} 전달됨"
+                    )
+        return func(*args, **kwargs)
+    return wrapper
+
+@enforce_types
+def greet(name: str, repeat: int) -> str:
+    return name * repeat
+
+print(greet("안녕", 3))
+
+try:
+    greet("안녕", "세 번")
+except TypeError as e:
+    print(f"TypeError: {e}")
+
+try:
+    greet(123, 3)
+except TypeError as e:
+    print(f"TypeError: {e}")</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 전공자 10 -->
+  <div class="exercise-block level-exp">
+    <span class="level-badge level-expert">전공자 10</span>
+    <h3>바이트코드로 데코레이터 실행 시점 확인</h3>
+    <p>
+      <code>dis</code> 모듈을 사용해 아래 세 코드의 바이트코드를 비교하고,
+      차이점을 설명하세요:
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>전공자 10</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">import dis
+
+# 케이스 1: 데코레이터 없음
+code1 = compile("""
+def f(): pass
+""", "&lt;case1&gt;", "exec")
+
+# 케이스 2: 일반 데코레이터
+code2 = compile("""
+def d(f): return f
+@d
+def f(): pass
+""", "&lt;case2&gt;", "exec")
+
+# 케이스 3: 인자 있는 데코레이터
+code3 = compile("""
+def d(n):
+    def dec(f): return f
+    return dec
+@d(42)
+def f(): pass
+""", "&lt;case3&gt;", "exec")
+
+# 각각 dis.dis()로 분석하고 CALL 횟수를 비교하세요
+# 질문: 케이스 1, 2, 3에서 'f' 이름 저장 전에 CALL이 몇 번 호출되는가?</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">import dis
+
+print("=== 케이스 1: 데코레이터 없음 ===")
+dis.dis(compile("def f(): pass", "&lt;c1&gt;", "exec"))
+# MAKE_FUNCTION → STORE_NAME f
+# CALL 0번 — 함수 생성만
+
+print("\n=== 케이스 2: 일반 데코레이터 ===")
+dis.dis(compile("def d(f): return f\n@d\ndef f(): pass", "&lt;c2&gt;", "exec"))
+# LOAD_GLOBAL d → MAKE_FUNCTION → CALL(1) → STORE_NAME f
+# CALL 1번 — d(f) 한 번
+
+print("\n=== 케이스 3: 인자 있는 데코레이터 ===")
+dis.dis(compile("def d(n):\n def dec(f): return f\n return dec\n@d(42)\ndef f(): pass", "&lt;c3&gt;", "exec"))
+# LOAD_GLOBAL d → LOAD_CONST 42 → CALL(1) → MAKE_FUNCTION → CALL(1) → STORE_NAME f
+# CALL 2번 — d(42) 한 번, dec(f) 한 번
+
+# 결론:
+# 케이스 1: CALL 0번 (데코레이터 없음)
+# 케이스 2: CALL 1번 (@d → d(f))
+# 케이스 3: CALL 2번 (@d(42) → d(42)=dec, dec(f))</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 전공자 11 -->
+  <div class="exercise-block level-exp">
+    <span class="level-badge level-expert">전공자 11</span>
+    <h3>__exit__ True/False 동작 분석</h3>
+    <p>
+      아래 코드에서 각 컨텍스트 매니저가 예외를 억제하는지 전파하는지 예측하고,
+      <code>__exit__</code>의 반환값이 어떻게 결정되는지 설명하세요:
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>전공자 11</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">class CM_A:
+    def __enter__(self): return self
+    def __exit__(self, et, ev, tb):
+        print(f"CM_A.__exit__: et={et}")
+        # 반환값 없음 (None = False)
+
+class CM_B:
+    def __enter__(self): return self
+    def __exit__(self, et, ev, tb):
+        print(f"CM_B.__exit__: et={et}")
+        return True   # 예외 억제
+
+class CM_C:
+    def __enter__(self): return self
+    def __exit__(self, et, ev, tb):
+        print(f"CM_C.__exit__: et={et}")
+        return et is ValueError   # ValueError만 억제
+
+# 각 케이스의 결과를 예측하세요
+# 케이스 1
+print("=== CM_A, ValueError ===")
+try:
+    with CM_A():
+        raise ValueError("오류")
+except ValueError:
+    print("ValueError 전파됨")
+
+# 케이스 2
+print("\n=== CM_B, ValueError ===")
+with CM_B():
+    raise ValueError("오류")
+print("ValueError 억제됨")
+
+# 케이스 3
+print("\n=== CM_C, ValueError ===")
+with CM_C():
+    raise ValueError("오류")
+print("ValueError 억제됨")
+
+# 케이스 4
+print("\n=== CM_C, TypeError ===")
+try:
+    with CM_C():
+        raise TypeError("타입 오류")
+except TypeError:
+    print("TypeError 전파됨")</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python"># 케이스 1 (CM_A, ValueError):
+# CM_A.__exit__가 None 반환 (Falsy) → 예외 전파
+# 출력: CM_A.__exit__: et=&lt;class 'ValueError'&gt;
+#       ValueError 전파됨
+
+# 케이스 2 (CM_B, ValueError):
+# CM_B.__exit__가 True 반환 → 예외 억제
+# 출력: CM_B.__exit__: et=&lt;class 'ValueError'&gt;
+#       ValueError 억제됨
+
+# 케이스 3 (CM_C, ValueError):
+# et is ValueError → True → 예외 억제
+# 출력: CM_C.__exit__: et=&lt;class 'ValueError'&gt;
+#       ValueError 억제됨
+
+# 케이스 4 (CM_C, TypeError):
+# et is ValueError → False (TypeError != ValueError) → 예외 전파
+# 출력: CM_C.__exit__: et=&lt;class 'TypeError'&gt;
+#       TypeError 전파됨
+
+# 핵심 규칙:
+# __exit__ 반환값이 Truthy → with 블록의 예외 억제 (삼킴)
+# __exit__ 반환값이 Falsy → 예외 전파 (재발생)
+# None은 False이므로 return 없으면 항상 전파</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 전공자 12 -->
+  <div class="exercise-block level-exp">
+    <span class="level-badge level-expert">전공자 12</span>
+    <h3>클래스 데코레이터 구현</h3>
+    <p>
+      함수 데코레이터가 아닌 <strong>클래스 데코레이터</strong>로 <code>Singleton</code>을 구현하세요.
+      클래스에 <code>@Singleton</code>을 적용하면 해당 클래스의 인스턴스가 전역에 하나만 생성됩니다:
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span>전공자 12</span>
+        <button class="copy-btn" title="복사">복사</button>
+      </div>
+      <pre><code class="language-python">class Singleton:
+    """클래스를 싱글톤으로 만드는 클래스 데코레이터"""
+    def __init__(self, cls):
+        self._cls = cls
+        self._instance = None
+
+    def __call__(self, *args, **kwargs):
+        # 구현: 인스턴스가 없으면 생성, 있으면 기존 반환
+        pass
+
+    def __repr__(self):
+        return f"Singleton({self._cls!r})"
+
+@Singleton
+class DatabaseConnection:
+    def __init__(self, url="localhost"):
+        self.url = url
+        print(f"[DB] 연결 생성: {url}")
+
+db1 = DatabaseConnection("postgres://...")
+db2 = DatabaseConnection("different_url")  # 이 인수는 무시됨
+
+print(db1 is db2)     # True — 같은 객체
+print(db1.url)        # postgres://... (첫 번째 생성 시 URL)</code></pre>
+    </div>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">class Singleton:
+    def __init__(self, cls):
+        self._cls = cls
+        self._instance = None
+
+    def __call__(self, *args, **kwargs):
+        if self._instance is None:
+            self._instance = self._cls(*args, **kwargs)
+        return self._instance
+
+    def __repr__(self):
+        return f"Singleton({self._cls!r})"
+
+@Singleton
+class DatabaseConnection:
+    def __init__(self, url="localhost"):
+        self.url = url
+        print(f"[DB] 연결 생성: {url}")
+
+db1 = DatabaseConnection("postgres://...")
+db2 = DatabaseConnection("different_url")
+
+print(db1 is db2)   # True
+print(db1.url)      # postgres://...
+
+# 주의: @Singleton 후 DatabaseConnection은 Singleton 인스턴스!
+# isinstance(db1, DatabaseConnection) → False
+# 이 문제를 해결하려면 __instancecheck__ 등 추가 구현 필요</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ==================== 11. 요약 ==================== -->
+<section id="summary">
+  <h2>이번 주 정리</h2>
+
+  <table class="summary-table">
+    <thead>
+      <tr><th>개념</th><th>핵심 내용</th><th>키워드</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>@decorator</td>
+        <td>Syntactic Sugar — <code>f = decorator(f)</code>와 완전히 동일. 정의 시점에 실행.</td>
+        <td>MAKE_FUNCTION, CALL, Syntactic Sugar</td>
+      </tr>
+      <tr>
+        <td>데코레이터 체인</td>
+        <td><code>@A @B def f</code> → <code>f = A(B(f))</code>. 아래가 먼저 적용됨.</td>
+        <td>함수 합성, 안→밖 적용, 바깥→안 실행</td>
+      </tr>
+      <tr>
+        <td>인자 있는 데코레이터</td>
+        <td>3중 중첩: 팩토리(n) → 데코레이터(func) → 래퍼(args). CALL 2번.</td>
+        <td>Closure, functools.partial</td>
+      </tr>
+      <tr>
+        <td>functools.wraps</td>
+        <td>__name__, __doc__, __annotations__, __wrapped__ 보존. 반드시 사용.</td>
+        <td>__wrapped__, inspect.unwrap, update_wrapper</td>
+      </tr>
+      <tr>
+        <td>with문</td>
+        <td>__enter__()로 진입, __exit__(et,ev,tb)로 종료. 예외 있어도 __exit__ 보장.</td>
+        <td>Context Manager, BEFORE_WITH, WITH_EXCEPT_START</td>
+      </tr>
+      <tr>
+        <td>__exit__ 반환값</td>
+        <td>True → 예외 억제. False/None → 예외 전파. 의도치 않게 True 반환 금지.</td>
+        <td>suppress, ExceptionGroup</td>
+      </tr>
+      <tr>
+        <td>contextmanager</td>
+        <td>yield 이전 = __enter__, yield 이후 = __exit__. Generator + CM 결합.</td>
+        <td>GeneratorContextManager, gen.throw()</td>
+      </tr>
+      <tr>
+        <td>AOP</td>
+        <td>횡단 관심사를 데코레이터로 분리. Before/After/Around Advice.</td>
+        <td>Aspect, Pointcut, Join Point, Cross-cutting Concerns</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <pre><code class="language-text">@decorator          ≡   f = decorator(f)          (MAKE_FUNCTION + CALL 1번)
+@dec(n)             ≡   f = dec(n)(f)             (MAKE_FUNCTION + CALL 2번)
+@A @B def f         ≡   f = A(B(f))               (아래부터 적용)
+
+with EXPR as VAR:       _mgr = EXPR
+    BLOCK           ≡   VAR = _mgr.__enter__()
+                        try: BLOCK
+                        finally: _mgr.__exit__(...)
+
+@contextmanager         yield 앞 → __enter__
+def f(): yield VAL  ≡   VAL → as 변수
+                        yield 뒤 → __exit__
+
+functools.wraps(func)   __name__, __doc__, __annotations__,
+                        __module__, __qualname__, __wrapped__ 복사</code></pre>
+</section>
+
+<!-- ==================== 12. 용어 사전 ==================== -->
+<section id="glossary">
+  <h2>용어 사전 (24개)</h2>
+  <div class="glossary-grid">
+    <div class="glossary-item">
+      <h4>데코레이터 (Decorator)</h4>
+      <p>함수를 받아 함수를 반환하는 고차 함수. <code>@decorator</code>는 <code>f = decorator(f)</code>의 Syntactic Sugar.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Syntactic Sugar</h4>
+      <p>언어가 제공하는 편의 문법. 의미는 같지만 더 읽기 쉬운 형태. <code>@decorator</code>, <code>with</code>, <code>for</code> 등.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>고차 함수 (Higher-order Function)</h4>
+      <p>함수를 인수로 받거나 반환값으로 돌려주는 함수. 데코레이터는 함수를 받아 함수를 반환하는 고차 함수.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Wrapper 함수</h4>
+      <p>데코레이터 내부에서 원본 함수를 감싸는 함수. 원본 함수 호출 전후에 추가 동작을 수행.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>데코레이터 팩토리</h4>
+      <p>인수를 받아 데코레이터를 반환하는 함수. <code>@repeat(3)</code>에서 <code>repeat</code>이 팩토리. 3중 중첩이 필요.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>functools.wraps</h4>
+      <p>데코레이터에서 원본 함수의 메타데이터를 보존하는 데코레이터. __name__, __doc__, __annotations__, __wrapped__ 복사.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>__wrapped__</h4>
+      <p>functools.wraps가 설정하는 속성. 래퍼 함수에서 원본 함수로 가는 참조. inspect.unwrap()이 이를 따라가며 원본을 찾음.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>__name__</h4>
+      <p>함수 객체의 이름 속성. functools.wraps 없이 데코레이터를 적용하면 'wrapper'로 오염됨.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>컨텍스트 매니저 (Context Manager)</h4>
+      <p>with문에서 사용할 수 있는 객체. __enter__와 __exit__ 메서드를 구현해야 함.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>__enter__</h4>
+      <p>with 블록에 진입할 때 호출되는 메서드. 반환값이 <code>as</code> 뒤 변수에 바인딩됨.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>__exit__</h4>
+      <p>with 블록을 나올 때 호출되는 메서드. 인수: (exc_type, exc_val, exc_tb). True 반환 시 예외 억제.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>예외 억제 (Exception Suppression)</h4>
+      <p>__exit__가 True를 반환하여 with 블록의 예외를 삼키는 동작. contextlib.suppress가 이를 활용.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>contextlib.contextmanager</h4>
+      <p>제너레이터 함수로 컨텍스트 매니저를 만드는 데코레이터. yield 이전 = __enter__, 이후 = __exit__.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>GeneratorContextManager</h4>
+      <p>@contextmanager 적용 시 반환되는 내부 클래스. __enter__에서 next(gen), __exit__에서 next(gen) 또는 gen.throw() 호출.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>gen.throw()</h4>
+      <p>제너레이터 내부에 예외를 주입하는 메서드. contextmanager가 with 블록 예외를 yield 지점으로 전달할 때 사용.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>MAKE_FUNCTION</h4>
+      <p>CPython 바이트코드. def 문 실행 시 code object로부터 함수 객체를 생성. 데코레이터 적용 전 단계.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>BEFORE_WITH</h4>
+      <p>CPython 3.12+ 바이트코드. with문에서 __enter__()를 호출하고 결과를 스택에 올림. (이전: SETUP_WITH)</p>
+    </div>
+    <div class="glossary-item">
+      <h4>WITH_EXCEPT_START</h4>
+      <p>CPython 3.12+ 바이트코드. with 블록에서 예외 발생 시 __exit__(exc_type, exc_val, exc_tb)를 호출.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>ExitStack</h4>
+      <p>contextlib의 컨텍스트 매니저. 동적으로 여러 컨텍스트를 스택에 쌓고 역순으로 해제. 개수가 런타임에 결정될 때 유용.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>AOP (Aspect-Oriented Programming)</h4>
+      <p>관점 지향 프로그래밍. 횡단 관심사(로깅, 인증, 캐시)를 핵심 로직에서 분리. Python에서는 데코레이터가 AOP를 구현.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>횡단 관심사 (Cross-cutting Concerns)</h4>
+      <p>여러 모듈에 걸쳐 반복되는 공통 기능. 로깅, 인증, 트랜잭션, 캐시, 재시도 등. 데코레이터로 분리.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Exponential Backoff</h4>
+      <p>재시도 시 대기 시간을 지수적으로 늘리는 전략. 첫 재시도 1초, 두 번째 2초, 세 번째 4초... 서버 부하 분산에 효과적.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Descriptor</h4>
+      <p>__get__, __set__, __delete__를 구현한 객체. classmethod, staticmethod, property가 대표적. 데코레이터이면서 동시에 descriptor.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>클래스 데코레이터</h4>
+      <p>클래스에 적용하는 데코레이터. <code>Cls = decorator(Cls)</code>. @dataclass, @Singleton 등. 함수 데코레이터와 문법은 동일.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 13. 다음 주 맛보기 ==================== -->
+<section id="next-week">
+  <h2>다음 주 맛보기 — Week 14: 이터레이터 &amp; 제너레이터 심화</h2>
+
+  <p>
+    이번 주에 <code>@contextmanager</code>를 만들면서 <code>yield</code>와 <code>gen.throw()</code>를 잠깐 봤습니다.
+    제너레이터는 단순히 "값을 하나씩 내보내는 것"이 아닙니다.
+    Python의 협력 멀티태스킹(<code>asyncio</code>)의 뿌리가 바로 제너레이터입니다.
+  </p>
+  <div class="code-block">
+    <div class="code-header">
+      <span>다음 주 맛보기 — yield from과 서브제너레이터</span>
+      <button class="copy-btn" title="복사">복사</button>
+    </div>
+    <pre><code class="language-python"># 제너레이터 기초 (이미 알고 있음)
+def simple_gen():
+    yield 1
+    yield 2
+    yield 3
+
+# 다음 주: yield from — 서브제너레이터에게 위임
+def chain(*iterables):
+    for iterable in iterables:
+        yield from iterable   # ← 이게 어떻게 동작하는가?
+
+result = list(chain([1, 2], [3, 4], [5]))
+print(result)   # [1, 2, 3, 4, 5]
+
+# 다음 주: send() — 제너레이터에 값을 보내기
+def accumulator():
+    total = 0
+    while True:
+        value = yield total   # yield로 내보내고, send()로 받음
+        if value is None:
+            break
+        total += value
+
+acc = accumulator()
+next(acc)           # 초기화
+acc.send(10)        # 10 → total = 10
+acc.send(20)        # 30 → total = 30
+print(acc.send(5))  # 35
+
+# 다음 주: async/await의 뿌리
+# asyncio는 사실 제너레이터 기반의 협력 스케줄러
+# async def f(): → 코루틴 객체 생성
+# await → yield from의 async 버전</code></pre>
+  </div>
+  <div class="output-block">
+    <div class="output-label">실행 결과:</div>
+[1, 2, 3, 4, 5]
+35
+  </div>
+
+  <p>다음 주에 배울 것들:</p>
+  <ul>
+    <li>제너레이터 프로토콜 — <code>next()</code>, <code>send()</code>, <code>throw()</code>, <code>close()</code></li>
+    <li><code>yield from</code> — 서브제너레이터 위임과 반환값 전파</li>
+    <li>제너레이터 표현식 vs 리스트 컴프리헨션 — 언제 무엇을 쓰는가</li>
+    <li>무한 시퀀스와 지연 평가(Lazy Evaluation) — itertools 심화</li>
+    <li>코루틴(Coroutine) — <code>async def</code>/<code>await</code>의 원리</li>
+    <li>CPython 내부: PyGenObject와 프레임 상태 저장</li>
+  </ul>
+
+  <p style="margin-top: 24px; font-size: 0.9rem; color: var(--text-secondary);">
+    참조:
+    <a href="https://docs.python.org/3/reference/compound_stmts.html#the-with-statement" target="_blank">Python Docs: with statement</a> ·
+    <a href="https://docs.python.org/3/library/functools.html#functools.wraps" target="_blank">Python Docs: functools.wraps</a> ·
+    <a href="https://docs.python.org/3/library/contextlib.html" target="_blank">Python Docs: contextlib</a> ·
+    <a href="https://peps.python.org/pep-0318/" target="_blank">PEP 318: Decorators for Functions and Methods</a> ·
+    <a href="https://peps.python.org/pep-0343/" target="_blank">PEP 343: The "with" Statement</a>
+  </p>
+</section>
+
+</main>
+</div>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+</footer>
+
+<script src="../js/highlight.js"></script>
+<script src="../js/nav.js"></script>
+<script src="../js/code-copy.js"></script>
+<script src="../js/spoiler.js"></script>
+</body>
+</html>

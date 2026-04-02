@@ -1,0 +1,2733 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>14주차: 타입 힌트 &amp; Protocol | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-week="14">
+
+<!-- ==================== HEADER ==================== -->
+<header class="site-header">
+  <div class="header-inner">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+        <a href="../index.html" class="site-title">PyWhy</a>
+      </div>
+    <div class="header-nav">
+      <a href="week13.html" class="nav-btn">&larr; 이전</a>
+      <a href="week15.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main>
+
+<!-- ==================== WEEK HEADER ==================== -->
+<div class="week-header">
+  <div class="week-number">WEEK 14</div>
+  <h1 class="week-title">타입 힌트 &amp; Protocol —<br>왜 "힌트"인가</h1>
+  <p class="week-subtitle">
+    Python은 동적 타입 언어입니다. 그런데 <strong>타입 힌트</strong>가 생겼습니다.<br>
+    이것은 컴파일러가 검사하는 타입이 아닙니다 — 런타임에 완전히 무시됩니다.<br>
+    그렇다면 왜 쓸까요? <strong>mypy</strong>, <strong>Protocol</strong>, <strong>dataclass</strong>까지<br>
+    Python 타입 시스템을 뿌리까지 분해합니다.
+  </p>
+</div>
+
+<!-- ==================== 목차 ==================== -->
+<details class="toc">
+  <summary>목차 — 14주차 전체 내용</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link">
+        <span class="toc-num">01</span>이번 주 이야기
+      </a>
+    </div>
+    <div class="toc-section">
+      <a href="#why-hints" class="toc-section-link">
+        <span class="toc-num">02</span>타입 힌트는 왜 "힌트"인가?
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#syntax" class="toc-section-link">
+        <span class="toc-num">03</span>타입 힌트 문법 — PEP 604 · 585 · 604
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#generics" class="toc-section-link">
+        <span class="toc-num">04</span>TypeVar &amp; Generic — 왜 필요한가
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#protocol" class="toc-section-link">
+        <span class="toc-num">05</span>Protocol — 구조적 서브타이핑
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#abc-vs-protocol" class="toc-section-link">
+        <span class="toc-num">06</span>ABC vs Protocol — 언제 무엇을 쓰는가
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#dataclass" class="toc-section-link">
+        <span class="toc-num">07</span>dataclass — __init__ 자동 생성의 원리
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#mypy-workflow" class="toc-section-link">
+        <span class="toc-num">08</span>mypy 실전 워크플로우
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#ai-types" class="toc-section-link">
+        <span class="toc-num">09</span>AI와 타입 힌트
+      </a>
+    </div>
+    <div class="toc-section">
+      <a href="#hands-on" class="toc-section-link">
+        <span class="toc-num">10</span>실습: 지금 바로 해봐
+      </a>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link">
+        <span class="toc-num">11</span>연습문제 (12문제 — 초급3 + 중급4 + 고급2 + 전공자3)
+      </a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#summary" class="toc-section-link">
+        <span class="toc-num">12</span>이번 주 정리
+      </a>
+    </div>
+    <div class="toc-section">
+      <a href="#glossary" class="toc-section-link">
+        <span class="toc-num">13</span>용어 사전 (22개)
+      </a>
+    </div>
+    <div class="toc-section">
+      <a href="#next-week" class="toc-section-link">
+        <span class="toc-num">14</span>다음 주 맛보기
+      </a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이번 주 이야기 ==================== -->
+<section id="story">
+  <h2>이번 주 이야기</h2>
+  <div class="story-block">
+    <p>
+      지난 주에 데코레이터와 메타클래스로 클래스의 동작을 런타임에 바꾸는 법을 배웠습니다.
+      그런데 프로젝트가 커질수록 함수의 인자가 무엇을 받는지, 무엇을 반환하는지 잊어버립니다.
+    </p>
+    <pre><code class="language-python"># 이 함수가 뭘 받고 뭘 반환하는지 알 수 있나요?
+def process(data, config, mode):
+    ...
+    return result</code></pre>
+    <p>
+      세 달 후 이 코드를 다시 보면: <code>data</code>가 리스트인가, 딕셔너리인가?
+      <code>config</code>는 어떤 키를 가져야 하는가? <code>result</code>는 무슨 타입인가?
+    </p>
+    <div class="callout callout-info">
+      <strong>타입 힌트가 없던 시절:</strong> 함수 시그니처만 보고는 알 수 없었습니다.
+      docstring을 열심히 쓰거나, 소스를 다 읽거나, 직접 실행해서 확인해야 했습니다.
+    </div>
+    <pre><code class="language-python"># 타입 힌트를 붙이면 — 코드 자체가 문서가 됩니다
+def process(
+    data: list[dict[str, int]],
+    config: dict[str, str],
+    mode: str
+) -> list[int]:
+    ...
+    return result</code></pre>
+    <p>
+      함수 시그니처만으로 이제 의도가 보입니다.
+      하지만 Python은 이것을 <strong>강제하지 않습니다</strong> — 힌트(hint)입니다.
+      오늘은 이 힌트가 어떻게 저장되고, 어떻게 도구들이 활용하며,
+      구조적 서브타이핑이라는 강력한 개념까지 완전히 분해합니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 02. 왜 "힌트"인가? ==================== -->
+<section id="why-hints">
+  <h2>타입 힌트는 왜 "힌트"인가?</h2>
+
+  <!-- 초급 -->
+  <div class="level-section elementary">
+    <span class="level-badge level-elementary">초급</span>
+    <h3>비유: 요리 레시피의 "추천 재료"</h3>
+    <div class="callout callout-info">
+      <strong>설명서 비유:</strong><br>
+      요리책에 "달걀 2개 <em>권장</em>"이라고 적혀 있습니다.
+      실제로 메추리알 4개를 쓰거나 달걀을 빼도 요리책이 막지는 않습니다.<br><br>
+      Python 타입 힌트는 이 "권장 재료 설명서"입니다 — 어기는 것을 막지 않고,
+      다른 사람(혹은 mypy 같은 도구)에게 의도를 알려줍니다.
+    </div>
+    <p>
+      타입 힌트를 쓴다고 해서 Python이 타입을 검사하지는 않습니다.
+      다음 코드는 경고 없이 실행됩니다:
+    </p>
+    <pre><code class="language-python">def greet(name: str) -> str:
+    return "안녕, " + name
+
+# str을 기대하지만 int를 넘겨도 런타임에서는 오류가 나지 않습니다
+# (하지만 실행하면 int + str 이라 TypeError가 발생합니다 — 타입 힌트 때문이 아니라
+#  실제 연산 때문에)
+result = greet("파이썬")    # "안녕, 파이썬" — 정상
+print(result)</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+안녕, 파이썬
+    </div>
+    <div class="callout callout-warning">
+      <strong>가장 흔한 오해:</strong> 타입 힌트를 쓰면 Python이 타입을 검사할 것이라고 생각합니다.
+      <strong>아닙니다.</strong> 타입 힌트는 런타임에 완전히 무시됩니다.
+      검사는 <code>mypy</code>, <code>pyright</code> 같은 별도 도구가 합니다.
+    </div>
+    <pre><code class="language-python"># 타입 힌트는 런타임에 무시됩니다 — 증명
+def add(a: int, b: int) -> int:
+    return a + b
+
+# int를 기대하지만 str을 넘겨도 Python은 아무 말 안 합니다
+# (str + str은 합법적인 연산이므로 실제로 실행됩니다)
+print(add("안녕", "세상"))   # "안녕세상" — 오류 없음!
+print(add(1, 2))             # 3</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+안녕세상
+3
+    </div>
+    <p>
+      타입 힌트는 <strong>코드를 읽는 사람</strong>과 <strong>정적 분석 도구</strong>를 위한 것입니다.
+      런타임 Python 인터프리터는 신경 쓰지 않습니다.
+    </p>
+  </div>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>타입 힌트의 역사 — PEP 484에서 시작</h3>
+    <p>
+      Python은 원래 완전히 동적 타입 언어였습니다. 타입 힌트는 Python 3.5 (PEP 484)에서 도입되었습니다.
+      Guido van Rossum이 직접 주도했고, <strong>선택적(optional)</strong>으로 설계했습니다.
+    </p>
+    <pre><code class="language-python"># Python 3.5+ — 기본 타입 힌트
+def greet(name: str) -> str:
+    return f"안녕, {name}!"
+
+# 변수에도 타입 힌트를 붙일 수 있습니다 (Python 3.6+, PEP 526)
+age: int = 25
+scores: list[float] = [98.5, 87.0, 93.3]
+
+# 반환값이 없을 때
+def log(message: str) -> None:
+    print(f"[LOG] {message}")</code></pre>
+    <p>
+      타입 힌트가 유용한 이유:
+    </p>
+    <ul>
+      <li><strong>IDE 자동완성</strong>: VSCode, PyCharm이 타입을 알면 더 정확하게 제안</li>
+      <li><strong>정적 분석</strong>: mypy가 실행 전에 타입 오류를 잡아냄</li>
+      <li><strong>문서화</strong>: docstring 없이도 함수 시그니처로 의도 전달</li>
+      <li><strong>리팩토링</strong>: 타입이 있으면 안전하게 코드를 바꿀 수 있음</li>
+    </ul>
+    <pre><code class="language-python"># 실전 예시 — 타입 힌트가 버그를 방지하는 방법
+from typing import Optional
+
+def find_user(user_id: int) -> Optional[dict]:
+    """user_id로 사용자를 찾아 반환. 없으면 None."""
+    users = {1: {"name": "Alice"}, 2: {"name": "Bob"}}
+    return users.get(user_id)
+
+user = find_user(1)
+# mypy는 user가 None일 수 있다는 것을 알고, None 체크 없이 접근하면 경고합니다
+if user is not None:
+    print(user["name"])   # "Alice"</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+Alice
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>타입 힌트가 저장되는 방식 — __annotations__</h3>
+    <p>
+      타입 힌트는 실제로 <code>__annotations__</code> 딕셔너리에 저장됩니다.
+      Python이 클래스나 함수를 정의할 때 이 딕셔너리를 자동으로 만듭니다.
+    </p>
+    <pre><code class="language-python">def add(a: int, b: int) -> int:
+    return a + b
+
+# 타입 힌트가 어디 저장되는지 확인
+print(add.__annotations__)
+# {'a': &lt;class 'int'&gt;, 'b': &lt;class 'int'&gt;, 'return': &lt;class 'int'&gt;}</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+{'a': &lt;class 'int'&gt;, 'b': &lt;class 'int'&gt;, 'return': &lt;class 'int'&gt;}
+    </div>
+    <pre><code class="language-python">class Point:
+    x: float
+    y: float
+
+    def __init__(self, x: float, y: float) -> None:
+        self.x = x
+        self.y = y
+
+# 클래스 레벨의 어노테이션
+print(Point.__annotations__)   # {'x': &lt;class 'float'&gt;, 'y': &lt;class 'float'&gt;}
+
+# 인스턴스 메서드의 어노테이션
+print(Point.__init__.__annotations__)
+# {'x': &lt;class 'float'&gt;, 'y': &lt;class 'float'&gt;, 'return': &lt;class 'NoneType'&gt;}</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+{'x': &lt;class 'float'&gt;, 'y': &lt;class 'float'&gt;}
+{'x': &lt;class 'float'&gt;, 'y': &lt;class 'float'&gt;, 'return': &lt;class 'NoneType'&gt;}
+    </div>
+    <div class="callout callout-info">
+      <strong>Python 공식 문서에서는:</strong>
+      Python 3.10부터는 <code>inspect.get_annotations()</code>로 접근을 권장합니다.
+      Python 3.14부터는 <code>annotationlib.get_annotations()</code>가 이를 대체합니다.
+      클래스 상속 시 <code>__annotations__</code>를 직접 접근하면 부모 클래스의 것이
+      반환될 수 있기 때문입니다.
+    </div>
+    <pre><code class="language-python">import inspect
+
+def process(data: list[int], name: str = "default") -> dict:
+    return {}
+
+# 권장 방법 (Python 3.10+)
+annotations = inspect.get_annotations(process)
+print(annotations)
+# {'data': list[int], 'name': &lt;class 'str'&gt;, 'return': &lt;class 'dict'&gt;}</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+{'data': list[int], 'name': &lt;class 'str'&gt;, 'return': &lt;class 'dict'&gt;}
+    </div>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A — CPython __annotations__ 내부 구현</h3>
+    <p>
+      CPython 컴파일러는 함수/클래스 정의를 컴파일할 때 어노테이션 표현식을 별도로 처리합니다.
+    </p>
+    <pre><code class="language-python">import dis
+
+def add(a: int, b: int) -> int:
+    return a + b
+
+dis.dis(add)
+# 어노테이션은 함수 본체의 바이트코드에 없습니다 —
+# 함수 정의 시점의 MAKE_FUNCTION 단계에서 처리됩니다</code></pre>
+    <pre><code class="language-python"># 모듈 레벨 어노테이션의 컴파일 방식 확인
+import dis
+
+code = compile("x: int = 5", "&lt;string&gt;", "exec")
+dis.dis(code)
+# RESUME          0
+# LOAD_CONST      5 (5)
+# STORE_NAME      0 (x)
+# SETUP_ANNOTATIONS   &lt;-- 이 바이트코드가 __annotations__ 딕셔너리를 초기화
+# LOAD_NAME       1 (int)
+# LOAD_NAME       2 (__annotations__)
+# LOAD_CONST      3 ('x')
+# STORE_SUBSCR</code></pre>
+    <div class="callout callout-info">
+      <strong>SETUP_ANNOTATIONS 바이트코드:</strong>
+      모듈이나 클래스 본체에 어노테이션이 있으면 Python 컴파일러는
+      <code>SETUP_ANNOTATIONS</code> 명령어를 삽입합니다.
+      이 명령어는 <code>__annotations__</code> 딕셔너리가 없으면 빈 딕셔너리로 초기화합니다.
+      함수는 다르게 동작합니다 — 함수 어노테이션은 함수 객체의 <code>func_annotations</code> 슬롯에
+      저장되고, lazy-create됩니다.
+    </div>
+    <h3>Part B — Hindley-Milner 타입 시스템과 Python의 선택</h3>
+    <p>
+      대부분의 정적 타입 언어(Haskell, ML, Rust)는 <strong>Hindley-Milner(HM) 타입 추론</strong>을
+      사용합니다. HM은 타입 주석이 없어도 모든 표현식의 타입을 완전히 추론합니다.
+    </p>
+    <p>
+      Python이 HM을 선택하지 않은 이유:
+    </p>
+    <ul>
+      <li><strong>동적 타이핑과의 공존:</strong> HM은 타입을 모르는 표현식이 없어야 합니다. Python은 타입 무관 코드가 존재합니다.</li>
+      <li><strong>점진적 타이핑(Gradual Typing):</strong> PEP 484는 Gradual Type System을 채택했습니다. 타입 힌트가 없는 코드는 <code>Any</code> 타입으로 취급하고, <code>Any</code>는 모든 타입과 호환됩니다.</li>
+      <li><strong>런타임 동적성:</strong> <code>setattr</code>, <code>__getattr__</code>, 메타클래스로 런타임에 속성이 바뀔 수 있어 컴파일 타임 전체 추론이 불가능합니다.</li>
+    </ul>
+    <pre><code class="language-python">from typing import Any
+
+# Any는 모든 타입과 양방향 호환
+def legacy_function(data: Any) -> Any:
+    return data
+
+# 타입이 없는 함수는 묵시적으로 Any → Any
+def no_hints(data):
+    return data
+
+# mypy 관점에서 이 둘은 동일하게 취급됩니다</code></pre>
+    <p>
+      mypy 같은 도구는 PEP 484의 Gradual Typing 명세를 구현합니다.
+      <strong>Liskov Substitution Principle(LSP)</strong>: 서브타입은 슈퍼타입이 사용되는
+      모든 곳에 사용 가능해야 합니다. mypy는 LSP를 검사합니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. 타입 힌트 문법 ==================== -->
+<section id="syntax">
+  <h2>타입 힌트 문법 — PEP 604 · 585 · Optional</h2>
+
+  <!-- 초급 -->
+  <div class="level-section elementary">
+    <span class="level-badge level-elementary">초급</span>
+    <h3>기본 문법 — 변수, 함수, 반환값</h3>
+    <pre><code class="language-python"># 기본 타입 힌트
+name: str = "파이썬"
+age: int = 3
+score: float = 98.5
+is_active: bool = True
+
+# 함수 매개변수와 반환값
+def greeting(name: str, times: int) -> str:
+    return (name + "! ") * times
+
+print(greeting("안녕", 3))   # "안녕! 안녕! 안녕! "</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+안녕! 안녕! 안녕!
+    </div>
+    <pre><code class="language-python"># 컨테이너 타입 (Python 3.9+, PEP 585)
+numbers: list[int] = [1, 2, 3]
+mapping: dict[str, int] = {"a": 1, "b": 2}
+pair: tuple[int, str] = (42, "hello")
+unique: set[str] = {"apple", "banana"}
+
+# 반환값이 없는 함수
+def print_info(data: dict[str, str]) -> None:
+    for key, value in data.items():
+        print(f"{key}: {value}")
+
+print_info({"이름": "파이썬", "버전": "3.12"})</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+이름: 파이썬
+버전: 3.12
+    </div>
+  </div>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>Optional, Union, PEP 604 파이프 문법</h3>
+    <div class="callout callout-warning">
+      <strong>Optional[X]는 X | None과 정확히 동일합니다.</strong>
+      <code>Optional[str]</code>은 <code>str | None</code>과 같습니다.
+      Python 3.10부터는 <code>|</code> 문법(PEP 604)을 권장합니다.
+      두 가지를 혼용하지 마세요 — 프로젝트 내에서 하나를 선택해 일관되게 쓰세요.
+    </div>
+    <pre><code class="language-python">from typing import Optional, Union
+
+# Optional — 값이 없을 수도 있음
+def find_name(user_id: int) -> Optional[str]:   # str | None과 동일
+    db = {1: "Alice", 2: "Bob"}
+    return db.get(user_id)
+
+# Python 3.10+ 권장 방식 (PEP 604)
+def find_name_modern(user_id: int) -> str | None:
+    db = {1: "Alice", 2: "Bob"}
+    return db.get(user_id)
+
+print(find_name(1))       # "Alice"
+print(find_name(99))      # None
+
+# Union — 여러 타입 중 하나
+def stringify(value: Union[int, float, str]) -> str:
+    return str(value)
+
+# PEP 604 방식 (Python 3.10+)
+def stringify_modern(value: int | float | str) -> str:
+    return str(value)
+
+print(stringify(42))        # "42"
+print(stringify(3.14))      # "3.14"
+print(stringify("hi"))      # "hi"</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+Alice
+None
+42
+3.14
+hi
+    </div>
+    <h3>list[int] vs List[int] — PEP 585 이전/이후</h3>
+    <pre><code class="language-python"># Python 3.8 이하 — typing 모듈에서 가져와야 했음
+from typing import List, Dict, Tuple, Set
+
+def old_style(items: List[int], mapping: Dict[str, List[str]]) -> Tuple[int, ...]:
+    return tuple(items)
+
+# Python 3.9+ (PEP 585) — 내장 타입을 직접 사용
+# typing에서 가져올 필요 없음!
+def new_style(items: list[int], mapping: dict[str, list[str]]) -> tuple[int, ...]:
+    return tuple(items)
+
+print(new_style([1, 2, 3], {"a": ["x", "y"]}))   # (1, 2, 3)</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+(1, 2, 3)
+    </div>
+    <div class="callout callout-info">
+      <strong>Python 공식 문서에서는:</strong>
+      PEP 585 (Python 3.9+)부터 <code>list[int]</code>, <code>dict[str, int]</code> 등
+      내장 컬렉션을 제네릭으로 직접 사용할 수 있습니다.
+      <code>typing.List</code>, <code>typing.Dict</code>는 deprecated 상태입니다.
+      새 코드는 내장 타입을 쓰세요.
+    </div>
+    <pre><code class="language-python"># 실전 패턴들
+from typing import Callable, Any
+
+# Callable — 호출 가능한 것의 타입
+def apply(func: Callable[[int], int], value: int) -> int:
+    return func(value)
+
+print(apply(lambda x: x * 2, 5))   # 10
+
+# 복잡한 중첩 타입
+UserDB = dict[int, dict[str, str | int]]
+
+def create_user_db() -> UserDB:
+    return {
+        1: {"name": "Alice", "age": 30},
+        2: {"name": "Bob", "age": 25},
+    }
+
+db = create_user_db()
+print(db[1])   # {'name': 'Alice', 'age': 30}</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+10
+{'name': 'Alice', 'age': 30}
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>Literal, Final, TypedDict</h3>
+    <pre><code class="language-python">from typing import Literal, Final, TypedDict
+
+# Literal — 특정 값만 허용
+Direction = Literal["up", "down", "left", "right"]
+
+def move(direction: Direction, steps: int) -> None:
+    print(f"{direction}으로 {steps}칸 이동")
+
+move("up", 3)        # OK
+# move("diagonal", 1)   # mypy 오류: "diagonal"은 Direction에 없음
+
+# Final — 재할당 금지 (상수 선언)
+MAX_RETRY: Final[int] = 3
+API_URL: Final = "https://api.example.com"
+
+# TypedDict — 딕셔너리의 구조를 타입으로 정의
+class UserInfo(TypedDict):
+    name: str
+    age: int
+    email: str
+
+def create_user(info: UserInfo) -> str:
+    return f"{info['name']} ({info['age']}세)"
+
+user: UserInfo = {"name": "Alice", "age": 30, "email": "alice@example.com"}
+print(create_user(user))   # "Alice (30세)"</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+up으로 3칸 이동
+Alice (30세)
+    </div>
+    <pre><code class="language-python">from typing import TYPE_CHECKING
+
+# TYPE_CHECKING — 런타임에는 임포트하지 않고 타입 검사 시에만 임포트
+if TYPE_CHECKING:
+    from some_heavy_module import HeavyClass   # 순환 임포트 방지에도 활용
+
+# 순환 참조가 있는 경우 문자열로 타입을 지정 (Forward Reference)
+class Node:
+    def __init__(self, value: int, next: "Node | None" = None):
+        self.value = value
+        self.next = next
+
+head = Node(1, Node(2, Node(3)))
+print(head.value, head.next.value, head.next.next.value)   # 1 2 3</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+1 2 3
+    </div>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A — 타입 표현식의 런타임 평가 지연 (PEP 563 / 649)</h3>
+    <pre><code class="language-python"># from __future__ import annotations 를 쓰면
+# 모든 어노테이션이 문자열로 저장됩니다 (lazy evaluation)
+from __future__ import annotations
+
+def add(a: int, b: int) -> int:
+    return a + b
+
+print(add.__annotations__)
+# {'a': 'int', 'b': 'int', 'return': 'int'}
+# — 실제 int 클래스가 아니라 문자열 'int'</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+{'a': 'int', 'b': 'int', 'return': 'int'}
+    </div>
+    <pre><code class="language-python"># PEP 649 (Python 3.14) — Deferred Evaluation of Annotations
+# __future__ 없이도 어노테이션이 lazy하게 평가됩니다
+# annotationlib.get_annotations()로 평가 시점을 제어할 수 있습니다
+
+# Python 3.14+ 예시:
+# import annotationlib
+# annotations = annotationlib.get_annotations(
+#     add,
+#     format=annotationlib.Format.FORWARDREF  # 문자열 그대로
+# )
+# annotations = annotationlib.get_annotations(
+#     add,
+#     format=annotationlib.Format.VALUE       # 실제 타입 객체
+# )</code></pre>
+    <div class="callout callout-info">
+      <strong>PEP 563 vs 649 논쟁:</strong>
+      PEP 563 (<code>from __future__ import annotations</code>)은 어노테이션을 항상 문자열로 저장합니다.
+      Pydantic 같은 런타임에 어노테이션을 활용하는 라이브러리들이 심각한 호환성 문제를 겪었습니다.
+      PEP 649는 "지연 평가(lazy evaluation)"로 타협 — 필요할 때만 평가합니다.
+      Python 3.14에서 PEP 649가 채택되었고, PEP 563은 최종적으로 취소되었습니다.
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 04. TypeVar & Generic ==================== -->
+<section id="generics">
+  <h2>TypeVar &amp; Generic — 왜 필요한가</h2>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>같은 타입을 유지해야 할 때</h3>
+    <div class="callout callout-info">
+      <strong>문제 상황:</strong>
+      리스트의 첫 번째 원소를 반환하는 함수를 만들고 싶습니다.
+      <code>int</code> 리스트에 쓰면 <code>int</code>를 반환하고,
+      <code>str</code> 리스트에 쓰면 <code>str</code>을 반환해야 합니다.
+    </div>
+    <pre><code class="language-python">from typing import TypeVar
+
+# TypeVar — "무슨 타입이든 되는데, 입력과 출력이 같은 타입이어야 함"
+T = TypeVar("T")
+
+def first(items: list[T]) -> T:
+    return items[0]
+
+# mypy는 이것을 알고 있습니다:
+n = first([1, 2, 3])         # n의 타입: int
+s = first(["a", "b", "c"])   # s의 타입: str
+
+print(n, type(n))   # 1 &lt;class 'int'&gt;
+print(s, type(s))   # a &lt;class 'str'&gt;</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+1 &lt;class 'int'&gt;
+a &lt;class 'str'&gt;
+    </div>
+    <pre><code class="language-python">from typing import TypeVar
+
+# TypeVar에 제약을 걸 수 있습니다
+Numeric = TypeVar("Numeric", int, float)
+
+def double(value: Numeric) -> Numeric:
+    return value * 2
+
+print(double(5))     # 10   (int)
+print(double(2.5))   # 5.0  (float)
+# double("hello")    # mypy 오류: str은 Numeric에 해당 안 됨</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+10
+5.0
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>Generic 클래스</h3>
+    <pre><code class="language-python">from typing import TypeVar, Generic
+
+T = TypeVar("T")
+
+# Generic 클래스 — 타입 매개변수를 가지는 클래스
+class Stack(Generic[T]):
+    def __init__(self) -> None:
+        self._items: list[T] = []
+
+    def push(self, item: T) -> None:
+        self._items.append(item)
+
+    def pop(self) -> T:
+        return self._items.pop()
+
+    def peek(self) -> T | None:
+        return self._items[-1] if self._items else None
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+# int 스택 — mypy는 push/pop 타입을 int로 추론
+int_stack: Stack[int] = Stack()
+int_stack.push(1)
+int_stack.push(2)
+int_stack.push(3)
+
+print(int_stack.pop())    # 3
+print(int_stack.peek())   # 2
+print(len(int_stack))     # 2
+
+# str 스택
+str_stack: Stack[str] = Stack()
+str_stack.push("a")
+str_stack.push("b")
+print(str_stack.pop())    # "b"</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+3
+2
+2
+b
+    </div>
+    <pre><code class="language-python">from typing import TypeVar, Generic
+
+K = TypeVar("K")
+V = TypeVar("V")
+
+# 두 개의 TypeVar — 키-값 구조
+class Pair(Generic[K, V]):
+    def __init__(self, key: K, value: V) -> None:
+        self.key = key
+        self.value = value
+
+    def swap(self) -> "Pair[V, K]":
+        return Pair(self.value, self.key)
+
+p = Pair("name", 42)        # Pair[str, int]
+swapped = p.swap()          # Pair[int, str]
+print(swapped.key)          # 42
+print(swapped.value)        # "name"</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+42
+name
+    </div>
+    <h3>Python 3.12+ 새 문법 — type 키워드</h3>
+    <pre><code class="language-python"># Python 3.12+ (PEP 695) — TypeVar를 더 간결하게
+# 기존 방식
+from typing import TypeVar
+T = TypeVar("T")
+def first_old(items: list[T]) -> T:
+    return items[0]
+
+# 새 방식 (Python 3.12+)
+def first[T](items: list[T]) -> T:
+    return items[0]
+
+class Stack[T]:
+    def __init__(self) -> None:
+        self._items: list[T] = []
+    def push(self, item: T) -> None:
+        self._items.append(item)
+
+# type 별칭 (PEP 695)
+type Vector = list[float]
+type Matrix = list[Vector]</code></pre>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A — TypeVar의 런타임 표현과 공변성/반공변성</h3>
+    <pre><code class="language-python">from typing import TypeVar
+
+T = TypeVar("T")
+T_co = TypeVar("T_co", covariant=True)     # 공변 (covariant)
+T_contra = TypeVar("T_contra", contravariant=True)  # 반공변 (contravariant)
+
+# TypeVar 객체를 직접 검사
+print(T.__name__)         # "T"
+print(T.__covariant__)    # False
+print(T.__contravariant__)   # False
+print(T_co.__covariant__)    # True
+
+# Sequence는 공변입니다 (Sequence[int]는 Sequence[object]의 서브타입)
+from typing import Sequence
+def print_all(items: Sequence[object]) -> None:
+    for item in items:
+        print(item)
+
+print_all([1, 2, 3])   # 정상 — list[int]는 Sequence[object] 호환</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+T
+False
+False
+True
+1
+2
+3
+    </div>
+    <h3>Part B — 공변성·반공변성 이론</h3>
+    <p>
+      <strong>공변성(Covariance):</strong> <code>Dog</code>이 <code>Animal</code>의 서브타입이면,
+      <code>Producer[Dog]</code>도 <code>Producer[Animal]</code>의 서브타입입니다.
+      "생산자"는 공변 — 더 구체적인 것을 생산해도 더 일반적인 것을 기대하는 곳에 쓸 수 있습니다.
+    </p>
+    <p>
+      <strong>반공변성(Contravariance):</strong> <code>Dog</code>이 <code>Animal</code>의 서브타입이면,
+      <code>Consumer[Animal]</code>이 <code>Consumer[Dog]</code>의 서브타입입니다.
+      "소비자"는 반공변 — 더 일반적인 것을 처리할 수 있으면, 더 구체적인 것도 처리 가능합니다.
+    </p>
+    <pre><code class="language-python">from typing import TypeVar, Callable
+
+# Callable의 반환 타입은 공변, 매개변수 타입은 반공변
+# Callable[[Dog], Animal] 은 Callable[[Animal], Dog]의 서브타입
+# (입력은 더 넓게, 출력은 더 좁게)
+
+# 실용적 관점: 이것이 바로 LSP의 수학적 표현
+# mypy는 이 규칙으로 타입 안정성을 검증합니다</code></pre>
+  </div>
+</section>
+
+<!-- ==================== 05. Protocol ==================== -->
+<section id="protocol">
+  <h2>Protocol — 구조적 서브타이핑</h2>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>오리 타이핑(Duck Typing)을 타입 시스템으로</h3>
+    <div class="callout callout-info">
+      <strong>"오리처럼 걷고 오리처럼 꽥꽥 울면, 그것은 오리다."</strong><br>
+      Python은 원래 오리 타이핑 언어입니다 — 어떤 클래스에서 왔는지보다 어떤 메서드가 있는지가 중요합니다.
+      Protocol은 이 오리 타이핑을 타입 시스템으로 공식화합니다.
+    </div>
+    <pre><code class="language-python">from typing import Protocol
+
+# Protocol 정의 — "이런 메서드가 있는 타입이면 OK"
+class Drawable(Protocol):
+    def draw(self) -> str: ...
+
+# Protocol을 상속받지 않아도 됩니다!
+class Circle:
+    def draw(self) -> str:
+        return "원을 그립니다"
+
+class Rectangle:
+    def draw(self) -> str:
+        return "사각형을 그립니다"
+
+# Drawable 타입을 받는 함수
+def render(shape: Drawable) -> None:
+    print(shape.draw())
+
+# Circle과 Rectangle은 Drawable을 상속받지 않았지만 — 구조적으로 호환!
+render(Circle())       # "원을 그립니다"
+render(Rectangle())    # "사각형을 그립니다"</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+원을 그립니다
+사각형을 그립니다
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>runtime_checkable — isinstance() 지원</h3>
+    <pre><code class="language-python">from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class Sized(Protocol):
+    def __len__(self) -> int: ...
+
+# isinstance() 검사 가능
+print(isinstance([1, 2, 3], Sized))    # True
+print(isinstance("hello", Sized))      # True
+print(isinstance(42, Sized))           # False
+
+# 주의: runtime_checkable은 메서드 존재 여부만 검사
+# 타입 시그니처까지 검사하지 않습니다
+class FakeSized:
+    def __len__(self):   # 반환 타입 힌트 없어도 OK
+        return "not an int"  # 실제로 잘못된 타입을 반환해도 isinstance는 True
+
+print(isinstance(FakeSized(), Sized))  # True — 구조만 맞으면 됨</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+True
+True
+False
+True
+    </div>
+    <pre><code class="language-python">from typing import Protocol, runtime_checkable
+
+# 복잡한 Protocol 정의
+@runtime_checkable
+class Serializable(Protocol):
+    def to_json(self) -> str: ...
+    def to_dict(self) -> dict: ...
+
+class User:
+    def __init__(self, name: str, age: int):
+        self.name = name
+        self.age = age
+
+    def to_dict(self) -> dict:
+        return {"name": self.name, "age": self.age}
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict())
+
+user = User("Alice", 30)
+print(isinstance(user, Serializable))  # True
+print(user.to_json())                  # {"name": "Alice", "age": 30}</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+True
+{"name": "Alice", "age": 30}
+    </div>
+    <h3>내장 Protocol들 — Python 표준 라이브러리</h3>
+    <pre><code class="language-python">from typing import Protocol, SupportsInt, SupportsFloat, SupportsAbs, Iterator
+
+# Python 표준 라이브러리의 Protocol들
+# SupportsInt: __int__ 메서드가 있음
+# SupportsFloat: __float__ 메서드가 있음
+# SupportsAbs: __abs__ 메서드가 있음
+
+class Temperature:
+    def __init__(self, celsius: float):
+        self.celsius = celsius
+
+    def __float__(self) -> float:
+        return self.celsius
+
+    def __abs__(self) -> "Temperature":
+        return Temperature(abs(self.celsius))
+
+    def __repr__(self) -> str:
+        return f"Temperature({self.celsius}°C)"
+
+temp = Temperature(-5.0)
+print(float(temp))    # -5.0
+print(abs(temp))      # Temperature(5.0°C)
+print(isinstance(temp, SupportsFloat))   # True</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+-5.0
+Temperature(5.0°C)
+True
+    </div>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A — Protocol의 구현 원리</h3>
+    <pre><code class="language-python">from typing import Protocol
+import inspect
+
+class Drawable(Protocol):
+    def draw(self) -> str: ...
+
+# Protocol 클래스의 내부 구조 탐색
+print(Drawable.__protocol_attrs__)   # frozenset({'draw'})
+
+# Protocol 클래스는 특수한 메타클래스를 사용합니다
+print(type(Drawable))   # &lt;class 'typing._ProtocolMeta'&gt;
+
+# runtime_checkable의 isinstance 검사는
+# __protocol_attrs__의 각 속성이 대상에 있는지 hasattr로 확인합니다
+# 이것이 타입 시그니처가 아닌 이름만 검사하는 이유입니다</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+frozenset({'draw'})
+&lt;class 'typing._ProtocolMeta'&gt;
+    </div>
+    <h3>Part B — 구조적 타이핑 vs 명목적 타이핑 이론</h3>
+    <p>
+      <strong>명목적 타이핑(Nominal Typing):</strong> Java, C# 방식.
+      타입 이름으로 호환성을 결정합니다. <code>class Dog extends Animal</code>처럼
+      명시적 선언이 필요합니다. "네가 누구인지"가 중요합니다.
+    </p>
+    <p>
+      <strong>구조적 타이핑(Structural Typing):</strong> TypeScript, Go, Protocol 방식.
+      구조(메서드, 속성)로 호환성을 결정합니다. 상속 선언이 불필요합니다.
+      "네가 무엇을 할 수 있는지"가 중요합니다.
+    </p>
+    <pre><code class="language-python"># 명목적 타이핑 — ABC 사용 (아래 섹션에서 자세히)
+from abc import ABC, abstractmethod
+
+class AbstractAnimal(ABC):
+    @abstractmethod
+    def speak(self) -> str: ...
+
+class Dog(AbstractAnimal):         # 명시적 상속 필수
+    def speak(self) -> str:
+        return "멍멍"
+
+# 구조적 타이핑 — Protocol 사용
+from typing import Protocol
+
+class Speaker(Protocol):
+    def speak(self) -> str: ...
+
+class Cat:                          # 상속 선언 불필요
+    def speak(self) -> str:
+        return "야옹"
+
+# Cat은 AbstractAnimal을 상속받지 않았지만 Speaker Protocol에는 호환
+def make_sound(animal: Speaker) -> None:
+    print(animal.speak())
+
+make_sound(Dog())   # "멍멍"
+make_sound(Cat())   # "야옹"</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+멍멍
+야옹
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 06. ABC vs Protocol ==================== -->
+<section id="abc-vs-protocol">
+  <h2>ABC vs Protocol — 언제 무엇을 쓰는가</h2>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>ABC (Abstract Base Class)</h3>
+    <pre><code class="language-python">from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    """도형의 추상 기반 클래스"""
+
+    @abstractmethod
+    def area(self) -> float:
+        """넓이를 반환 — 반드시 구현해야 함"""
+        ...
+
+    @abstractmethod
+    def perimeter(self) -> float:
+        """둘레를 반환 — 반드시 구현해야 함"""
+        ...
+
+    # 공통 구현 — 서브클래스에서 그대로 쓸 수 있음
+    def describe(self) -> str:
+        return f"넓이={self.area():.2f}, 둘레={self.perimeter():.2f}"
+
+class Circle(Shape):   # 명시적으로 Shape를 상속
+    def __init__(self, radius: float):
+        self.radius = radius
+
+    def area(self) -> float:
+        import math
+        return math.pi * self.radius ** 2
+
+    def perimeter(self) -> float:
+        import math
+        return 2 * math.pi * self.radius
+
+# 추상 메서드를 구현하지 않으면 인스턴스 생성 불가
+# class BadShape(Shape): pass
+# BadShape()  # TypeError: Can't instantiate abstract class BadShape
+
+c = Circle(5.0)
+print(c.describe())   # "넓이=78.54, 둘레=31.42"</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+넓이=78.54, 둘레=31.42
+    </div>
+    <h3>ABC vs Protocol 선택 기준</h3>
+    <div class="callout callout-info">
+      <strong>언제 ABC를 쓰는가:</strong>
+      <ul>
+        <li>공통 구현(concrete method)을 기반 클래스에서 제공하고 싶을 때</li>
+        <li>서브클래스가 반드시 추상 메서드를 구현하도록 강제해야 할 때 (인스턴스 생성 시점에 검사)</li>
+        <li>내가 만드는 클래스 계층구조가 명확할 때</li>
+      </ul>
+      <strong>언제 Protocol을 쓰는가:</strong>
+      <ul>
+        <li>서드파티 클래스나 내가 수정할 수 없는 클래스를 타입으로 표현할 때</li>
+        <li>"오리 타이핑"을 타입으로 문서화하고 싶을 때</li>
+        <li>상속 계층 없이 유연하게 타입을 정의하고 싶을 때</li>
+      </ul>
+    </div>
+    <pre><code class="language-python">from typing import Protocol
+from abc import ABC, abstractmethod
+
+# ABC — 내가 만드는 계층구조에 적합
+class Vehicle(ABC):
+    @abstractmethod
+    def move(self) -> str: ...
+
+    def describe(self) -> str:   # 공통 구현 제공
+        return f"이 탈것은 {self.move()}합니다"
+
+class Car(Vehicle):
+    def move(self) -> str:
+        return "도로를 달립니다"
+
+print(Car().describe())   # "이 탈것은 도로를 달립니다합니다"
+
+# Protocol — 외부 클래스도 포함하는 유연한 타입 정의
+class Movable(Protocol):
+    def move(self) -> str: ...
+
+# 표준 라이브러리, 서드파티 클래스도 호환 가능
+class Submarine:   # 상속 없음
+    def move(self) -> str:
+        return "물속을 헤엄칩니다"
+
+def describe_any(thing: Movable) -> str:
+    return f"이것은 {thing.move()}"
+
+print(describe_any(Car()))        # 정상
+print(describe_any(Submarine()))  # 정상 — 상속 없이도!</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+이 탈것은 도로를 달립니다합니다
+이것은 도로를 달립니다
+이것은 물속을 헤엄칩니다
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>ABC와 Protocol을 함께 사용하기</h3>
+    <pre><code class="language-python">from abc import ABC, abstractmethod
+from typing import Protocol, runtime_checkable
+
+# Protocol로 "행동"을 정의
+@runtime_checkable
+class Serializable(Protocol):
+    def to_dict(self) -> dict: ...
+
+# ABC로 "공통 구현"을 제공하면서 Protocol도 만족시키기
+class BaseModel(ABC):
+    @abstractmethod
+    def to_dict(self) -> dict: ...
+
+    def to_json(self) -> str:
+        import json
+        return json.dumps(self.to_dict(), ensure_ascii=False)
+
+class Product(BaseModel):
+    def __init__(self, name: str, price: int):
+        self.name = name
+        self.price = price
+
+    def to_dict(self) -> dict:
+        return {"name": self.name, "price": self.price}
+
+p = Product("파이썬 책", 25000)
+print(p.to_json())                        # {"name": "파이썬 책", "price": 25000}
+print(isinstance(p, Serializable))        # True — Protocol도 만족!</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+{"name": "파이썬 책", "price": 25000}
+True
+    </div>
+    <h3>ABC의 register() — 가상 서브클래스</h3>
+    <pre><code class="language-python">from abc import ABC, abstractmethod
+
+class Drawable(ABC):
+    @abstractmethod
+    def draw(self) -> str: ...
+
+# 외부 클래스를 Drawable의 가상 서브클래스로 등록
+class ExternalShape:   # 수정할 수 없는 외부 클래스
+    def draw(self) -> str:
+        return "외부 도형"
+
+Drawable.register(ExternalShape)
+
+# 이제 isinstance 검사 통과
+obj = ExternalShape()
+print(isinstance(obj, Drawable))   # True
+print(obj.draw())                   # "외부 도형"
+# 주의: register()는 추상 메서드 구현을 강제하지 않습니다</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+True
+외부 도형
+    </div>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A — ABCMeta와 __subclasshook__</h3>
+    <pre><code class="language-python">from abc import ABCMeta, abstractmethod
+
+class MyABC(metaclass=ABCMeta):
+    @abstractmethod
+    def method(self) -> None: ...
+
+    @classmethod
+    def __subclasshook__(cls, C):
+        """isinstance() 검사를 커스터마이징"""
+        if cls is MyABC:
+            # C가 'method'를 가지면 서브클래스로 인정
+            for base in C.__mro__:
+                if "method" in base.__dict__:
+                    return True
+            return NotImplemented
+        return NotImplemented
+
+class Compliant:
+    def method(self) -> None:
+        pass
+
+print(isinstance(Compliant(), MyABC))   # True — 상속 없이!
+
+# __subclasshook__은 Protocol의 런타임 검사가 작동하는 방식과 동일한 아이디어입니다
+# ABCMeta._abc_subclasscheck()가 내부적으로 __subclasshook__을 호출합니다</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+True
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 07. dataclass ==================== -->
+<section id="dataclass">
+  <h2>dataclass — __init__ 자동 생성의 원리</h2>
+
+  <!-- 초급 -->
+  <div class="level-section elementary">
+    <span class="level-badge level-elementary">초급</span>
+    <h3>dataclass 없이 vs 있을 때</h3>
+    <div class="callout callout-info">
+      <strong>데이터를 담는 클래스의 문제:</strong>
+      Python에서 단순히 데이터를 묶어 담는 클래스를 만들 때마다
+      <code>__init__</code>, <code>__repr__</code>, <code>__eq__</code>를 반복해서 씁니다.
+      <code>@dataclass</code>는 이것을 자동으로 만들어 줍니다.
+    </div>
+    <pre><code class="language-python"># dataclass 없이 — 반복 코드
+class Point:
+    def __init__(self, x: float, y: float):
+        self.x = x
+        self.y = y
+
+    def __repr__(self):
+        return f"Point(x={self.x}, y={self.y})"
+
+    def __eq__(self, other):
+        if isinstance(other, Point):
+            return self.x == other.x and self.y == other.y
+        return False
+
+p1 = Point(1.0, 2.0)
+p2 = Point(1.0, 2.0)
+print(p1)          # Point(x=1.0, y=2.0)
+print(p1 == p2)    # True</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+Point(x=1.0, y=2.0)
+True
+    </div>
+    <pre><code class="language-python">from dataclasses import dataclass
+
+# @dataclass — __init__, __repr__, __eq__ 자동 생성
+@dataclass
+class Point:
+    x: float
+    y: float
+
+p1 = Point(1.0, 2.0)
+p2 = Point(1.0, 2.0)
+print(p1)          # Point(x=1.0, y=2.0)
+print(p1 == p2)    # True
+print(p1.x)        # 1.0</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+Point(x=1.0, y=2.0)
+True
+1.0
+    </div>
+    <div class="callout callout-tip">
+      <strong>핵심:</strong> <code>@dataclass</code>는 클래스 본체의 타입 힌트가 붙은 변수들을 읽어
+      <code>__init__</code>의 매개변수를 자동으로 만듭니다. 타입 힌트가 없으면 dataclass로 인식하지 않습니다.
+    </div>
+  </div>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>dataclass 옵션들 — 기본값, frozen, field()</h3>
+    <pre><code class="language-python">from dataclasses import dataclass, field
+
+# 기본값 설정
+@dataclass
+class Config:
+    host: str = "localhost"
+    port: int = 8080
+    debug: bool = False
+
+c = Config()
+print(c)   # Config(host='localhost', port=8080, debug=False)
+c2 = Config(host="prod.example.com", port=443)
+print(c2)  # Config(host='prod.example.com', port=443, debug=False)</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+Config(host='localhost', port=8080, debug=False)
+Config(host='prod.example.com', port=443, debug=False)
+    </div>
+    <div class="callout callout-warning">
+      <strong>mutable 기본값 주의:</strong>
+      일반 클래스에서 <code>def __init__(self, items=[])</code>처럼 mutable 기본값을 쓰면
+      모든 인스턴스가 같은 리스트를 공유합니다. dataclass도 마찬가지입니다.
+      mutable 기본값은 반드시 <code>field(default_factory=list)</code>를 사용하세요.
+    </div>
+    <pre><code class="language-python">from dataclasses import dataclass, field
+
+# 잘못된 방법 — dataclass가 이것을 막아줍니다!
+# @dataclass
+# class BadClass:
+#     items: list = []   # ValueError: mutable default not allowed
+
+# 올바른 방법 — field(default_factory=...)
+@dataclass
+class GoodClass:
+    items: list[int] = field(default_factory=list)
+    metadata: dict[str, str] = field(default_factory=dict)
+
+a = GoodClass()
+b = GoodClass()
+a.items.append(1)
+print(a.items)   # [1]
+print(b.items)   # [] — 독립된 리스트!</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+[1]
+[]
+    </div>
+    <pre><code class="language-python">from dataclasses import dataclass
+
+# frozen=True — 불변(immutable) dataclass
+@dataclass(frozen=True)
+class ImmutablePoint:
+    x: float
+    y: float
+
+p = ImmutablePoint(1.0, 2.0)
+print(p)   # ImmutablePoint(x=1.0, y=2.0)
+print(hash(p))   # 해시 가능! (frozen이면 __hash__ 자동 생성)
+
+# p.x = 3.0   # FrozenInstanceError: cannot assign to field 'x'
+
+# order=True — 비교 연산자 자동 생성
+@dataclass(order=True)
+class Student:
+    grade: int   # 이 필드로 정렬 (첫 번째 필드 우선)
+    name: str
+
+students = [Student(3, "Charlie"), Student(1, "Alice"), Student(2, "Bob")]
+print(sorted(students))
+# [Student(grade=1, name='Alice'), Student(grade=2, name='Bob'), Student(grade=3, name='Charlie')]</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+ImmutablePoint(x=1.0, y=2.0)
+(해시값은 실행마다 다름)
+[Student(grade=1, name='Alice'), Student(grade=2, name='Bob'), Student(grade=3, name='Charlie')]
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>__post_init__, field(init=False), InitVar</h3>
+    <pre><code class="language-python">from dataclasses import dataclass, field
+
+@dataclass
+class Circle:
+    radius: float
+
+    # __post_init__: __init__ 완료 후 자동으로 호출
+    def __post_init__(self):
+        if self.radius &lt;= 0:
+            raise ValueError(f"반지름은 양수여야 합니다: {self.radius}")
+        # __init__에서 설정된 값을 기반으로 추가 필드 계산
+        self.area: float = 3.14159 * self.radius ** 2
+
+c = Circle(5.0)
+print(c.radius)   # 5.0
+print(c.area)     # 78.53975
+
+# Circle(-1)   # ValueError!</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+5.0
+78.53975
+    </div>
+    <pre><code class="language-python">from dataclasses import dataclass, field, InitVar
+
+@dataclass
+class DatabaseConnection:
+    host: str
+    port: int
+    # init=False — __init__에 포함되지 않는 필드 (내부용)
+    _connection_string: str = field(init=False, repr=False)
+
+    # InitVar — __init__에는 있지만 필드로 저장되지 않는 임시 인자
+    password: InitVar[str] = ""
+
+    def __post_init__(self, password: str):
+        self._connection_string = f"postgresql://{self.host}:{self.port}?pwd={password}"
+
+db = DatabaseConnection("localhost", 5432, password="secret")
+print(db)   # DatabaseConnection(host='localhost', port=5432) — password는 repr에 없음
+print(db._connection_string)</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+DatabaseConnection(host='localhost', port=5432)
+postgresql://localhost:5432?pwd=secret
+    </div>
+  </div>
+
+  <!-- 전공자 -->
+  <div class="level-section expert">
+    <span class="level-badge level-expert">전공자</span>
+    <h3>Part A — @dataclass가 __init__을 생성하는 메커니즘</h3>
+    <pre><code class="language-python">from dataclasses import dataclass
+import inspect
+
+@dataclass
+class Point:
+    x: float
+    y: float
+    label: str = "point"
+
+# 자동 생성된 __init__의 소스코드를 볼 수 있습니다
+print(inspect.getsource(Point.__init__))</code></pre>
+    <p>
+      <code>@dataclass</code>는 데코레이터입니다 — 클래스 정의 완료 후 클래스 객체를 받아
+      <code>__annotations__</code>를 읽고, 동적으로 <code>__init__</code> 등을 생성해서
+      클래스에 주입합니다.
+    </p>
+    <pre><code class="language-python">from dataclasses import dataclass, fields, asdict, astuple
+
+@dataclass
+class Product:
+    name: str
+    price: float
+    in_stock: bool = True
+
+# dataclass의 필드 메타데이터 접근
+for f in fields(Product):
+    print(f"이름={f.name}, 타입={f.type}, 기본값={f.default}")
+
+p = Product("파이썬 책", 25000.0)
+
+# 딕셔너리/튜플로 변환
+print(asdict(p))    # {'name': '파이썬 책', 'price': 25000.0, 'in_stock': True}
+print(astuple(p))   # ('파이썬 책', 25000.0, True)</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+이름=name, 타입=&lt;class 'str'&gt;, 기본값=MISSING
+이름=price, 타입=&lt;class 'float'&gt;, 기본값=MISSING
+이름=in_stock, 타입=&lt;class 'bool'&gt;, 기본값=True
+{'name': '파이썬 책', 'price': 25000.0, 'in_stock': True}
+('파이썬 책', 25000.0, True)
+    </div>
+    <pre><code class="language-python"># dataclass 내부 구현 핵심 — 코드 생성
+# 실제 CPython dataclasses.py에서 _init_fn()은 이런 식으로 동작합니다:
+
+# 1. __annotations__에서 필드 목록을 추출
+# 2. 각 필드에 대해 매개변수 문자열을 생성
+# 3. exec()로 동적으로 __init__ 함수 생성
+# 4. 생성된 함수를 클래스에 setattr()로 주입
+
+# 실제 생성되는 코드 (개념적 재현):
+def _create_init(fields_list):
+    params = ", ".join(f"{f.name}: {f.type.__name__}" for f in fields_list)
+    body_lines = [f"    self.{f.name} = {f.name}" for f in fields_list]
+    body = "\n".join(body_lines)
+    source = f"def __init__(self, {params}):\n{body}"
+    return source
+
+from dataclasses import fields, dataclass
+
+@dataclass
+class Dummy:
+    x: int
+    y: str
+
+# 실제 생성된 코드와 유사한 것을 보려면:
+print(inspect.getsource(Dummy.__init__))  # 실제 소스 확인</code></pre>
+    <div class="callout callout-info">
+      <strong>Python 공식 문서에서는:</strong>
+      <code>dataclasses</code> 모듈은 <code>__init__</code>을 <code>exec()</code>를 통한
+      동적 코드 생성으로 만듭니다. 이것이 생성된 함수가 일반 Python 함수처럼
+      <code>inspect.getsource()</code>로 볼 수 있는 이유입니다.
+      단순히 <code>setattr</code>로 메서드를 주입하는 것이 아닙니다.
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 08. mypy 실전 워크플로우 ==================== -->
+<section id="mypy-workflow">
+  <h2>mypy 실전 워크플로우</h2>
+
+  <!-- 중급 -->
+  <div class="level-section intermediate">
+    <span class="level-badge level-intermediate">중급</span>
+    <h3>mypy 설치와 기본 사용법</h3>
+    <pre><code class="language-python"># 터미널에서 mypy 설치
+# pip install mypy
+
+# 파일 검사
+# mypy my_file.py
+
+# 프로젝트 전체 검사
+# mypy src/
+
+# 엄격 모드 (권장 — 모든 타입 힌트 강제)
+# mypy --strict my_file.py</code></pre>
+    <pre><code class="language-python"># example.py — mypy가 잡아내는 오류 예시
+
+def add(a: int, b: int) -> int:
+    return a + b
+
+# 이 줄들을 mypy로 검사하면 오류가 납니다:
+result1 = add("hello", 1)    # Argument 1 has incompatible type "str"; expected "int"
+result2 = add(1, 2, 3)       # Too many arguments
+
+# 정상 호출
+result3 = add(1, 2)          # OK</code></pre>
+    <pre><code class="language-python"># mypy 설정 파일 — mypy.ini 또는 pyproject.toml
+# [mypy]
+# python_version = 3.12
+# strict = True
+# ignore_missing_imports = True
+
+# pyproject.toml 방식:
+# [tool.mypy]
+# python_version = "3.12"
+# strict = true</code></pre>
+    <h3>mypy와 협업하는 실전 패턴</h3>
+    <pre><code class="language-python">from typing import cast, overload, TYPE_CHECKING
+
+# cast — 타입 검사기에게 "나 이 타입 맞아" 강제 선언
+# (런타임에는 아무 일도 일어나지 않음)
+def process_data(data: object) -> int:
+    # data가 int임을 알지만 타입 검사기는 모름
+    return cast(int, data)
+
+# overload — 같은 함수, 다른 시그니처
+@overload
+def double(x: int) -> int: ...
+@overload
+def double(x: str) -> str: ...
+
+def double(x):
+    if isinstance(x, str):
+        return x + x
+    return x * 2
+
+print(double(5))       # 10  — mypy: 반환 타입은 int
+print(double("hi"))    # "hihi" — mypy: 반환 타입은 str</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+10
+hihi
+    </div>
+  </div>
+
+  <!-- 고급 -->
+  <div class="level-section advanced">
+    <span class="level-badge level-advanced">고급</span>
+    <h3>reveal_type, # type: ignore, TypeGuard</h3>
+    <pre><code class="language-python">from typing import TypeGuard
+
+# TypeGuard — type narrowing 커스터마이징
+def is_str_list(lst: list[object]) -> TypeGuard[list[str]]:
+    return all(isinstance(x, str) for x in lst)
+
+def process(items: list[object]) -> None:
+    if is_str_list(items):
+        # 이 블록 안에서 mypy는 items를 list[str]로 취급합니다
+        for item in items:
+            print(item.upper())   # str 메서드 접근 — mypy OK
+
+process(["hello", "world"])   # HELLO WORLD</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+HELLO
+WORLD
+    </div>
+    <pre><code class="language-python"># reveal_type — mypy 실행 시 타입을 출력 (런타임에서는 오류)
+# mypy 파일을 검사할 때만 사용하고 실제 코드에는 남기지 마세요
+
+# x = [1, 2, 3]
+# reveal_type(x)   # mypy 출력: Revealed type is "builtins.list[builtins.int]"
+
+# # type: ignore — 특정 줄의 mypy 오류 무시
+result: int = "string"   # type: ignore[assignment]
+
+# # type: ignore[error-code] — 특정 오류 코드만 무시
+from typing import Any
+data: Any = get_data()   # type: ignore[name-defined]</code></pre>
+  </div>
+</section>
+
+<!-- ==================== 09. AI와 타입 힌트 ==================== -->
+<section id="ai-types">
+  <h2>AI는 타입 힌트를 어떻게 활용하는가</h2>
+
+  <div class="callout callout-info">
+    <strong>AI 코드 생성과 타입 힌트:</strong>
+    GPT-4, Claude 같은 LLM은 타입 힌트를 두 가지 방식으로 활용합니다.
+    (1) 학습 데이터의 타입 힌트에서 "어떤 타입이 어떤 연산을 하는지" 패턴을 학습합니다.
+    (2) 여러분이 타입 힌트를 주면 AI가 더 정확한 코드를 생성합니다.
+  </div>
+
+  <h3>AI에게 타입 힌트로 의도를 전달하기</h3>
+  <pre><code class="language-python"># ❌ 타입 없이 — AI가 의도를 추측해야 합니다
+def process(data, mode):
+    ...
+
+# ✅ 타입 힌트로 의도를 명확히 — AI가 더 정확하게 구현합니다
+from typing import Literal
+from dataclasses import dataclass
+
+@dataclass
+class ProcessResult:
+    success: bool
+    data: list[dict[str, int]]
+    error: str | None = None
+
+def process(
+    data: list[dict[str, int]],
+    mode: Literal["fast", "accurate", "balanced"]
+) -> ProcessResult:
+    """데이터를 처리합니다.
+
+    Args:
+        data: 정수 값을 가지는 딕셔너리 리스트
+        mode: 처리 모드
+    Returns:
+        ProcessResult: 성공 여부와 처리된 데이터
+    """
+    ...
+    return ProcessResult(success=True, data=data)</code></pre>
+
+  <h3>mypy + AI 워크플로우</h3>
+  <pre><code class="language-python"># AI가 생성한 코드를 mypy로 검증하는 흐름:
+# 1. AI에게 타입 힌트를 명시한 함수 시그니처 제공
+# 2. AI가 구현 생성
+# 3. mypy로 타입 안정성 검사
+# 4. 오류가 있으면 AI에게 오류 메시지를 포함해 재요청
+
+# Copilot, Cursor 등은 타입 힌트를 읽어 자동완성을 더 정확하게 제공합니다
+# Protocol 정의는 AI에게 "어떤 인터페이스가 필요한지"를 명확히 전달합니다
+
+from typing import Protocol
+
+class DataProcessor(Protocol):
+    """AI에게 이 Protocol을 보여주면 구현체를 정확히 생성합니다"""
+    def process(self, data: list[int]) -> list[int]: ...
+    def validate(self, data: list[int]) -> bool: ...
+    def reset(self) -> None: ...</code></pre>
+</section>
+
+<!-- ==================== 10. 지금 바로 해봐 ==================== -->
+<section id="hands-on">
+  <h2>지금 바로 해봐 — 타입 힌트 실험</h2>
+
+  <div class="callout callout-tip">
+    <strong>실험 목적:</strong>
+    타입 힌트가 런타임에 정말로 무시되는지, <code>__annotations__</code>가 어떻게 저장되는지,
+    Protocol이 상속 없이 어떻게 동작하는지 직접 확인합니다.
+  </div>
+
+  <h3>실험 1 — __annotations__ 직접 탐색</h3>
+  <pre><code class="language-python">from dataclasses import dataclass
+import inspect
+
+@dataclass
+class Person:
+    name: str
+    age: int
+    email: str = ""
+
+# 어노테이션 확인
+print("클래스 어노테이션:", Person.__annotations__)
+print()
+
+# dataclass 필드 확인
+from dataclasses import fields
+for f in fields(Person):
+    print(f"필드: {f.name!r:10} 타입: {f.type} 기본값: {f.default!r}")
+
+print()
+# 생성된 __init__ 시그니처 확인
+print("__init__ 시그니처:")
+print(inspect.signature(Person))</code></pre>
+
+  <h3>실험 2 — Protocol 구조적 호환성 확인</h3>
+  <pre><code class="language-python">from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class Quackable(Protocol):
+    def quack(self) -> str: ...
+    def walk(self) -> str: ...
+
+# 전혀 다른 클래스들
+class RubberDuck:
+    def quack(self) -> str: return "삑삑!"
+    def walk(self) -> str: return "뒤뚱뒤뚱"
+
+class Robot:
+    def quack(self) -> str: return "삑! (로봇 소리)"
+    def walk(self) -> str: return "쿵쿵"
+
+class Person:
+    def walk(self) -> str: return "성큼성큼"
+    # quack 없음!
+
+for obj in [RubberDuck(), Robot(), Person()]:
+    result = isinstance(obj, Quackable)
+    print(f"{type(obj).__name__:15} → Quackable? {result}")</code></pre>
+
+  <h3>실험 3 — 타입 힌트 위반해보기</h3>
+  <pre><code class="language-python">def strictly_typed(x: int, y: str) -> list[bool]:
+    return [bool(x), bool(y)]
+
+# 타입을 어겨도 Python은 신경 안 씁니다
+print(strictly_typed("문자열", 42))        # [True, True] — 오류 없음
+print(strictly_typed([1, 2], {"a": 1}))   # [True, True] — 오류 없음
+print(strictly_typed(0, ""))               # [False, False]
+
+# 어노테이션 확인
+print(strictly_typed.__annotations__)
+# {'x': int, 'y': str, 'return': list[bool]}
+
+# 결론: Python 런타임은 완전히 무시합니다
+# 검사는 mypy의 몫입니다</code></pre>
+</section>
+
+<!-- ==================== 11. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>연습문제 (12문제)</h2>
+
+  <div class="exercise-block level-elem">
+    <span class="level-badge level-elementary">초급 1</span>
+    <h3>기본 타입 힌트 달기</h3>
+    <p>다음 함수에 적절한 타입 힌트를 추가하세요:</p>
+    <pre><code class="language-python">def calculate_bmi(weight, height):
+    """체중(kg)과 키(m)로 BMI를 계산합니다."""
+    return weight / (height ** 2)
+
+def categorize_bmi(bmi):
+    """BMI 값에 따라 '저체중', '정상', '과체중', '비만' 중 하나를 반환합니다."""
+    if bmi &lt; 18.5:
+        return "저체중"
+    elif bmi &lt; 25:
+        return "정상"
+    elif bmi &lt; 30:
+        return "과체중"
+    else:
+        return "비만"
+
+print(calculate_bmi(70, 1.75))   # 약 22.86
+print(categorize_bmi(22.86))     # "정상"</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">def calculate_bmi(weight: float, height: float) -> float:
+    """체중(kg)과 키(m)로 BMI를 계산합니다."""
+    return weight / (height ** 2)
+
+def categorize_bmi(bmi: float) -> str:
+    """BMI 값에 따라 카테고리를 반환합니다."""
+    if bmi &lt; 18.5:
+        return "저체중"
+    elif bmi &lt; 25:
+        return "정상"
+    elif bmi &lt; 30:
+        return "과체중"
+    else:
+        return "비만"</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-elem">
+    <span class="level-badge level-elementary">초급 2</span>
+    <h3>dataclass로 학생 카드 만들기</h3>
+    <p><code>@dataclass</code>로 학생 정보를 담는 클래스를 만드세요. 점수 리스트의 기본값은 빈 리스트여야 합니다:</p>
+    <pre><code class="language-python">from dataclasses import dataclass, field
+
+@dataclass
+class Student:
+    # name: str
+    # student_id: str
+    # scores: list[int]  ← 기본값 빈 리스트
+    # grade: int = 1     ← 기본값 1
+    pass
+
+s1 = Student("Alice", "20240001")
+s2 = Student("Bob", "20240002", grade=3)
+s1.scores.append(95)
+s1.scores.append(88)
+
+print(s1)         # Student(name='Alice', student_id='20240001', scores=[95, 88], grade=1)
+print(s2.scores)  # [] — s1과 독립!
+print(s1 == s2)   # False</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from dataclasses import dataclass, field
+
+@dataclass
+class Student:
+    name: str
+    student_id: str
+    scores: list[int] = field(default_factory=list)
+    grade: int = 1
+
+s1 = Student("Alice", "20240001")
+s2 = Student("Bob", "20240002", grade=3)
+s1.scores.append(95)
+s1.scores.append(88)
+
+print(s1)
+print(s2.scores)
+print(s1 == s2)</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-elem">
+    <span class="level-badge level-elementary">초급 3</span>
+    <h3>Optional 처리하기</h3>
+    <p>사용자를 이름으로 찾는 함수를 작성하세요. 없으면 <code>None</code>을 반환하고, 호출하는 쪽에서 안전하게 처리하세요:</p>
+    <pre><code class="language-python">from typing import Optional
+
+USERS = {
+    "alice": {"email": "alice@example.com", "age": 30},
+    "bob": {"email": "bob@example.com", "age": 25},
+}
+
+def find_user(username: str) -> ???:
+    """사용자를 찾아 정보 딕셔너리를 반환. 없으면 None."""
+    pass
+
+def get_email(username: str) -> ???:
+    """사용자 이메일을 반환. 없는 사용자면 'unknown'을 반환."""
+    pass
+
+print(get_email("alice"))    # "alice@example.com"
+print(get_email("charlie"))  # "unknown"</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from typing import Optional
+
+USERS = {
+    "alice": {"email": "alice@example.com", "age": 30},
+    "bob": {"email": "bob@example.com", "age": 25},
+}
+
+def find_user(username: str) -> Optional[dict[str, str | int]]:
+    return USERS.get(username)
+
+def get_email(username: str) -> str:
+    user = find_user(username)
+    if user is None:
+        return "unknown"
+    return user["email"]  # type: ignore[return-value]</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-inter">
+    <span class="level-badge level-intermediate">중급 1</span>
+    <h3>Generic Stack 구현</h3>
+    <p><code>Generic[T]</code>를 사용해서 어떤 타입이든 담을 수 있는 Stack을 구현하세요:</p>
+    <pre><code class="language-python">from typing import TypeVar, Generic
+
+T = TypeVar("T")
+
+class Stack(Generic[T]):
+    # 구현하세요
+    # - push(item: T) -> None
+    # - pop() -> T  (비어있으면 IndexError)
+    # - peek() -> T | None  (비어있으면 None)
+    # - is_empty() -> bool
+    # - __len__() -> int
+    pass
+
+# 테스트
+int_stack: Stack[int] = Stack()
+int_stack.push(1)
+int_stack.push(2)
+int_stack.push(3)
+
+print(int_stack.peek())      # 3
+print(int_stack.pop())       # 3
+print(len(int_stack))        # 2
+print(int_stack.is_empty())  # False</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from typing import TypeVar, Generic
+
+T = TypeVar("T")
+
+class Stack(Generic[T]):
+    def __init__(self) -> None:
+        self._items: list[T] = []
+
+    def push(self, item: T) -> None:
+        self._items.append(item)
+
+    def pop(self) -> T:
+        if not self._items:
+            raise IndexError("Stack이 비어있습니다")
+        return self._items.pop()
+
+    def peek(self) -> T | None:
+        return self._items[-1] if self._items else None
+
+    def is_empty(self) -> bool:
+        return len(self._items) == 0
+
+    def __len__(self) -> int:
+        return len(self._items)</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-inter">
+    <span class="level-badge level-intermediate">중급 2</span>
+    <h3>Protocol로 정렬 가능 타입 정의</h3>
+    <p>비교 연산(<code>__lt__</code>)이 가능한 타입을 Protocol로 정의하고, 이를 사용해 최솟값을 찾는 함수를 작성하세요:</p>
+    <pre><code class="language-python">from typing import Protocol, TypeVar
+
+class Comparable(Protocol):
+    # __lt__ 메서드를 정의하세요
+    pass
+
+CT = TypeVar("CT", bound=Comparable)
+
+def find_min(items: list[CT]) -> CT:
+    """Comparable한 타입의 리스트에서 최솟값을 반환."""
+    pass
+
+print(find_min([3, 1, 4, 1, 5, 9]))          # 1
+print(find_min(["banana", "apple", "cherry"])) # "apple"</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from typing import Protocol, TypeVar
+
+class Comparable(Protocol):
+    def __lt__(self, other: "Comparable") -> bool: ...
+
+CT = TypeVar("CT", bound=Comparable)
+
+def find_min(items: list[CT]) -> CT:
+    if not items:
+        raise ValueError("빈 리스트")
+    result = items[0]
+    for item in items[1:]:
+        if item &lt; result:
+            result = item
+    return result
+
+print(find_min([3, 1, 4, 1, 5, 9]))
+print(find_min(["banana", "apple", "cherry"]))</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-inter">
+    <span class="level-badge level-intermediate">중급 3</span>
+    <h3>TypedDict로 API 응답 모델링</h3>
+    <p><code>TypedDict</code>로 API 응답 구조를 정의하고, 파싱 함수를 작성하세요:</p>
+    <pre><code class="language-python">from typing import TypedDict
+
+# 다음 JSON 구조를 TypedDict로 모델링하세요:
+# {
+#   "id": 1,
+#   "title": "게시글 제목",
+#   "author": {"name": "Alice", "email": "alice@example.com"},
+#   "tags": ["python", "typing"],
+#   "published": true
+# }
+
+class Author(TypedDict):
+    pass  # 구현
+
+class Post(TypedDict):
+    pass  # 구현
+
+def get_summary(post: Post) -> str:
+    """게시글 요약 문자열을 반환: '[id] title by author_name'"""
+    pass
+
+sample: Post = {
+    "id": 1,
+    "title": "타입 힌트 완전 분해",
+    "author": {"name": "Alice", "email": "alice@example.com"},
+    "tags": ["python", "typing"],
+    "published": True
+}
+print(get_summary(sample))   # "[1] 타입 힌트 완전 분해 by Alice"</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from typing import TypedDict
+
+class Author(TypedDict):
+    name: str
+    email: str
+
+class Post(TypedDict):
+    id: int
+    title: str
+    author: Author
+    tags: list[str]
+    published: bool
+
+def get_summary(post: Post) -> str:
+    return f"[{post['id']}] {post['title']} by {post['author']['name']}"</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-inter">
+    <span class="level-badge level-intermediate">중급 4</span>
+    <h3>frozen dataclass로 좌표 시스템</h3>
+    <p><code>frozen=True</code> dataclass로 2D 벡터를 구현하세요. 덧셈, 스칼라 곱, 크기 계산이 가능해야 합니다:</p>
+    <pre><code class="language-python">from dataclasses import dataclass
+import math
+
+@dataclass(frozen=True)
+class Vector2D:
+    x: float
+    y: float
+
+    def __add__(self, other: "Vector2D") -> "Vector2D":
+        pass  # 구현
+
+    def scale(self, factor: float) -> "Vector2D":
+        pass  # 구현
+
+    def magnitude(self) -> float:
+        pass  # 구현
+
+v1 = Vector2D(3.0, 4.0)
+v2 = Vector2D(1.0, 2.0)
+print(v1 + v2)           # Vector2D(x=4.0, y=6.0)
+print(v1.scale(2.0))     # Vector2D(x=6.0, y=8.0)
+print(v1.magnitude())    # 5.0
+print(hash(v1))          # 해시 가능!</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from dataclasses import dataclass
+import math
+
+@dataclass(frozen=True)
+class Vector2D:
+    x: float
+    y: float
+
+    def __add__(self, other: "Vector2D") -> "Vector2D":
+        return Vector2D(self.x + other.x, self.y + other.y)
+
+    def scale(self, factor: float) -> "Vector2D":
+        return Vector2D(self.x * factor, self.y * factor)
+
+    def magnitude(self) -> float:
+        return math.sqrt(self.x ** 2 + self.y ** 2)</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-adv">
+    <span class="level-badge level-advanced">고급 1</span>
+    <h3>Protocol로 저장소 인터페이스 설계</h3>
+    <p>데이터 저장소의 Protocol을 정의하고, 메모리/파일 두 가지 구현을 만드세요. mypy가 두 구현을 같은 타입으로 취급할 수 있어야 합니다:</p>
+    <pre><code class="language-python">from typing import Protocol
+from dataclasses import dataclass
+
+@dataclass
+class Item:
+    id: int
+    name: str
+    value: float
+
+class ItemRepository(Protocol):
+    def save(self, item: Item) -> None: ...
+    def get(self, item_id: int) -> Item | None: ...
+    def delete(self, item_id: int) -> bool: ...
+    def list_all(self) -> list[Item]: ...
+
+class InMemoryRepository:
+    """메모리 기반 구현 — 테스트용"""
+    # 구현하세요
+    pass
+
+class FileRepository:
+    """JSON 파일 기반 구현"""
+    # 구현하세요 (json 모듈 사용)
+    pass
+
+def process_items(repo: ItemRepository) -> None:
+    """Repository를 사용하는 비즈니스 로직 — 구현에 무관"""
+    repo.save(Item(1, "파이썬 책", 25000.0))
+    repo.save(Item(2, "마우스", 45000.0))
+    items = repo.list_all()
+    for item in items:
+        print(f"[{item.id}] {item.name}: {item.value:,.0f}원")
+
+mem_repo = InMemoryRepository()
+process_items(mem_repo)</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from typing import Protocol
+from dataclasses import dataclass, asdict
+import json
+
+@dataclass
+class Item:
+    id: int
+    name: str
+    value: float
+
+class ItemRepository(Protocol):
+    def save(self, item: Item) -> None: ...
+    def get(self, item_id: int) -> Item | None: ...
+    def delete(self, item_id: int) -> bool: ...
+    def list_all(self) -> list[Item]: ...
+
+class InMemoryRepository:
+    def __init__(self) -> None:
+        self._store: dict[int, Item] = {}
+
+    def save(self, item: Item) -> None:
+        self._store[item.id] = item
+
+    def get(self, item_id: int) -> Item | None:
+        return self._store.get(item_id)
+
+    def delete(self, item_id: int) -> bool:
+        if item_id in self._store:
+            del self._store[item_id]
+            return True
+        return False
+
+    def list_all(self) -> list[Item]:
+        return list(self._store.values())</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-adv">
+    <span class="level-badge level-advanced">고급 2</span>
+    <h3>dataclass + __post_init__ + Protocol 조합</h3>
+    <p>검증 로직이 있는 dataclass를 만들고, Serializable Protocol을 만족시키세요:</p>
+    <pre><code class="language-python">from dataclasses import dataclass, field
+from typing import Protocol
+import json
+
+class Serializable(Protocol):
+    def to_dict(self) -> dict: ...
+    def to_json(self) -> str: ...
+
+@dataclass
+class BankAccount:
+    owner: str
+    balance: float
+    account_number: str
+    transactions: list[float] = field(default_factory=list)
+
+    def __post_init__(self):
+        # 검증: balance는 음수 불가, account_number는 10자리 숫자
+        pass
+
+    def deposit(self, amount: float) -> None:
+        # amount > 0 검증 후 잔액 추가, 거래 기록
+        pass
+
+    def withdraw(self, amount: float) -> None:
+        # 잔액 부족 시 ValueError, 거래 기록은 음수로
+        pass
+
+    def to_dict(self) -> dict:
+        pass
+
+    def to_json(self) -> str:
+        pass
+
+acc = BankAccount("Alice", 100000.0, "1234567890")
+acc.deposit(50000)
+acc.withdraw(30000)
+print(acc.balance)    # 120000.0
+print(acc.to_json())</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from dataclasses import dataclass, field
+import json
+
+@dataclass
+class BankAccount:
+    owner: str
+    balance: float
+    account_number: str
+    transactions: list[float] = field(default_factory=list)
+
+    def __post_init__(self):
+        if self.balance &lt; 0:
+            raise ValueError("초기 잔액은 0 이상이어야 합니다")
+        if not (self.account_number.isdigit() and len(self.account_number) == 10):
+            raise ValueError("계좌번호는 10자리 숫자여야 합니다")
+
+    def deposit(self, amount: float) -> None:
+        if amount &lt;= 0:
+            raise ValueError("입금액은 양수여야 합니다")
+        self.balance += amount
+        self.transactions.append(amount)
+
+    def withdraw(self, amount: float) -> None:
+        if amount &lt;= 0:
+            raise ValueError("출금액은 양수여야 합니다")
+        if amount > self.balance:
+            raise ValueError("잔액 부족")
+        self.balance -= amount
+        self.transactions.append(-amount)
+
+    def to_dict(self) -> dict:
+        return {
+            "owner": self.owner,
+            "balance": self.balance,
+            "account_number": self.account_number,
+            "transactions": self.transactions,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), ensure_ascii=False)</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-exp">
+    <span class="level-badge level-expert">전공자 1</span>
+    <h3>__annotations__ 기반 자동 검증 데코레이터</h3>
+    <p><code>__annotations__</code>를 런타임에 읽어서 함수 인자 타입을 검사하는 <code>@enforce_types</code> 데코레이터를 구현하세요:</p>
+    <pre><code class="language-python">import functools
+import inspect
+
+def enforce_types(func):
+    """__annotations__를 읽어 런타임 타입 검사를 수행합니다."""
+    # 구현하세요
+    # 1. func.__annotations__ 에서 매개변수 타입 추출
+    # 2. 실제 호출 시 isinstance()로 검사
+    # 3. 타입 불일치 시 TypeError 발생
+    # 4. return 어노테이션은 반환값 검사
+    pass
+
+@enforce_types
+def add(a: int, b: int) -> int:
+    return a + b
+
+print(add(1, 2))       # 3 — 정상
+# add("x", 2)          # TypeError: add()의 a는 int여야 합니다, str이 전달되었습니다</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">import functools
+import inspect
+
+def enforce_types(func):
+    ann = func.__annotations__
+    sig = inspect.signature(func)
+    param_types = {
+        name: ann[name]
+        for name in sig.parameters
+        if name in ann
+    }
+    return_type = ann.get("return")
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        bound = sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+        for name, value in bound.arguments.items():
+            if name in param_types:
+                expected = param_types[name]
+                if not isinstance(value, expected):
+                    raise TypeError(
+                        f"{func.__name__}()의 {name}는 {expected.__name__}여야 합니다, "
+                        f"{type(value).__name__}이 전달되었습니다"
+                    )
+        result = func(*args, **kwargs)
+        if return_type is not None and not isinstance(result, return_type):
+            raise TypeError(
+                f"{func.__name__}()의 반환값은 {return_type.__name__}여야 합니다"
+            )
+        return result
+    return wrapper</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-exp">
+    <span class="level-badge level-expert">전공자 2</span>
+    <h3>Covariant Generic Container</h3>
+    <p>공변(covariant) TypeVar를 사용해서 <code>ReadOnlyList</code>를 구현하세요. <code>ReadOnlyList[int]</code>가 <code>ReadOnlyList[object]</code>와 호환되어야 합니다 (mypy 기준):</p>
+    <pre><code class="language-python">from typing import TypeVar, Generic, Iterator, overload
+
+T_co = TypeVar("T_co", covariant=True)
+
+class ReadOnlyList(Generic[T_co]):
+    """읽기 전용 리스트 — 공변 타입 매개변수"""
+    def __init__(self, items: list) -> None:
+        self._items = list(items)
+
+    # __getitem__, __len__, __iter__ 구현
+    # 쓰기 메서드(append, __setitem__)는 구현하지 마세요 — 공변성 위반
+
+    def __getitem__(self, index: int) -> T_co:
+        return self._items[index]
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __iter__(self) -> Iterator[T_co]:
+        return iter(self._items)
+
+# 이 함수는 ReadOnlyList[object]를 받습니다
+def print_all(items: ReadOnlyList[object]) -> None:
+    for item in items:
+        print(item)
+
+int_list = ReadOnlyList([1, 2, 3])
+# 공변성: ReadOnlyList[int]는 ReadOnlyList[object]의 서브타입
+# mypy는 이것을 허용합니다 (T_co가 covariant이므로)
+print_all(int_list)   # 1, 2, 3</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">from typing import TypeVar, Generic, Iterator
+
+T_co = TypeVar("T_co", covariant=True)
+
+class ReadOnlyList(Generic[T_co]):
+    def __init__(self, items: list) -> None:
+        self._items = list(items)
+
+    def __getitem__(self, index: int) -> T_co:
+        return self._items[index]  # type: ignore[return-value]
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __iter__(self) -> Iterator[T_co]:
+        return iter(self._items)  # type: ignore[return-value]
+
+    def __repr__(self) -> str:
+        return f"ReadOnlyList({self._items!r})"
+
+# 공변: ReadOnlyList[int] → ReadOnlyList[object] OK
+# 불변: list[int] → list[object] NG (mypy 오류)
+# 이유: list는 읽기+쓰기라서 불변이어야 타입 안전</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="exercise-block level-exp">
+    <span class="level-badge level-expert">전공자 3</span>
+    <h3>typing 모듈 없이 Protocol 동작 원리 구현</h3>
+    <p><code>typing.Protocol</code>의 런타임 동작을 흉내 내는 <code>SimpleProtocol</code> 메타클래스를 구현하세요:</p>
+    <pre><code class="language-python">class ProtocolMeta(type):
+    """Protocol 메타클래스 — isinstance 검사를 커스터마이징"""
+
+    def __instancecheck__(cls, instance):
+        """isinstance(obj, MyProtocol) 호출 시 실행"""
+        # cls.__protocol_attrs__에서 필요한 속성 목록을 가져와
+        # instance가 모두 가지고 있는지 hasattr로 확인
+        pass
+
+    def __subclasscheck__(cls, subclass):
+        pass
+
+class SimpleProtocol(metaclass=ProtocolMeta):
+    """기본 Protocol 클래스"""
+    pass
+
+# 사용 예시
+class Printable(SimpleProtocol):
+    __protocol_attrs__ = frozenset(["__str__", "encode"])
+
+class MyStr:
+    def __str__(self): return "MyStr"
+    def encode(self, encoding="utf-8"): return b"MyStr"
+
+print(isinstance(MyStr(), Printable))   # True
+print(isinstance(42, Printable))        # False (int에 encode 없음)</code></pre>
+    <details class="answer">
+      <summary>💡 힌트 / 정답 보기</summary>
+      <div class="answer-content">
+        <div class="answer-body">
+          <pre><code class="language-python">class ProtocolMeta(type):
+    def __instancecheck__(cls, instance):
+        attrs = getattr(cls, "__protocol_attrs__", frozenset())
+        return all(hasattr(instance, attr) for attr in attrs)
+
+    def __subclasscheck__(cls, subclass):
+        attrs = getattr(cls, "__protocol_attrs__", frozenset())
+        return all(
+            any(attr in base.__dict__ for base in subclass.__mro__)
+            for attr in attrs
+        )
+
+class SimpleProtocol(metaclass=ProtocolMeta):
+    pass
+
+class Printable(SimpleProtocol):
+    __protocol_attrs__ = frozenset(["__str__", "encode"])
+
+class MyStr:
+    def __str__(self): return "MyStr"
+    def encode(self, encoding="utf-8"): return b"MyStr"
+
+print(isinstance(MyStr(), Printable))   # True
+print(isinstance(42, Printable))        # False</code></pre>
+        </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ==================== 12. 이번 주 정리 ==================== -->
+<section id="summary">
+  <h2>이번 주 정리</h2>
+
+  <div class="callout callout-info">
+    <strong>핵심 3가지:</strong>
+    <ol>
+      <li><strong>타입 힌트는 런타임에 무시됩니다.</strong> <code>__annotations__</code> 딕셔너리에 저장되지만, Python 인터프리터는 타입 검사를 하지 않습니다. mypy, pyright 같은 도구의 몫입니다.</li>
+      <li><strong>Protocol은 구조적 서브타이핑.</strong> 상속 선언 없이 "어떤 메서드를 가졌는가"로 호환성을 판단합니다. 외부 라이브러리 클래스를 타입으로 표현할 때 핵심입니다.</li>
+      <li><strong>dataclass는 코드 생성.</strong> <code>__annotations__</code>를 읽어 <code>exec()</code>로 <code>__init__</code>을 동적 생성합니다. mutable 기본값은 반드시 <code>field(default_factory=...)</code>를 쓰세요.</li>
+    </ol>
+  </div>
+
+  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <thead>
+      <tr style="background:var(--bg-secondary)">
+        <th style="padding:8px 12px;text-align:left;border:1px solid var(--border)">개념</th>
+        <th style="padding:8px 12px;text-align:left;border:1px solid var(--border)">언제 쓰는가</th>
+        <th style="padding:8px 12px;text-align:left;border:1px solid var(--border)">핵심</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:8px 12px;border:1px solid var(--border)"><code>X | Y</code> (PEP 604)</td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">둘 중 하나 (Python 3.10+)</td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">Optional[X] = X | None</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px;border:1px solid var(--border)"><code>list[int]</code> (PEP 585)</td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">컨테이너 타입 (Python 3.9+)</td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">List[int] deprecated</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px;border:1px solid var(--border)"><code>TypeVar</code></td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">입출력 타입이 연동될 때</td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">제네릭 함수/클래스</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px;border:1px solid var(--border)"><code>Protocol</code></td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">구조만으로 호환성 정의</td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">상속 불필요, 구조적</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px;border:1px solid var(--border)"><code>ABC</code></td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">공통 구현 + 구현 강제</td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">명목적, 상속 필수</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px;border:1px solid var(--border)"><code>@dataclass</code></td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">데이터 클래스</td>
+        <td style="padding:8px 12px;border:1px solid var(--border)">__init__/__repr__/__eq__ 자동</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== 13. 용어 사전 ==================== -->
+<section id="glossary">
+  <h2>용어 사전 (22개)</h2>
+  <div class="glossary-grid">
+    <div class="glossary-item">
+      <h4>타입 힌트 (Type Hint)</h4>
+      <p>Python 3.5+에서 도입된 선택적 타입 표기. 런타임에 무시되며, <code>__annotations__</code> 딕셔너리에 저장됨. 정적 분석 도구와 IDE가 활용.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>__annotations__</h4>
+      <p>함수·클래스·모듈이 자동으로 가지는 딕셔너리. 타입 힌트가 저장되는 곳. Python 3.14+에서는 <code>annotationlib.get_annotations()</code>로 접근 권장.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>PEP 484</h4>
+      <p>Python 타입 힌트 시스템의 출발점 (Python 3.5, 2015). Gradual Typing을 채택 — 타입 힌트가 없는 코드는 <code>Any</code> 타입으로 취급.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>PEP 585</h4>
+      <p>Python 3.9+에서 내장 컬렉션(<code>list</code>, <code>dict</code>, <code>tuple</code>)을 제네릭으로 직접 사용 가능하게 함. <code>List[int]</code> → <code>list[int]</code>.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>PEP 604</h4>
+      <p>Python 3.10+에서 <code>X | Y</code> 유니온 문법 도입. <code>Union[X, Y]</code>의 간결한 대체. <code>X | None</code>이 <code>Optional[X]</code>와 동일.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Optional[X]</h4>
+      <p><code>Union[X, None]</code>의 축약. 값이 있거나 <code>None</code>일 수 있음. Python 3.10+에서는 <code>X | None</code>으로 대체 가능.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Union[X, Y]</h4>
+      <p>X 또는 Y 중 하나의 타입임을 표현. Python 3.10+에서는 <code>X | Y</code>가 권장.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>TypeVar</h4>
+      <p>타입 변수. 제네릭 함수·클래스에서 타입 매개변수를 표현. <code>T = TypeVar("T")</code>. bound로 상한 타입 지정 가능.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Generic[T]</h4>
+      <p>타입 매개변수를 가지는 클래스의 기반. <code>class Stack(Generic[T]):</code>. <code>Stack[int]</code>처럼 구체 타입으로 인스턴스화 가능.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Protocol (PEP 544)</h4>
+      <p>Python 3.8+. 구조적 서브타이핑 지원. 상속 선언 없이 특정 메서드를 가진 타입이면 호환. "오리 타이핑"의 공식화.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>runtime_checkable</h4>
+      <p>Protocol에 붙이는 데코레이터. <code>isinstance()</code>로 런타임 검사 가능하게 함. 메서드 이름 존재 여부만 검사, 시그니처는 검사 안 함.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>ABC (Abstract Base Class)</h4>
+      <p>명목적 서브타이핑. <code>abc.ABC</code>를 상속하고 <code>@abstractmethod</code>로 추상 메서드 선언. 구현 강제, 공통 구현 제공 가능.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>@abstractmethod</h4>
+      <p>ABC에서 서브클래스가 반드시 구현해야 하는 메서드 표시. 구현 없이 인스턴스를 만들면 <code>TypeError</code> 발생.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>구조적 타이핑 (Structural Typing)</h4>
+      <p>이름이 아닌 구조(메서드, 속성)로 호환성 결정. Protocol, TypeScript, Go 방식. "무엇을 할 수 있는가"가 중요.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>명목적 타이핑 (Nominal Typing)</h4>
+      <p>이름(상속 관계)으로 호환성 결정. Java, C#, ABC 방식. "누구에서 왔는가"가 중요.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>@dataclass</h4>
+      <p>Python 3.7+. 클래스 어노테이션을 읽어 <code>__init__</code>, <code>__repr__</code>, <code>__eq__</code>를 자동 생성하는 데코레이터.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>field(default_factory=...)</h4>
+      <p>dataclass에서 mutable 기본값(list, dict 등)을 안전하게 지정하는 방법. 인스턴스마다 독립된 객체를 생성.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>frozen=True</h4>
+      <p>dataclass 옵션. 인스턴스를 불변으로 만들고 <code>__hash__</code>를 자동 생성. 딕셔너리 키나 set 원소로 사용 가능.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Gradual Typing</h4>
+      <p>타입 힌트가 있는 코드와 없는 코드가 공존하는 타입 시스템. 타입 없는 부분은 <code>Any</code>로 취급. PEP 484의 핵심 설계 원칙.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>mypy</h4>
+      <p>Python 타입 힌트를 검사하는 정적 분석 도구. 실행 없이 타입 오류를 찾아냄. Gradual Typing 기반 — 힌트 없는 코드는 경고 억제 가능.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>공변성 (Covariance)</h4>
+      <p>타입 매개변수의 상속 관계가 Generic 클래스에도 그대로 유지됨. <code>covariant=True</code> TypeVar. "생산자"에 적합.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>TypedDict</h4>
+      <p>딕셔너리의 구조를 타입으로 정의. API 응답, 설정 딕셔너리 등 구조가 고정된 딕셔너리 타입 검사에 사용.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 14. 다음 주 맛보기 ==================== -->
+<section id="next-week">
+  <h2>다음 주 맛보기 — Week 15: 비동기 프로그래밍 (asyncio)</h2>
+
+  <p>
+    이번 주에 타입 힌트로 코드를 더 명확하게 만들고 Protocol로 유연한 인터페이스를 설계했습니다.
+    이제 코드가 <strong>기다리는</strong> 문제가 남았습니다.
+    웹 API를 호출하거나 파일을 읽을 때 — 결과가 올 때까지 아무것도 못 하면 얼마나 낭비일까요?
+  </p>
+  <pre><code class="language-python">import time
+
+# 동기 방식 — 순서대로, 기다리면서
+def fetch_data(url: str) -> dict:
+    time.sleep(1)   # 네트워크 대기
+    return {"data": "..."}
+
+# 3개의 API를 순서대로 호출하면 — 3초 소요
+start = time.time()
+result1 = fetch_data("https://api1.example.com")
+result2 = fetch_data("https://api2.example.com")
+result3 = fetch_data("https://api3.example.com")
+print(f"소요 시간: {time.time() - start:.1f}초")   # 3.0초</code></pre>
+  <div class="output-block">
+    <div class="output-label">실행 결과:</div>
+소요 시간: 3.0초
+  </div>
+  <pre><code class="language-python">import asyncio
+
+# 비동기 방식 — 기다리는 동안 다른 일을 함
+async def fetch_data_async(url: str) -> dict:
+    await asyncio.sleep(1)   # 기다리는 동안 다른 코루틴 실행
+    return {"data": f"from {url}"}
+
+# 3개를 동시에! — 1초 소요
+async def main():
+    start = asyncio.get_event_loop().time()
+    results = await asyncio.gather(
+        fetch_data_async("https://api1.example.com"),
+        fetch_data_async("https://api2.example.com"),
+        fetch_data_async("https://api3.example.com"),
+    )
+    print(f"소요 시간: {asyncio.get_event_loop().time() - start:.1f}초")
+    return results
+
+asyncio.run(main())   # 1.0초!</code></pre>
+
+  <p>다음 주에 배울 것들:</p>
+  <ul>
+    <li><code>async def</code>와 <code>await</code> — 코루틴(Coroutine)이 무엇인가</li>
+    <li>Event Loop — 비동기의 심장. 어떻게 "동시에" 처리하는가</li>
+    <li><code>asyncio.gather()</code>, <code>asyncio.create_task()</code></li>
+    <li>Awaitable, Coroutine, Future, Task — 타입 계층</li>
+    <li><code>async for</code>, <code>async with</code> — 비동기 이터레이터와 컨텍스트 매니저</li>
+    <li>CPython 내부: 코루틴 객체와 <code>send()</code> 프로토콜</li>
+  </ul>
+
+  <p style="margin-top: 24px; font-size: 0.9rem; color: var(--text-secondary);">
+    참조:
+    <a href="https://docs.python.org/3/howto/annotations.html" target="_blank">Python Docs: Annotations Best Practices</a> ·
+    <a href="https://docs.python.org/3/library/typing.html" target="_blank">typing — Support for type hints</a> ·
+    <a href="https://docs.python.org/3/library/dataclasses.html" target="_blank">dataclasses — Data Classes</a> ·
+    <a href="https://peps.python.org/pep-0544/" target="_blank">PEP 544: Protocols</a> ·
+    <a href="https://peps.python.org/pep-0604/" target="_blank">PEP 604: X | Y Union Syntax</a> ·
+    <a href="https://mypy.readthedocs.io/" target="_blank">mypy 문서</a>
+  </p>
+</section>
+
+</main>
+</div>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+</footer>
+
+<script src="../js/highlight.js"></script>
+<script src="../js/nav.js"></script>
+<script src="../js/code-copy.js"></script>
+<script src="../js/spoiler.js"></script>
+</body>
+</html>
