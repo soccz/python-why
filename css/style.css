@@ -1276,13 +1276,12 @@ details.answer .answer-body {
 }
 .callout pre {
   margin: 8px 0 0;
-  background: rgba(0,0,0,0.06);
-  padding: 8px 12px;
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 10px 14px;
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
-}
-[data-theme="dark"] .callout pre {
-  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--code-border);
 }
 .callout-tip {
   background: color-mix(in srgb, var(--level-adv) 8%, transparent);
