@@ -490,9 +490,14 @@ dis.dis(code)</code></pre>
       단순히 <strong>LOAD_GLOBAL(decorator) → MAKE_FUNCTION → CALL → STORE_NAME</strong> 순서의
       일반 바이트코드입니다. Python 컴파일러는 <code>@</code>를 보면 이 패턴으로 번역합니다.
     </p>
+    <h3>Part B — 데코레이터와 Descriptor Protocol</h3>
+    <p>
+      <code>@classmethod</code>와 <code>@staticmethod</code>는 데코레이터이면서 동시에 Descriptor입니다.
+      데코레이터가 함수를 래핑하는 것과 Descriptor가 속성 접근을 가로채는 것이 어떻게 결합되는지 확인합니다.
+    </p>
     <div class="code-block">
       <div class="code-header">
-        <span>Part B: 데코레이터와 Descriptor Protocol</span>
+        <span>데코레이터 + Descriptor Protocol 결합</span>
         <button class="copy-btn" title="복사">복사</button>
       </div>
       <pre><code class="language-python"># classmethod, staticmethod는 데코레이터이면서 동시에 Descriptor
@@ -776,6 +781,22 @@ dis.dis(code)</code></pre>
       MAKE_FUNCTION이 함수 객체를 만든 후, CALL을 아래 데코레이터부터 실행합니다.
       즉 스택 구조상 <strong>아래 데코레이터가 먼저 호출</strong>되는 것은 자연스러운 결과입니다.
     </p>
+    <div class="callout callout-warning">
+      <strong>@staticmethod / @classmethod는 반드시 가장 바깥(맨 위)에:</strong><br>
+      <code>@staticmethod</code>와 <code>@classmethod</code>는 Descriptor 객체를 반환합니다.
+      다른 데코레이터가 그 위에 쌓이면 Descriptor가 일반 함수처럼 취급되어
+      <code>cls</code>나 인스턴스 바인딩이 <strong>완전히 무시</strong>됩니다.<br>
+      <br>
+      <code># 잘못된 순서 — @staticmethod가 안쪽에 있어 wraps가 descriptor를 덮어씀</code><br>
+      <code>@some_decorator   # ← 바깥 래퍼가 staticmethod descriptor를 일반 함수로 처리</code><br>
+      <code>@staticmethod     # ← 여기서 만든 descriptor가 위에서 사라짐</code><br>
+      <code>def method(): ...</code><br>
+      <br>
+      <code># 올바른 순서 — @staticmethod가 가장 바깥에</code><br>
+      <code>@staticmethod</code><br>
+      <code>@some_decorator   # ← staticmethod 안쪽에서 함수에만 적용</code><br>
+      <code>def method(): ...</code>
+    </div>
   </div>
 </section>
 
@@ -1114,7 +1135,8 @@ print(f"원본 함수 직접 호출: {calculate.__wrapped__(3, 4)}")</code></pre
       <div class="output-label">실행 결과:</div>
 __name__:      calculate
 __qualname__:  calculate
-__doc__:       x와 y를 더한 결...
+__doc__:       x와 y를 더한 결과를 반환합니다.
+...
 __annotations__: {'x': &lt;class 'int'&gt;, 'y': &lt;class 'int'&gt;, 'return': &lt;class 'int'&gt;}
 __module__:    __main__
 __wrapped__:   &lt;function calculate at 0x...&gt;
@@ -1499,9 +1521,14 @@ dis.dis(example)</code></pre>
       Python 3.12에서 <code>BEFORE_WITH</code>와 <code>WITH_EXCEPT_START</code>로 분리되었습니다.
       이는 CPython의 예외 처리 모델이 "블록 기반"에서 "인라인 예외 테이블" 방식으로 전환된 결과입니다.
     </p>
+    <h3>Part B — AOP: Aspect-Oriented Programming</h3>
+    <p>
+      데코레이터는 Python에서 AOP(관점 지향 프로그래밍)를 구현하는 핵심 메커니즘입니다.
+      횡단 관심사(Cross-cutting Concerns)를 핵심 로직에서 분리하는 패턴을 확인합니다.
+    </p>
     <div class="code-block">
       <div class="code-header">
-        <span>Part B: AOP — Aspect-Oriented Programming</span>
+        <span>AOP 패턴 — Advice, Pointcut, Join Point</span>
         <button class="copy-btn" title="복사">복사</button>
       </div>
       <pre><code class="language-python"># AOP(관점 지향 프로그래밍) — 핵심 로직과 횡단 관심사 분리
@@ -1651,7 +1678,7 @@ except RuntimeError:
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
 [Timer] 행렬 계산 시작
-결과: 41666416666750000
+결과: 41666541666750000
 [Timer] 행렬 계산 완료: 0.0521s
 
 [Timer] 오류 작업 시작
@@ -1687,6 +1714,21 @@ with temp_directory("test_") as tmpdir:
     print(f"파일 존재: {os.path.exists(filepath)}")
 
 print(f"디렉토리 존재: {os.path.exists('test_' + str(os.getpid()))}")</code></pre>
+    </div>
+    <div class="callout callout-warning">
+      <strong>@contextmanager 함수에서 yield를 두 번 쓰면 RuntimeError:</strong><br>
+      <code>@contextmanager</code>는 제너레이터가 <strong>정확히 한 번</strong> yield해야 합니다.
+      yield가 없으면 <code>RuntimeError: generator didn't yield</code>,
+      yield가 두 번 이상 실행되면 <code>RuntimeError: generator didn't stop</code>이 발생합니다.<br>
+      <br>
+      <code>@contextmanager</code><br>
+      <code>def broken():           # 잘못된 예</code><br>
+      <code>    yield "첫 번째"    # __enter__에서 소비됨</code><br>
+      <code>    yield "두 번째"    # __exit__가 next() 호출 → StopIteration이 아님!</code><br>
+      <code>    # → RuntimeError: generator didn't stop</code><br>
+      <br>
+      루프를 yield와 함께 쓰려면 <code>@contextmanager</code>가 아닌 클래스 기반
+      컨텍스트 매니저를 직접 구현해야 합니다.
     </div>
   </div>
 
@@ -2915,7 +2957,7 @@ functools.wraps(func)   __name__, __doc__, __annotations__,
 
 <!-- ==================== 12. 용어 사전 ==================== -->
 <section id="glossary">
-  <h2>용어 사전 (24개)</h2>
+  <h2>용어 사전 (30개)</h2>
   <div class="glossary-grid">
     <div class="glossary-item">
       <h4>데코레이터 (Decorator)</h4>
@@ -3012,6 +3054,30 @@ functools.wraps(func)   __name__, __doc__, __annotations__,
     <div class="glossary-item">
       <h4>클래스 데코레이터</h4>
       <p>클래스에 적용하는 데코레이터. <code>Cls = decorator(Cls)</code>. @dataclass, @Singleton 등. 함수 데코레이터와 문법은 동일.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Advice (어드바이스)</h4>
+      <p>AOP 용어. 횡단 관심사 코드가 "언제, 어떻게" 실행되는지를 정의한 것. Before / After / Around로 분류. Python 데코레이터는 Around Advice에 해당.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Pointcut (포인트컷)</h4>
+      <p>AOP 용어. Advice가 적용될 합류점(Join Point)을 선택하는 표현식. Python에서는 어떤 함수에 <code>@decorator</code>를 붙이는지가 Pointcut 역할.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>SETUP_WITH</h4>
+      <p>CPython 3.11 이전의 with문 바이트코드. __enter__ 호출 및 예외 핸들러 블록 설정을 담당. 3.12+에서 BEFORE_WITH + WITH_EXCEPT_START로 분리됨.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>contextlib</h4>
+      <p>Python 표준 라이브러리 모듈. 컨텍스트 매니저 관련 유틸리티 제공. @contextmanager, contextlib.suppress, ExitStack, nullcontext, asynccontextmanager 포함.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>functools</h4>
+      <p>Python 표준 라이브러리 모듈. 고차 함수 유틸리티 제공. wraps, lru_cache, partial, reduce, cached_property 등 포함. 데코레이터 작성의 필수 도구.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>inspect.unwrap()</h4>
+      <p>데코레이터로 감싸진 함수에서 원본 함수를 찾는 함수. __wrapped__ 체인을 따라가며 래핑을 벗겨냄. functools.wraps 없이 데코레이터를 적용하면 unwrap()이 실패할 수 있음.</p>
     </div>
   </div>
 </section>

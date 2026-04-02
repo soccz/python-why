@@ -153,7 +153,7 @@
     </div>
     <div class="toc-section">
       <a href="#glossary" class="toc-section-link">
-        <span class="toc-num">13</span>용어 사전 (25개)
+        <span class="toc-num">13</span>용어 사전 (30개)
       </a>
     </div>
     <div class="toc-section">
@@ -320,7 +320,7 @@ class PoliceDog(Dog):
     def arrest(self, suspect):
         print(f"경찰견 {self.name}(배지 #{self.badge_number}): {suspect} 체포!")
 
-rex = PoliceDog("렉스", 007)
+rex = PoliceDog("렉스", 7)
 rex.bark()           # 렉스: 왈왈!  (Dog.bark 상속)
 rex.arrest("범인")   # 경찰견 렉스(배지 #7): 범인 체포!
 
@@ -720,6 +720,48 @@ print(obj.name)                         # 바둑이</code></pre>
       <code>tp_basicsize</code>만큼의 메모리를 <code>PyObject_GC_New</code>로 할당합니다.
       이 시점에 GC 트래킹이 시작되고, <code>ob_refcnt = 1</code>로 초기화됩니다.
     </p>
+    <h3>Part B: 싱글톤 패턴과 __new__ — 불변 타입 서브클래싱</h3>
+    <p>
+      <code>__new__</code>가 필요한 실전 사례 두 가지: <strong>싱글톤 패턴</strong>과 <strong>불변 타입 서브클래싱</strong>.
+      <code>__init__</code>은 이미 생성된 인스턴스를 초기화하므로, 인스턴스 생성 자체를 제어하려면 <code>__new__</code>를 사용해야 합니다.
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-label">Python (__new__ 활용 패턴)</span>
+        <button class="copy-btn">복사</button>
+      </div>
+      <pre><code class="language-python"># 패턴 1: 싱글톤 — 인스턴스를 하나만 생성
+class Singleton:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance  # 항상 동일한 객체 반환
+
+a = Singleton()
+b = Singleton()
+print(a is b)   # True — 같은 객체
+
+# 패턴 2: 불변 타입(int, str, tuple) 서브클래싱
+# int는 불변이므로 __init__에서 값을 바꿀 수 없음 → __new__ 사용
+class EvenInt(int):
+    def __new__(cls, value):
+        if value % 2 != 0:
+            raise ValueError(f"{value}는 짝수가 아닙니다")
+        return super().__new__(cls, value)  # int의 값을 __new__에서 설정
+
+e = EvenInt(4)
+print(e, type(e))   # 4 &lt;class 'EvenInt'&gt;
+print(e + 2)        # 6 — int 연산 가능 (하지만 결과는 일반 int)
+# EvenInt(3)  # ValueError</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+True
+4 &lt;class '__main__.EvenInt'&gt;
+6
+    </div>
   </div>
 </section>
 
@@ -915,6 +957,50 @@ print(repr(r))   # "OnlyRepr()"
 # 디버깅: dis로 f-string이 어떤 바이트코드를 생성하는지 확인
 import dis
 dis.dis("f'{obj}'")  # FORMAT_VALUE 0 (str), FORMAT_VALUE 2 (repr: !r)</code></pre>
+    </div>
+    <h3>Part B: 포맷 명세 미니언어 (Format Specification Mini-Language)</h3>
+    <p>
+      <code>__format__(self, spec)</code>은 f-string의 <code>{obj:spec}</code>에서 호출됩니다.
+      Python의 포맷 명세 미니언어는 PEP 3101에서 정의된 별도의 DSL입니다.
+    </p>
+    <ul>
+      <li><strong>숫자 포맷</strong>: <code>f"{3.14:.2f}"</code> → spec = <code>".2f"</code></li>
+      <li><strong>폭/정렬</strong>: <code>f"{'hi':&lt;10}"</code> → 왼쪽 정렬, 폭 10</li>
+      <li><strong>커스텀 타입</strong>: <code>__format__</code>을 구현하면 임의의 spec 처리 가능</li>
+    </ul>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-label">Python (__format__ 커스터마이징)</span>
+        <button class="copy-btn">복사</button>
+      </div>
+      <pre><code class="language-python">class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __repr__(self):
+        return f"Vector({self.x}, {self.y})"
+
+    def __format__(self, spec):
+        if spec == "polar":
+            import math
+            r = math.hypot(self.x, self.y)
+            theta = math.degrees(math.atan2(self.y, self.x))
+            return f"({r:.2f} ∠ {theta:.1f}°)"
+        return format(repr(self), spec)
+
+v = Vector(3, 4)
+print(f"{v}")        # Vector(3, 4)
+print(f"{v:polar}")  # (5.00 ∠ 53.1°)
+
+# CPython 내부:
+# f"{v:polar}" → FORMAT_VALUE 바이트코드 → v.__format__("polar") 호출
+# f"{v!r}"     → repr(v) 후 FORMAT_VALUE 0</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+Vector(3, 4)
+(5.00 ∠ 53.1°)
     </div>
   </div>
 </section>
@@ -1136,6 +1222,46 @@ None
 True
 True
 {0: 'false'}
+    </div>
+    <h3>Part B: 해시테이블 — 오픈 어드레싱과 충돌 해결</h3>
+    <p>
+      Python dict/set은 내부적으로 <strong>오픈 어드레싱(Open Addressing)</strong> 해시테이블입니다.
+      두 가지 주요 충돌 해결 전략과 Python의 선택을 비교합니다.
+    </p>
+    <ul>
+      <li><strong>체이닝(Chaining)</strong>: 각 슬롯에 연결 리스트. 충돌 시 리스트에 추가. Java HashMap이 사용.</li>
+      <li><strong>오픈 어드레싱(Open Addressing)</strong>: 충돌 시 다음 슬롯을 탐사(probe). CPython dict가 사용.</li>
+    </ul>
+    <p>
+      CPython의 탐사 공식: <code>i = (5*i + 1 + perturb) % table_size; perturb >>= 5</code><br>
+      단순 선형 탐사(<code>i+1, i+2...</code>)와 달리 클러스터링을 방지하고 해시값 상위 비트도 활용합니다.
+      Python 3.6+부터는 삽입 순서를 유지하기 위해 <strong>인덱스 배열 + 엔트리 배열</strong> 분리 구조를 사용합니다.
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-label">Python (dict 내부 탐색)</span>
+        <button class="copy-btn">복사</button>
+      </div>
+      <pre><code class="language-python">import sys
+
+# dict의 메모리 크기 — 빈 dict도 최소 슬롯 8개를 유지
+d = {}
+print(sys.getsizeof(d))   # 약 64 바이트 (CPython 3.11 기준)
+
+# 부하율(load factor) ~ 2/3 초과 시 리해싱(크기 2배)
+# 8 → 18 → 38 → 86 → ...
+for i in range(50):
+    d[i] = i
+    if i in (6, 7, 17, 18):  # 리해싱 경계 근처
+        print(f"len={len(d)}, sizeof={sys.getsizeof(d)}")
+
+# 해시 품질이 나쁜 경우 — 최악의 성능 O(n)
+class BadHash:
+    def __hash__(self): return 42   # 모든 인스턴스가 같은 해시
+    def __eq__(self, other): return self is other
+
+bad = {BadHash(): i for i in range(5)}
+# 모든 키가 같은 슬롯에 몰려 탐사 횟수 폭증 — O(n) 접근</code></pre>
     </div>
   </div>
 </section>
@@ -1373,7 +1499,8 @@ print(Z.__mro__)  # (&lt;Z&gt;, &lt;Y&gt;, &lt;X&gt;, &lt;object&gt;)</code></pr
       </div>
       <div class="output-block">
         <div class="output-label">실행 결과:</div>
-TypeError: Cannot create a consistent method resolution order (MRO) for bases X, Y
+TypeError: Cannot create a consistent method resolution
+order (MRO) for bases X, Y
 (&lt;class '__main__.Z'&gt;, &lt;class '__main__.Y'&gt;, &lt;class '__main__.X'&gt;, &lt;class 'object'&gt;)
       </div>
     </div>
@@ -1479,6 +1606,62 @@ print(f"자유 변수: {cell_vars}")  # ('__class__',)</code></pre>
 ['D', 'B', 'C', 'A', 'object']
 Sub -&gt; Base
 자유 변수: ('__class__',)
+    </div>
+    <h3>Part B: 협동 다중 상속 (Cooperative Multiple Inheritance)</h3>
+    <p>
+      다중 상속에서 <code>super()</code>를 MRO 순서대로 협동적으로 호출하는 패턴입니다.
+      각 클래스가 자신의 바로 위 MRO 클래스에만 위임하면, 전체 체인이 올바르게 실행됩니다.
+    </p>
+    <div class="callout callout-warning">
+      <strong>함정: super()를 한 클래스만 호출하면 체인이 끊어집니다.</strong><br>
+      협동 다중 상속이 동작하려면 <strong>모든 클래스</strong>가 super()를 호출해야 합니다.
+    </div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-label">Python (협동 다중 상속 패턴)</span>
+        <button class="copy-btn">복사</button>
+      </div>
+      <pre><code class="language-python">class Base:
+    def action(self):
+        print("Base.action")
+
+class LogMixin:
+    def action(self):
+        print("LogMixin: before")
+        super().action()   # MRO의 다음 클래스에 위임
+        print("LogMixin: after")
+
+class CacheMixin:
+    def action(self):
+        print("CacheMixin: before")
+        super().action()   # MRO의 다음 클래스에 위임
+        print("CacheMixin: after")
+
+class Service(LogMixin, CacheMixin, Base):
+    pass
+
+# MRO: Service → LogMixin → CacheMixin → Base → object
+print([c.__name__ for c in Service.__mro__])
+
+s = Service()
+s.action()
+# LogMixin: before
+# CacheMixin: before
+# Base.action
+# CacheMixin: after
+# LogMixin: after
+#
+# Mixin 패턴은 횡단 관심사(cross-cutting concerns)를 구현하는
+# Python 고유의 관용구입니다. Java의 AOP와 유사한 역할.</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+['Service', 'LogMixin', 'CacheMixin', 'Base', 'object']
+LogMixin: before
+CacheMixin: before
+Base.action
+CacheMixin: after
+LogMixin: after
     </div>
   </div>
 </section>
@@ -1719,8 +1902,62 @@ def risky():
 risky()</code></pre>
     </div>
     <div class="output-block">
-      <div class="output-label">실행 결과:</div>
+      <div class="output-label">실행 결과 (dis 출력 이후):</div>
+  3           0 RESUME                   0
+  4           2 LOAD_GLOBAL              1 (NULL + open)
+             ...
+             22 BEFORE_WITH
+             ...
+             46 PUSH_EXC_INFO
+             48 WITH_EXCEPT_START
+             ...
 (None, None, None)
+    </div>
+    <h3>Part B: RAII와 Python Context Manager — 자원 관리 패턴 비교</h3>
+    <p>
+      C++의 <strong>RAII(Resource Acquisition Is Initialization)</strong>는 객체 생성 시 자원을 획득하고
+      소멸자(<code>~Destructor</code>)에서 해제하는 패턴입니다. Python은 GC 기반이라 소멸자 호출 시점이 불확실하므로
+      <code>with</code>문 + Context Manager가 RAII의 역할을 맡습니다.
+    </p>
+    <ul>
+      <li><strong>C++ RAII</strong>: 스택 해제(stack unwinding) 시 소멸자 자동 호출 — 결정적(deterministic)</li>
+      <li><strong>Python __del__</strong>: GC에 의존, 순환 참조 시 호출 보장 없음 — 비결정적</li>
+      <li><strong>Python with/contextlib</strong>: __exit__ 호출이 보장됨 — RAII의 안전한 대안</li>
+    </ul>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-label">Python (contextlib.contextmanager — 제너레이터 기반 CM)</span>
+        <button class="copy-btn">복사</button>
+      </div>
+      <pre><code class="language-python">from contextlib import contextmanager
+
+@contextmanager
+def managed_resource(name):
+    print(f"획득: {name}")
+    try:
+        yield name          # __enter__의 반환값 역할
+    finally:
+        print(f"해제: {name}")   # 예외 여부와 무관하게 항상 실행
+
+with managed_resource("DB 연결") as r:
+    print(f"사용 중: {r}")
+    # raise ValueError("의도적 오류")  # 주석 해제해도 해제 보장
+
+# 출력:
+# 획득: DB 연결
+# 사용 중: DB 연결
+# 해제: DB 연결
+
+# CPython 내부:
+# @contextmanager는 GeneratorContextManager 객체를 반환
+# __enter__: generator.send(None) → yield 지점까지 실행
+# __exit__: 정상이면 generator.send(None), 예외면 generator.throw(exc)</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+획득: DB 연결
+사용 중: DB 연결
+해제: DB 연결
     </div>
   </div>
 </section>
@@ -1900,7 +2137,7 @@ def suppress_chain():
     try:
         int("not a number")
     except ValueError:
-        raise RuntimeError("변환 실패") from None  # 원인 숨김
+        raise RuntimeError("변환 실패") from None  # __cause__=None, __suppress_context__=True (단, __context__는 여전히 설정됨)
 
 try:
     suppress_chain()
@@ -1915,7 +2152,7 @@ except RuntimeError as e:
 오류: 변환 실패
 컨텍스트: invalid literal for int() with base 10: 'not a number'
 
-오류: 변환 실패, 원인: None, 컨텍스트: None
+오류: 변환 실패, 원인: None, 컨텍스트: invalid literal for int() with base 10: 'not a number'
     </div>
     <h3>__exit__와 예외 처리의 통합</h3>
     <p>
@@ -2016,6 +2253,55 @@ except ZeroDivisionError as e:
 &lt;traceback object at 0x...&gt;
 ('division by zero',)
 Traceback (most recent call last):
+    </div>
+    <h3>Part B: 예외 계층구조 설계 — LSP와 예외 의미론</h3>
+    <p>
+      예외 클래스 계층구조를 설계할 때 <strong>리스코프 치환 원칙(Liskov Substitution Principle, LSP)</strong>을 적용합니다.
+      서브 예외를 catch하는 핸들러는 베이스 예외도 처리할 수 있어야 합니다.
+    </p>
+    <ul>
+      <li><code>except Exception</code>: BaseException의 서브클래스 중 시스템 종료 예외(SystemExit, KeyboardInterrupt, GeneratorExit)를 제외한 모든 예외 포착</li>
+      <li><code>except BaseException</code>: 모든 예외 포착 — 일반적으로 사용 금지</li>
+      <li><strong>예외 그룹(Python 3.11+)</strong>: <code>ExceptionGroup</code>으로 여러 예외를 묶어 동시에 처리 (<code>except*</code> 문법)</li>
+    </ul>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-label">Python (커스텀 예외 계층구조 설계)</span>
+        <button class="copy-btn">복사</button>
+      </div>
+      <pre><code class="language-python">class AppError(Exception):
+    """모든 앱 오류의 베이스. 외부 코드는 이것만 catch해도 됨."""
+    pass
+
+class NetworkError(AppError):
+    """네트워크 관련 오류."""
+    pass
+
+class TimeoutError(NetworkError):  # NetworkError의 서브클래스
+    def __init__(self, url, seconds):
+        self.url = url
+        self.seconds = seconds
+        super().__init__(f"{url}이 {seconds}초 후 타임아웃")
+
+# LSP: NetworkError를 catch하면 TimeoutError도 처리됨
+try:
+    raise TimeoutError("https://example.com", 30)
+except NetworkError as e:
+    print(f"네트워크 오류: {e}")   # TimeoutError도 잡힘
+except AppError as e:
+    print(f"앱 오류: {e}")
+
+# Python 3.11+ ExceptionGroup (여러 예외 동시 처리)
+# try:
+#     raise ExceptionGroup("multi", [ValueError("a"), KeyError("b")])
+# except* ValueError as eg:
+#     print(f"ValueError들: {eg.exceptions}")
+# except* KeyError as eg:
+#     print(f"KeyError들: {eg.exceptions}")</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+네트워크 오류: https://example.com이 30초 후 타임아웃
     </div>
   </div>
 </section>
@@ -2973,7 +3259,7 @@ print(p2.size)          # 10 — 처음 생성 시 값 유지</code></pre>
 
 <!-- ==================== 13. 용어 사전 ==================== -->
 <section id="glossary">
-  <h2>용어 사전 (25개)</h2>
+  <h2>용어 사전 (30개)</h2>
   <div class="glossary-grid">
     <div class="glossary-item">
       <h4>클래스 (Class)</h4>
@@ -3074,6 +3360,26 @@ print(p2.size)          # 10 — 처음 생성 시 값 유지</code></pre>
     <div class="glossary-item">
       <h4>Zero-cost Exception Handling</h4>
       <p>Python 3.11+에서 도입. try 블록이 정상 실행되면 오버헤드 0. 예외 발생 시에만 예외 테이블을 조회하는 방식으로 구현.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>__class_getitem__</h4>
+      <p><code>class[type]</code> 구문(제네릭 표기)을 처리하는 클래스 메서드. <code>list[int]</code>, <code>dict[str, int]</code> 등 타입 힌트 표기를 가능하게 함. PEP 560에서 도입.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>__init_subclass__</h4>
+      <p>클래스가 서브클래스화될 때 부모 클래스에서 자동 호출되는 훅. 메타클래스 없이도 서브클래스 생성을 가로채고 커스터마이즈할 수 있음. PEP 487에서 도입.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Mixin</h4>
+      <p>단독 인스턴스화를 의도하지 않고, 다른 클래스에 기능을 주입하기 위해 설계된 클래스. 협동 다중 상속 + MRO를 활용. Python에서 <code>LogMixin</code>, <code>SerializeMixin</code> 등이 대표적 패턴.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Cooperative Multiple Inheritance</h4>
+      <p>다중 상속 계층에서 모든 클래스가 <code>super()</code>를 호출해 MRO 순서대로 메서드 체인을 완성하는 설계 패턴. 한 클래스라도 super()를 생략하면 체인이 끊어짐.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Traceback 객체</h4>
+      <p>예외 발생 시 Python이 생성하는 스택 프레임 체인. <code>e.__traceback__</code>으로 접근. CPython에서 <code>PyTracebackObject</code> 구조체로 표현. <code>traceback</code> 모듈로 형식화 가능.</p>
     </div>
   </div>
 </section>

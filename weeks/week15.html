@@ -750,6 +750,7 @@ for t in threads: t.join()</code></pre>
       <div class="output-label">실행 결과:</div>
 [모니터] 상태 체크...
 [모니터] 상태 체크...
+[모니터] 상태 체크...
 메인 종료 → 데몬 스레드도 자동 종료
 스레드 0: user_id = 0
 스레드 1: user_id = 1
@@ -792,9 +793,9 @@ for t in threading.enumerate():
     </div>
     <div class="output-block">
       <div class="output-label">실행 결과 (예상):</div>
-Thread native_id: 140234567890
-Thread ident: 140234567890
-sys.thread_info: sys.thread_info(implementation='pthread', version=1, lock='mutex+cond')
+Thread native_id: 3713018
+Thread ident: 139828552726080
+sys.thread_info: sys.thread_info(name='pthread', lock='semaphore', version='NPTL 2.35')
 
 활성 스레드: 1
   MainThread: daemon=False
@@ -941,10 +942,10 @@ if __name__ == "__main__":
     </div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
-100000007 = 941 × 106271
-100000009 = 100000009
-100000003 = 100000003
-100000019 = 100000019
+100000007 = 100000007
+100000009 = 149 × 671141
+100000003 = 643 × 155521
+100000019 = 7 × 14285717
     </div>
     <div class="callout callout-info">
       <strong>multiprocessing의 비용:</strong>
@@ -1261,6 +1262,47 @@ asyncio.run(main_cooperative())</code></pre>
       Python 공식 문서의 asyncio conceptual overview에서는 이를 <code>YieldToEventLoop</code>로 표현합니다.
     </div>
     <div class="callout callout-warning">
+      <strong>경고: <code>asyncio.sleep(0)</code>과 <code>time.sleep(0)</code>은 완전히 다릅니다</strong><br>
+      <code>time.sleep(0)</code>은 OS에게 "지금 당장 CPU를 다른 OS 스레드에 넘겨라"고 요청하는 시스템 콜입니다.
+      반면 <code>await asyncio.sleep(0)</code>은 <strong>Event Loop에 제어권을 양보</strong>하는 asyncio 전용 패턴입니다.<br><br>
+      asyncio 코루틴 안에서 <code>time.sleep(0)</code>을 쓰면 Event Loop가 <em>완전히 블로킹</em>되어
+      다른 코루틴이 실행되지 못합니다. <code>time.sleep(1)</code>과 동일한 블로킹 효과.
+      반드시 <code>await asyncio.sleep(0)</code>을 사용하세요.
+      <div class="code-block" style="margin-top:12px;">
+        <div class="code-header">
+          <span>asyncio.sleep(0) vs time.sleep(0)</span>
+          <button class="copy-btn" title="복사">복사</button>
+        </div>
+        <pre><code class="language-python">import asyncio
+import time
+
+async def bad_yield():
+    """time.sleep(0)은 Event Loop를 블로킹"""
+    for i in range(3):
+        time.sleep(0)          # ❌ OS sleep — Event Loop 차단
+        print(f"bad_yield {i}")
+
+async def good_yield():
+    """asyncio.sleep(0)은 Event Loop에 제어권 양보"""
+    for i in range(3):
+        await asyncio.sleep(0) # ✅ Event Loop 양보
+        print(f"good_yield {i}")
+
+async def background():
+    for i in range(3):
+        await asyncio.sleep(0)
+        print(f"  background {i}")
+
+async def main():
+    print("--- time.sleep(0): background 실행 안 됨 ---")
+    await asyncio.gather(bad_yield(), background())
+    print("--- asyncio.sleep(0): 번갈아 실행 ---")
+    await asyncio.gather(good_yield(), background())
+
+asyncio.run(main())</code></pre>
+      </div>
+    </div>
+    <div class="callout callout-warning">
       <strong>경고: asyncio.run() 안에서 asyncio.run() 중첩 불가</strong>
       <div class="code-block" style="margin-top:12px;">
         <div class="code-header">
@@ -1334,7 +1376,7 @@ print("  4. 반복")</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과 (Linux):</div>
 Event Loop 구현: &lt;class 'asyncio.unix_events._UnixSelectorEventLoop'&gt;
-Selector: &lt;selectors.EpollSelector object at 0x...&gt;
+Selector: &lt;class 'selectors.EpollSelector'&gt;
 
 _run_once 내 핵심 패턴:
   1. _ready 큐에서 콜백 실행
@@ -1404,7 +1446,11 @@ print(type(gen()))         # <class 'generator'>
 print(type(coro()))        # <class 'coroutine'>
 
 # 코루틴도 send()로 직접 제어 가능
-c = coro()
+# (await 없는 단순한 코루틴으로 StopIteration 확인)
+async def simple_coro():
+    return 42
+
+c = simple_coro()
 try:
     c.send(None)           # 첫 번째 send는 반드시 None
 except StopIteration as e:
@@ -1514,7 +1560,7 @@ async def sample():
 
 # 코루틴 함수의 코드 객체 분석
 print(f"co_flags: {hex(sample.__code__.co_flags)}")
-# CO_COROUTINE (0x100) 플래그 설정됨
+# Python 3.12: 0x83 (CO_OPTIMIZED | CO_NEWLOCALS | CO_COROUTINE)
 
 print("\n바이트코드:")
 dis.dis(sample)
@@ -1527,25 +1573,28 @@ print(f"코드 객체 타입: {type(sample.__code__)}")</code></pre>
     </div>
     <div class="output-block">
       <div class="output-label">실행 결과 (Python 3.12):</div>
-co_flags: 0x100
+co_flags: 0x83
 바이트코드:
-  RESUME           0
-  LOAD_CONST       1 (1)
-  STORE_FAST       0 (x)
-  PUSH_NULL
-  LOAD_GLOBAL      1 (asyncio)
-  LOAD_ATTR        2 (sleep)
-  LOAD_CONST       2 (0)
-  CALL             1
-  GET_AWAITABLE    1
-  LOAD_CONST       0 (None)
-  SEND             ...
-  YIELD_VALUE      ...
-  RESUME           ...
+  RETURN_GENERATOR
   POP_TOP
-  LOAD_FAST        0 (x)
-  LOAD_CONST       3 (1)
-  BINARY_OP        0 (+)
+  RESUME                   0
+  LOAD_CONST               1 (1)
+  STORE_FAST               0 (x)
+  LOAD_GLOBAL              1 (NULL + asyncio)
+  LOAD_ATTR                2 (sleep)
+  LOAD_CONST               2 (0)
+  CALL                     1
+  GET_AWAITABLE            0
+  LOAD_CONST               0 (None)
+  SEND                     ... (to ...)
+  YIELD_VALUE              ...
+  RESUME                   3
+  JUMP_BACKWARD_NO_INTERRUPT ...
+  END_SEND
+  POP_TOP
+  LOAD_FAST                0 (x)
+  LOAD_CONST               1 (1)
+  BINARY_OP                0 (+)
   RETURN_VALUE
 
 코루틴인지 확인: True
@@ -1625,8 +1674,8 @@ asyncio.run(demo_create_task())</code></pre>
 [C] 완료
 C 먼저 완료: C
 [A] 완료
-A: A, B: B
 [B] 완료
+A: A, B: B
     </div>
     <div class="callout callout-info">
       <strong>비교 요약:</strong>
@@ -1934,6 +1983,44 @@ asyncio.run(main())</code></pre>
 IO 결과: IO 완료
 CPU 결과: 333332833333500000
     </div>
+    <div class="callout callout-warning">
+      <strong>경고: <code>ThreadPoolExecutor</code> 안에서 <code>async def</code> 함수를 직접 호출할 수 없습니다</strong><br>
+      <code>executor.submit()</code>은 일반 동기 함수(<code>def</code>)만 받습니다.
+      <code>async def</code> 코루틴을 넘기면 코루틴 <em>객체</em>만 생성될 뿐 실행되지 않습니다.
+      스레드 풀 내부에는 Event Loop가 없기 때문입니다.<br><br>
+      asyncio 코루틴을 별도 스레드에서 실행하려면
+      <code>asyncio.run_coroutine_threadsafe(coro, loop)</code>로
+      <strong>기존 Event Loop에 안전하게 제출</strong>해야 합니다.
+      <div class="code-block" style="margin-top:12px;">
+        <div class="code-header">
+          <span>ThreadPoolExecutor에서 async def 호출 — 올바른 방법</span>
+          <button class="copy-btn" title="복사">복사</button>
+        </div>
+        <pre><code class="language-python">import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+async def async_task(n):
+    await asyncio.sleep(0.1)
+    return n * n
+
+def sync_wrapper(n, loop):
+    # ✅ 기존 Event Loop에 코루틴을 스레드 안전하게 제출
+    future = asyncio.run_coroutine_threadsafe(async_task(n), loop)
+    return future.result()   # 블로킹으로 결과 수신
+
+async def main():
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        # ❌ 잘못된 방법 — 코루틴 객체만 반환됨, 실행 안 됨
+        # future = executor.submit(async_task, 5)
+
+        # ✅ 올바른 방법 — sync_wrapper가 코루틴을 loop에 제출
+        results = list(executor.map(sync_wrapper, [1, 2, 3], [loop]*3))
+    print(results)  # [1, 4, 9]
+
+asyncio.run(main())</code></pre>
+      </div>
+    </div>
   </div>
 
   <!-- 고급 -->
@@ -2010,8 +2097,8 @@ for n in [1, 2, 4, 8, 16, 32, 64, 128]:
     8개 코어: 4.71배 (이론 최대: 10배)
    16개 코어: 6.40배 (이론 최대: 10배)
    32개 코어: 7.80배 (이론 최대: 10배)
-   64개 코어: 8.76배 (이론 최대: 10배)
-  128개 코어: 9.33배 (이론 최대: 10배)
+   64개 코어: 8.77배 (이론 최대: 10배)
+  128개 코어: 9.34배 (이론 최대: 10배)
     </div>
   </div>
 </section>
@@ -2689,7 +2776,7 @@ multiprocessing — GIL 우회, 진짜 병렬
 
 <!-- ==================== 15. 용어 사전 ==================== -->
 <section id="glossary">
-  <h2>용어 사전 (25개)</h2>
+  <h2>용어 사전 (30개)</h2>
   <dl class="glossary">
 
     <dt>GIL (Global Interpreter Lock)</dt>
@@ -2766,6 +2853,21 @@ multiprocessing — GIL 우회, 진짜 병렬
 
     <dt>Amdahl의 법칙</dt>
     <dd>병렬 처리의 이론적 속도 향상 한계를 설명하는 법칙. S = 1 / ((1-P) + P/N). P가 병렬화 가능한 비율, N이 프로세서 수. 10%의 순차 코드가 있으면 최대 10배 향상이 한계.</dd>
+
+    <dt>epoll</dt>
+    <dd>Linux 커널의 I/O 이벤트 알림 인터페이스. <code>select()</code>의 O(n) 한계를 극복하여 수만 개의 파일 디스크립터를 O(1)에 감시한다. asyncio는 Linux에서 <code>SelectorEventLoop</code>의 기반으로 epoll을 사용한다. macOS는 <code>kqueue</code>, Windows는 <code>IOCP</code>.</dd>
+
+    <dt>Task (태스크)</dt>
+    <dd><code>asyncio.Task</code>는 코루틴을 감싸 Event Loop에서 독립적으로 실행되는 단위. <code>asyncio.create_task()</code>로 생성하며, <code>Future</code>의 서브클래스. <code>task.cancel()</code>로 취소 가능하고 <code>task.done()</code>으로 완료 확인.</dd>
+
+    <dt>Future (퓨처)</dt>
+    <dd>아직 완료되지 않은 비동기 연산의 결과를 나타내는 객체. <code>concurrent.futures.Future</code>는 스레드 기반, <code>asyncio.Future</code>는 Event Loop 기반. 콜백을 등록하면 완료 시 자동 호출된다. <code>Task</code>는 <code>asyncio.Future</code>의 서브클래스.</dd>
+
+    <dt>run_coroutine_threadsafe()</dt>
+    <dd>다른 OS 스레드에서 실행 중인 asyncio Event Loop에 코루틴을 안전하게 제출하는 함수. <code>asyncio.run_coroutine_threadsafe(coro, loop)</code>로 호출하며 <code>concurrent.futures.Future</code>를 반환한다. Thread-safe하게 설계되어 <code>ThreadPoolExecutor</code>와 asyncio를 연동할 때 사용.</dd>
+
+    <dt>Starvation (기아 상태)</dt>
+    <dd>특정 코루틴이나 스레드가 필요한 자원을 계속 얻지 못하고 영원히 대기하는 상태. asyncio에서는 한 코루틴이 <code>await</code> 없이 긴 루프를 실행할 때 다른 코루틴이 실행 기회를 얻지 못해 발생한다. <code>await asyncio.sleep(0)</code>으로 주기적으로 양보하면 예방 가능.</dd>
 
   </dl>
 </section>

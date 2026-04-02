@@ -328,11 +328,11 @@ print(Point.__annotations__)   # {'x': &lt;class 'float'&gt;, 'y': &lt;class 'fl
 
 # 인스턴스 메서드의 어노테이션
 print(Point.__init__.__annotations__)
-# {'x': &lt;class 'float'&gt;, 'y': &lt;class 'float'&gt;, 'return': &lt;class 'NoneType'&gt;}</code></pre>
+# {'x': &lt;class 'float'&gt;, 'y': &lt;class 'float'&gt;, 'return': None}</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
 {'x': &lt;class 'float'&gt;, 'y': &lt;class 'float'&gt;}
-{'x': &lt;class 'float'&gt;, 'y': &lt;class 'float'&gt;, 'return': &lt;class 'NoneType'&gt;}
+{'x': &lt;class 'float'&gt;, 'y': &lt;class 'float'&gt;, 'return': None}
     </div>
     <div class="callout callout-info">
       <strong>Python 공식 문서에서는:</strong>
@@ -340,6 +340,14 @@ print(Point.__init__.__annotations__)
       Python 3.14부터는 <code>annotationlib.get_annotations()</code>가 이를 대체합니다.
       클래스 상속 시 <code>__annotations__</code>를 직접 접근하면 부모 클래스의 것이
       반환될 수 있기 때문입니다.
+    </div>
+    <div class="callout callout-warning">
+      <strong><code>__annotations__</code>는 상속되지 않습니다.</strong>
+      자식 클래스에서 <code>ChildClass.__annotations__</code>를 조회하면 자식이 직접 선언한 어노테이션만 반환됩니다.
+      부모 클래스의 타입 힌트를 포함해 모든 조상의 어노테이션까지 수집하려면
+      <code>inspect.get_annotations(cls, eval_str=True)</code> 대신
+      MRO를 직접 순회해야 합니다:
+      <code>for c in reversed(cls.__mro__): hints.update(c.__annotations__)</code>.
     </div>
     <pre><code class="language-python">import inspect
 
@@ -440,9 +448,9 @@ is_active: bool = True
 
 # 함수 매개변수와 반환값
 def greeting(name: str, times: int) -> str:
-    return (name + "! ") * times
+    return " ".join([name + "!"] * times)
 
-print(greeting("안녕", 3))   # "안녕! 안녕! 안녕! "</code></pre>
+print(greeting("안녕", 3))   # "안녕! 안녕! 안녕!"</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
 안녕! 안녕! 안녕!
@@ -707,6 +715,13 @@ print(double(2.5))   # 5.0  (float)
 10
 5.0
     </div>
+    <div class="callout callout-warning">
+      <strong>TypeVar에 <code>bound</code>가 없으면 Any처럼 동작합니다.</strong>
+      <code>T = TypeVar("T")</code>만 선언하면 mypy는 T를 어떤 타입이든 허용합니다.
+      이 경우 함수 내부에서 <code>T</code>에 대해 메서드를 호출하면 mypy가 오류를 잡지 못합니다.
+      특정 메서드를 가진 타입만 허용하려면 <code>bound</code>로 상한 타입을 지정하세요:
+      <code>T = TypeVar("T", bound=Comparable)</code>.
+    </div>
   </div>
 
   <!-- 고급 -->
@@ -903,6 +918,13 @@ render(Rectangle())    # "사각형을 그립니다"</code></pre>
   <div class="level-section advanced">
     <span class="level-badge level-advanced">고급</span>
     <h3>runtime_checkable — isinstance() 지원</h3>
+    <div class="callout callout-warning">
+      <strong>Protocol은 기본적으로 <code>isinstance()</code> 검사가 불가능합니다.</strong>
+      <code>@runtime_checkable</code> 데코레이터 없이 <code>isinstance(obj, MyProtocol)</code>을 호출하면
+      <code>TypeError: Protocols with non-method members don't support issubclass()</code> 오류가 발생합니다.
+      또한 <code>@runtime_checkable</code>을 붙이더라도 메서드 이름 존재 여부만 검사하며,
+      반환 타입이나 매개변수 타입까지는 검사하지 않습니다.
+    </div>
     <pre><code class="language-python">from typing import Protocol, runtime_checkable
 
 @runtime_checkable
@@ -1000,7 +1022,7 @@ class Drawable(Protocol):
     def draw(self) -> str: ...
 
 # Protocol 클래스의 내부 구조 탐색
-print(Drawable.__protocol_attrs__)   # frozenset({'draw'})
+print(Drawable.__protocol_attrs__)   # {'draw'}  (Python 3.12+: set, 이전 버전: frozenset)
 
 # Protocol 클래스는 특수한 메타클래스를 사용합니다
 print(type(Drawable))   # &lt;class 'typing._ProtocolMeta'&gt;
@@ -1010,7 +1032,7 @@ print(type(Drawable))   # &lt;class 'typing._ProtocolMeta'&gt;
 # 이것이 타입 시그니처가 아닌 이름만 검사하는 이유입니다</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
-frozenset({'draw'})
+{'draw'}
 &lt;class 'typing._ProtocolMeta'&gt;
     </div>
     <h3>Part B — 구조적 타이핑 vs 명목적 타이핑 이론</h3>
@@ -1470,14 +1492,23 @@ class Point:
     y: float
     label: str = "point"
 
-# 자동 생성된 __init__의 소스코드를 볼 수 있습니다
-print(inspect.getsource(Point.__init__))</code></pre>
+# 주의: dataclass의 __init__은 exec()로 동적 생성되므로
+# inspect.getsource()로 소스를 가져올 수 없습니다
+# inspect.getsource(Point.__init__)  # OSError: could not get source code
+
+# 대신 시그니처로 확인합니다
+print(inspect.signature(Point))   # (x: float, y: float, label: str = 'point') -> None</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+(x: float, y: float, label: str = 'point') -> None
+    </div>
     <p>
       <code>@dataclass</code>는 데코레이터입니다 — 클래스 정의 완료 후 클래스 객체를 받아
-      <code>__annotations__</code>를 읽고, 동적으로 <code>__init__</code> 등을 생성해서
-      클래스에 주입합니다.
+      <code>__annotations__</code>를 읽고, <code>exec()</code>로 <code>__init__</code> 코드 문자열을 실행해
+      클래스에 주입합니다. exec로 생성된 함수는 소스 파일 위치가 없으므로 <code>inspect.getsource()</code>가
+      실패합니다.
     </p>
-    <pre><code class="language-python">from dataclasses import dataclass, fields, asdict, astuple
+    <pre><code class="language-python">from dataclasses import dataclass, fields, asdict, astuple, MISSING
 
 @dataclass
 class Product:
@@ -1487,7 +1518,8 @@ class Product:
 
 # dataclass의 필드 메타데이터 접근
 for f in fields(Product):
-    print(f"이름={f.name}, 타입={f.type}, 기본값={f.default}")
+    default_display = "MISSING" if f.default is MISSING else f.default
+    print(f"이름={f.name}, 타입={f.type}, 기본값={default_display}")
 
 p = Product("파이썬 책", 25000.0)
 
@@ -1519,20 +1551,26 @@ def _create_init(fields_list):
     return source
 
 from dataclasses import fields, dataclass
+import inspect
 
 @dataclass
 class Dummy:
     x: int
     y: str
 
-# 실제 생성된 코드와 유사한 것을 보려면:
-print(inspect.getsource(Dummy.__init__))  # 실제 소스 확인</code></pre>
+# exec()로 생성된 __init__은 소스 파일이 없어 getsource()가 실패합니다
+# 시그니처로 구조를 확인합니다:
+print(inspect.signature(Dummy))   # (x: int, y: str) -> None</code></pre>
+    <div class="output-block">
+      <div class="output-label">실행 결과:</div>
+(x: int, y: str) -> None
+    </div>
     <div class="callout callout-info">
       <strong>Python 공식 문서에서는:</strong>
       <code>dataclasses</code> 모듈은 <code>__init__</code>을 <code>exec()</code>를 통한
-      동적 코드 생성으로 만듭니다. 이것이 생성된 함수가 일반 Python 함수처럼
-      <code>inspect.getsource()</code>로 볼 수 있는 이유입니다.
-      단순히 <code>setattr</code>로 메서드를 주입하는 것이 아닙니다.
+      동적 코드 생성으로 만듭니다. exec()로 생성된 함수는 실제 소스 파일과 연결되지 않으므로
+      <code>inspect.getsource()</code>가 실패합니다 (<code>OSError: could not get source code</code>).
+      단순히 <code>setattr</code>로 메서드를 주입하는 것이 아니라 완전한 함수 객체를 생성합니다.
     </div>
   </div>
 </section>
@@ -2558,7 +2596,7 @@ print(isinstance(42, Printable))        # False</code></pre>
 
 <!-- ==================== 13. 용어 사전 ==================== -->
 <section id="glossary">
-  <h2>용어 사전 (22개)</h2>
+  <h2>용어 사전 (31개)</h2>
   <div class="glossary-grid">
     <div class="glossary-item">
       <h4>타입 힌트 (Type Hint)</h4>
@@ -2647,6 +2685,42 @@ print(isinstance(42, Printable))        # False</code></pre>
     <div class="glossary-item">
       <h4>TypedDict</h4>
       <p>딕셔너리의 구조를 타입으로 정의. API 응답, 설정 딕셔너리 등 구조가 고정된 딕셔너리 타입 검사에 사용.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>구조적 서브타이핑 (Structural Subtyping)</h4>
+      <p>이름(상속) 대신 구조(메서드·속성 집합)로 타입 호환성을 결정하는 방식. Python의 Protocol이 이를 구현. Go, TypeScript도 채택. "Duck Typing"의 정적 타입 시스템 버전.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>명목적 서브타이핑 (Nominal Subtyping)</h4>
+      <p>클래스 이름과 상속 선언으로 타입 호환성을 결정하는 방식. Java, C#, Python의 ABC가 이 방식. 명시적 <code>class Foo(Bar):</code> 선언이 없으면 호환 불가.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>반공변성 (Contravariance)</h4>
+      <p>타입 매개변수의 상속 관계가 Generic에서 역전되는 성질. <code>contravariant=True</code> TypeVar. 함수 인자 타입에 적용 — <code>Consumer[Animal]</code>은 <code>Consumer[Dog]</code>의 서브타입.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>불변성 (Invariance)</h4>
+      <p>Generic 타입 매개변수에서 상속 관계가 유지되지도, 역전되지도 않는 성질. Python의 <code>list[int]</code>는 <code>list[object]</code>의 서브타입이 아님. 읽기·쓰기가 모두 가능한 컨테이너에 적용.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>PEP 544</h4>
+      <p>Python 3.8+에서 Protocol을 도입한 제안. 구조적 서브타이핑을 공식화. <code>typing.Protocol</code>과 <code>@runtime_checkable</code> 정의. "Static Duck Typing"이라고도 불림.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>PEP 695</h4>
+      <p>Python 3.12+에서 도입된 타입 매개변수 문법. <code>def func[T](...)</code>, <code>class Cls[T]:</code>, <code>type Alias = ...</code>로 TypeVar 선언을 간소화. <code>from typing import TypeVar</code> 불필요.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>bound (TypeVar 상한)</h4>
+      <p>TypeVar에서 허용되는 타입의 상한을 지정하는 매개변수. <code>T = TypeVar("T", bound=SomeClass)</code>이면 T는 SomeClass 또는 그 서브클래스만 가능. bound 없으면 Any처럼 동작.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Literal[...]</h4>
+      <p>특정 값 자체를 타입으로 표현. <code>Literal["read", "write"]</code>는 그 두 문자열 값만 허용. 설정값, 상태 코드, 방향 등 고정된 선택지를 모델링할 때 사용.</p>
+    </div>
+    <div class="glossary-item">
+      <h4>Final[T]</h4>
+      <p>재할당이 불가능한 변수·속성임을 표현. <code>MAX_SIZE: Final[int] = 100</code>. mypy가 재할당 시도를 오류로 검출. 클래스 상속에서 메서드 오버라이드 방지에도 사용(<code>@final</code>).</p>
     </div>
   </div>
 </section>
