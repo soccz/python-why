@@ -149,7 +149,7 @@
     </div>
     <div class="toc-section">
       <a href="#exercises" class="toc-section-link">
-        <span class="toc-num">11</span>연습문제 (12문제 — 초급4 + 중급4 + 고급1 + 전공자3)
+        <span class="toc-num">11</span>연습문제 (13문제 — 초급4 + 중급4 + 고급2 + 전공자3)
       </a>
       <div class="toc-levels">
         <span class="toc-level-dot elem">초급</span>
@@ -725,8 +725,10 @@ c = Color(255, 0, 0)
 lst = [1, 2, 3]
 lst.append(lst)  # 자기 참조!
 
-# repr()은 RecursionError
-# reprlib.repr()은 안전하게 처리
+# 내장 repr()도 리스트의 자기 참조는 감지함
+print(repr(lst))           # [1, 2, 3, [...]]
+# 하지만 사용자 정의 __repr__에서 자기 참조가 있으면 RecursionError 위험
+# reprlib.repr()은 길이 제한 + 깊이 제한으로 더 안전
 print(reprlib.repr(lst))   # [1, 2, 3, [...]]
 
 # reprlib.Repr 커스터마이즈
@@ -872,7 +874,8 @@ class GoodHash:
     def __hash__(self):
         return hash((self.a, self.b, self.c))  # 튜플은 각 원소를 혼합
 
-# Python의 hash()는 내부적으로 SipHash-1-3 (Python 3.4+)
+# str/bytes의 hash()는 SipHash-2-4 (Python 3.4+), SipHash-1-3 (Python 3.11+)
+# int/tuple 등은 별도 해시 함수 사용 (int는 자기 자신, tuple은 xxHash 기반)
 # 해시 시드가 매 실행마다 바뀜 (hash randomization)
 # PYTHONHASHSEED=0으로 고정 가능 (테스트용)
 import os
@@ -907,7 +910,7 @@ for i in range(20):
 
 # 크기가 점프하는 지점이 리사이징 지점 (부하율 2/3 초과 시)
 print(sizes)
-# 리사이징: 8→16→32→... (2배씩)</code></pre>
+# 리사이징: 8→16→32→... (대략 2배씩, 삭제가 많으면 4배 성장도 가능)</code></pre>
     <h3>Part B: __eq__와 None 비교 관례</h3>
     <pre><code class="language-python"># None과 비교할 때는 항상 is/is not을 씁니다
 # == 를 쓰면 __eq__가 호출되어 의도치 않은 동작 가능
@@ -1008,6 +1011,29 @@ D().hello()
       <strong>super()가 중요한 이유: 다이아몬드 문제 해결</strong><br>
       D → B, C → A 구조(다이아몬드)에서 A.hello가 두 번 호출되는 문제를 MRO + super()가 해결합니다.<br>
       MRO가 각 클래스를 정확히 한 번만 호출하도록 순서를 정해줍니다.
+    </div>
+    <div class="callout callout-warning">
+      <strong>함정: super().__init__() 호출 누락</strong>
+      <pre><code class="language-python"># 될 것 같은데 안 되는 코드
+class Animal:
+    def __init__(self, name):
+        self.name = name
+
+class Dog(Animal):
+    def __init__(self, name, breed):
+        # super().__init__(name)을 안 불렀다!
+        self.breed = breed
+
+dog = Dog("바둑이", "진돗개")
+print(dog.breed)   # 진돗개
+print(dog.name)    # AttributeError: 'Dog' object has no attribute 'name'
+# __init__을 오버라이드하면 부모의 __init__은 자동 호출되지 않음!
+
+# 올바른 방법
+class Dog(Animal):
+    def __init__(self, name, breed):
+        super().__init__(name)    # 부모 초기화를 명시적으로 호출
+        self.breed = breed</code></pre>
     </div>
     <pre><code class="language-python"># __init__에서 super() 사용 — 다중 상속 안전 패턴
 class Base:
@@ -1171,11 +1197,12 @@ with open("data.txt", "w") as f:
     # 예외가 나도 with 블록을 빠져나오면서 f.close() 자동 호출
 
 # with문의 내부 번역:
-# f = open("data.txt", "w")      ← __enter__ 호출 결과
+# mgr = open("data.txt", "w")       ← 컨텍스트 매니저 객체
+# f = mgr.__enter__()                ← __enter__ 호출, 반환값을 as 변수에 저장
 # try:
 #     f.write("데이터")
 # finally:
-#     f.close()                  ← __exit__ 호출</code></pre>
+#     mgr.__exit__(None, None, None)  ← __exit__ 호출 (예외 시 예외 정보 전달)</code></pre>
     <div class="callout callout-warning">
       <strong>as 뒤의 변수는 __enter__의 반환값</strong>
       <pre><code class="language-python">with open("data.txt") as f:
@@ -1308,14 +1335,18 @@ def use_with():
         f.write("hello")
 
 dis.dis(use_with)
-# 핵심 명령어:
-#   BEFORE_WITH      ← __enter__ 호출, 스택에 exit 함수 저장
-#   STORE_FAST       ← as 변수에 __enter__ 반환값 저장
-#   ... (블록 내용) ...
-#   LOAD_CONST       ← None, None, None (정상 종료 시)
-#   CALL             ← __exit__ 호출
+# BEFORE_WITH: Python 3.11에서 도입 (SETUP_WITH 대체), 3.12/3.13에서 사용
+# Python 3.14에서 BEFORE_WITH 제거 → LOAD_SPECIAL로 대체
 #
-# 예외 시: CLEANUP_THROW → __exit__(exc_type, exc_val, exc_tb) 호출</code></pre>
+# Python 3.12 실측 바이트코드:
+#   CALL  1              ← open("test.txt", "w") 호출
+#   BEFORE_WITH          ← __enter__ 호출, __exit__를 스택에 저장
+#   STORE_FAST  0 (f)    ← as 변수에 __enter__ 반환값 저장
+#   ... (블록 내용) ...
+#   __exit__(None, None, None) 호출 (정상 종료 시)
+#
+# 예외 시: 예외 테이블에서 핸들러 블록을 찾아 점프 → __exit__(exc_type, exc_val, exc_tb) 호출
+# (Python 3.11+ zero-cost exception handling: 예외 테이블이 별도 관리)</code></pre>
     <h3>Part B: ExitStack — 동적 컨텍스트 관리</h3>
     <pre><code class="language-python">from contextlib import ExitStack
 
@@ -1677,7 +1708,7 @@ class Vector:
 
     # 부울 (영벡터인가?)
     def __bool__(self):
-        return bool(self.x or self.y)
+        return self.x != 0 or self.y != 0
 
     # 같은가?
     def __eq__(self, other):
@@ -1695,7 +1726,7 @@ print(v1 * 2)       # Vector(6, 8)
 print(3 * v1)       # Vector(9, 12)
 print(abs(v1))      # 5.0
 print(bool(v1))     # True
-print(Vector(0,0))  # False는 아님
+print(Vector(0,0))  # Vector(0, 0)  ← __repr__ 호출 (bool이 아님)
 print(bool(Vector(0,0)))  # False</code></pre>
 
     <h3>실습 C — 컨텍스트 매니저로 연산 추적</h3>
@@ -1738,7 +1769,7 @@ with vector_ops_tracker() as ops:
     print(f"결과: {result:.2f}")
 
 print(f"연산 횟수: {ops}")
-# 결과: 8.06
+# 결과: 10.63
 # 연산 횟수: {'add': 1, 'mul': 1, 'abs': 1}</code></pre>
   </div>
 </section>
@@ -1826,11 +1857,11 @@ print(D().method())
     f.write("안녕하세요")</code></pre>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">f = open("data.txt", "w")  # __enter__ 호출 (파일 객체 반환)
+      <pre><code class="language-python">f = open("data.txt", "w")  # with문에서는 여기서 __enter__ 호출 → 파일 객체 반환
 try:
     f.write("안녕하세요")
 finally:
-    f.close()  # __exit__ 호출 (예외 유무 관계 없이)</code></pre>
+    f.close()  # with문에서는 __exit__이 이 역할을 담당</code></pre>
     </details>
   </div>
 
@@ -1956,7 +1987,7 @@ finally:
     </details>
   </div>
 
-  <h3 class="exercises-level-title">고급 (1문제)</h3>
+  <h3 class="exercises-level-title">고급 (2문제)</h3>
 
   <div class="problem">
     <p><strong>문제 9.</strong> 불변(immutable) 좌표 클래스 <code>ImmutablePoint</code>를 구현하세요. 생성 후 x, y를 변경할 수 없어야 하며, 딕셔너리 키로 사용 가능해야 합니다. <code>__new__</code>와 <code>__setattr__</code>을 활용하세요.</p>
@@ -2001,10 +2032,85 @@ except AttributeError as e:
     </details>
   </div>
 
+  <div class="problem">
+    <p><strong>문제 10.</strong> <code>Temperature</code> 클래스에 <code>__lt__</code>, <code>__le__</code>, <code>__gt__</code>, <code>__ge__</code>를 구현하고, <code>functools.total_ordering</code>으로 간소화한 버전과 비교하세요.</p>
+    <details class="answer">
+      <summary>정답 보기</summary>
+      <pre><code class="language-python"># 방법 1: 직접 구현
+class Temperature:
+    def __init__(self, celsius):
+        self.celsius = celsius
+
+    def __eq__(self, other):
+        if not isinstance(other, Temperature):
+            return NotImplemented
+        return self.celsius == other.celsius
+
+    def __lt__(self, other):
+        if not isinstance(other, Temperature):
+            return NotImplemented
+        return self.celsius < other.celsius
+
+    def __le__(self, other):
+        if not isinstance(other, Temperature):
+            return NotImplemented
+        return self.celsius <= other.celsius
+
+    def __gt__(self, other):
+        if not isinstance(other, Temperature):
+            return NotImplemented
+        return self.celsius > other.celsius
+
+    def __ge__(self, other):
+        if not isinstance(other, Temperature):
+            return NotImplemented
+        return self.celsius >= other.celsius
+
+    def __repr__(self):
+        return f"Temperature({self.celsius})"
+
+# 방법 2: functools.total_ordering (간소화)
+import functools
+
+@functools.total_ordering
+class TemperatureSimple:
+    def __init__(self, celsius):
+        self.celsius = celsius
+
+    def __eq__(self, other):
+        if not isinstance(other, TemperatureSimple):
+            return NotImplemented
+        return self.celsius == other.celsius
+
+    def __lt__(self, other):
+        if not isinstance(other, TemperatureSimple):
+            return NotImplemented
+        return self.celsius < other.celsius
+
+    def __repr__(self):
+        return f"TemperatureSimple({self.celsius})"
+
+# 테스트
+t1 = Temperature(36.5)
+t2 = Temperature(38.0)
+print(t1 < t2)    # True
+print(t1 >= t2)   # False
+print(sorted([Temperature(38), Temperature(36), Temperature(37)]))
+# [Temperature(36), Temperature(37), Temperature(38)]
+
+# total_ordering은 __eq__와 __lt__만으로 나머지를 자동 생성
+s1 = TemperatureSimple(36.5)
+s2 = TemperatureSimple(38.0)
+print(s1 <= s2)    # True (자동 생성됨)
+print(s1 > s2)     # False (자동 생성됨)</code></pre>
+      <p><strong>핵심:</strong> <code>total_ordering</code>은 편리하지만, 자동 생성된 메서드는 2번의 비교를 수행하므로 성능이 중요하면 직접 구현이 낫습니다. 또한 <code>NotImplemented</code>를 반환해야 Python이 역방향 비교(<code>__rlt__</code> 등)를 시도할 수 있습니다.</p>
+    </details>
+  </div>
+
   <h3 class="exercises-level-title">전공자 (3문제)</h3>
 
   <div class="problem">
-    <p><strong>문제 10.</strong> 다음 코드에서 <code>s.__len__ = lambda: 99</code>가 <code>len(s)</code>에 영향을 주지 않는 이유를 CPython 내부 구현 관점에서 설명하세요.</p>
+    <p><strong>문제 11.</strong> 다음 코드에서 <code>s.__len__ = lambda: 99</code>가 <code>len(s)</code>에 영향을 주지 않는 이유를 CPython 내부 구현 관점에서 설명하세요.</p>
     <pre><code class="language-python">class Slow:
     def __len__(self): return 42
 
@@ -2020,7 +2126,7 @@ print(len(s))       # 42?  99?</code></pre>
   </div>
 
   <div class="problem">
-    <p><strong>문제 11.</strong> C3 선형화 알고리즘을 직접 구현하세요. 입력으로 클래스와 부모 클래스 리스트를 받아 MRO를 반환합니다.</p>
+    <p><strong>문제 12.</strong> C3 선형화 알고리즘을 직접 구현하세요. 입력으로 클래스와 부모 클래스 리스트를 받아 MRO를 반환합니다.</p>
     <details class="answer">
       <summary>정답 보기</summary>
       <pre><code class="language-python">def c3_merge(sequences):
@@ -2066,7 +2172,7 @@ print(computed == actual)  # True</code></pre>
   </div>
 
   <div class="problem">
-    <p><strong>문제 12.</strong> <code>__init_subclass__</code>를 사용해서 플러그인 레지스트리 시스템을 구현하세요. 서브클래스를 만들 때 자동으로 등록되고, 이름으로 조회 가능해야 합니다.</p>
+    <p><strong>문제 13.</strong> <code>__init_subclass__</code>를 사용해서 플러그인 레지스트리 시스템을 구현하세요. 서브클래스를 만들 때 자동으로 등록되고, 이름으로 조회 가능해야 합니다.</p>
     <details class="answer">
       <summary>정답 보기</summary>
       <pre><code class="language-python">class Serializer:
@@ -2161,7 +2267,7 @@ print(Serializer._registry)
         <td><strong>__add__/__radd__</strong></td>
         <td>+, sum()</td>
         <td>새 객체 또는 NotImplemented</td>
-        <td>라타입 처리 시 r- 버전 필요</td>
+        <td>오른쪽 타입 처리 시 r- 버전 필요</td>
       </tr>
       <tr>
         <td><strong>__call__</strong></td>

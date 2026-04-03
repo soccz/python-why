@@ -6,16 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>6주차: 리스트와 튜플 — 여러 값을 담는 컨테이너 | PyWhy</title>
   <link rel="stylesheet" href="../css/style.min.css">
-  <meta name="description" content="딕셔너리와 세트 — 해시 테이블 기반 자료구조를 분해합니다">
+  <meta name="description" content="리스트와 튜플 — 여러 값을 담는 컨테이너를 분해합니다">
   <meta property="og:type" content="article">
   <meta property="og:title" content="6주차: 리스트와 튜플 — 여러 값을 담는 컨테이너 | PyWhy">
-  <meta property="og:description" content="딕셔너리와 세트 — 해시 테이블 기반 자료구조를 분해합니다">
+  <meta property="og:description" content="리스트와 튜플 — 여러 값을 담는 컨테이너를 분해합니다">
   <meta property="og:url" content="https://soccz.github.io/python-why/weeks/week06.html">
   <meta property="og:site_name" content="PyWhy">
   <meta property="og:locale" content="ko_KR">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="6주차: 리스트와 튜플 — 여러 값을 담는 컨테이너 | PyWhy">
-  <meta name="twitter:description" content="딕셔너리와 세트 — 해시 테이블 기반 자료구조를 분해합니다">
+  <meta name="twitter:description" content="리스트와 튜플 — 여러 값을 담는 컨테이너를 분해합니다">
 </head>
 <body data-week="6">
 <a href="#main-content" class="skip-link">본문 바로가기</a>
@@ -317,7 +317,7 @@ print(min(lst), max(lst)) # 1 5</code></pre>
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>PyListObject — CPython의 리스트 내부 구조</h3>
+    <h3>Part A: PyListObject — CPython의 리스트 내부 구조</h3>
     <p>
       CPython의 <code>Include/cpython/listobject.h</code>에서:
     </p>
@@ -528,7 +528,7 @@ print(temps[-1])  # 100°C</code></pre>
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>BINARY_SUBSCR와 ob_item 직접 접근</h3>
+    <h3>Part A: BINARY_SUBSCR와 ob_item 직접 접근</h3>
     <pre><code class="language-python">import dis
 
 def get_item(lst, i):
@@ -536,16 +536,16 @@ def get_item(lst, i):
 
 dis.dis(get_item)</code></pre>
     <div class="output-block">
-      <div class="output-label">실행 결과 (Python 3.12):</div>
+      <div class="output-label">실행 결과 (Python 3.12 기준, 버전마다 다를 수 있음):</div>
   1           0 RESUME                   0
 
   2           2 LOAD_FAST                0 (lst)
               4 LOAD_FAST                1 (i)
               6 BINARY_SUBSCR
-             16 RETURN_VALUE
+             10 RETURN_VALUE
     </div>
     <p>
-      <code>BINARY_SUBSCR</code>는 6바이트(명령어 2 + 인라인 캐시 4)를 차지합니다.
+      <code>BINARY_SUBSCR</code>는 4바이트(명령어 2 + 인라인 캐시 2)를 차지합니다(offset 6→10).
       Python 3.12의 Specializing Adaptive Interpreter는 반복 실행 후
       <code>BINARY_SUBSCR_LIST_INT</code>로 특화될 수 있습니다:
     </p>
@@ -690,7 +690,7 @@ print(numbers)   # [3, 1, 4, 1, 5, 9, 2] ← 원본 보존
     </table>
     <p>
       <strong>실용 가이드:</strong> 양쪽 끝에서 삽입/삭제가 많다면 <code>collections.deque</code>를 사용하세요.
-      deque는 양쪽 O(1)을 보장하는 이중 연결 리스트 구조입니다.
+      deque는 양쪽 O(1)을 보장하는 이중 연결 블록 리스트(doubly-linked list of fixed-size blocks, 블록당 64개 포인터) 구조입니다.
     </p>
     <pre><code class="language-python">from collections import deque
 dq = deque([1, 2, 3])
@@ -701,7 +701,7 @@ dq.popleft()       # O(1)</code></pre>
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>Timsort — Python 정렬의 구현</h3>
+    <h3>Part A: Timsort — Python 정렬의 구현</h3>
     <p>
       Python의 <code>list.sort()</code>와 <code>sorted()</code>는 <strong>Timsort</strong>를 사용합니다.
       Tim Peters가 2002년 Python용으로 설계했으며, 이후 Java, Android에도 채택됐습니다.
@@ -729,7 +729,7 @@ print(f"무작위 데이터: {t2:.4f}초")
       <em>"Python's sort is guaranteed to be stable. That means that when multiple records have the same key, their original order is preserved."</em>
     </div>
 
-    <h3>Part A (추가) — PyListObject의 동적 할당: allocated vs ob_size</h3>
+    <h3>Part A (계속): PyListObject의 동적 할당 — allocated vs ob_size</h3>
     <p>
       파이썬 리스트는 항목이 추가될 때마다 메모리를 재할당하지 않습니다.
       <code>PyListObject</code>는 <code>ob_size</code>(실제 항목 수)와 <code>allocated</code>(예약된 슬롯 수)를 분리해 관리합니다.
@@ -750,7 +750,7 @@ for i in range(17):
     else:
         print(f"항목 {len(lst)}개: {curr_size} bytes")</code></pre>
     <div class="output-block">
-      <div class="output-label">실행 결과 (Python 3.12):</div>
+      <div class="output-label">실행 결과 (Python 3.12 기준, 버전마다 다를 수 있음):</div>
 빈 리스트: 56 bytes, 항목 수: 0
 항목 1개: 88 bytes ← resize 발생! (0 → 4슬롯)
 항목 5개: 120 bytes ← resize 발생! (4 → 8슬롯)
@@ -780,7 +780,7 @@ dis.dis(make_list_comp)</code></pre>
       이것이 리스트 컴프리헨션이 일반 루프보다 빠른 핵심 이유입니다.
     </div>
 
-    <h3>Part B (추가) — 가변성(Mutability)의 CS 이론적 배경</h3>
+    <h3>Part B: 가변성(Mutability)의 CS 이론적 배경</h3>
     <p>
       <strong>영속적 자료구조(Persistent Data Structure)</strong>: 수정 시 이전 버전을 보존하는 구조체.
       파이썬의 <code>tuple</code>은 완전히 불변이지만, 함수형 프로그래밍의 불변 리스트처럼
@@ -963,7 +963,7 @@ print(lst[10:])      # [] ← 빈 리스트 반환</code></pre>
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>BINARY_SLICE — Python 3.11+의 슬라이싱 최적화</h3>
+    <h3>Part A: BINARY_SLICE — Python 3.11+의 슬라이싱 최적화</h3>
     <pre><code class="language-python">import dis
 
 def get_slice(lst):
@@ -976,7 +976,7 @@ dis.dis(get_slice)
 print("---")
 dis.dis(get_step_slice)</code></pre>
     <div class="output-block">
-      <div class="output-label">실행 결과 (Python 3.12):</div>
+      <div class="output-label">실행 결과 (Python 3.12 기준, 버전마다 다를 수 있음):</div>
   1           0 RESUME                   0
 
   2           2 LOAD_FAST                0 (lst)
@@ -993,7 +993,7 @@ dis.dis(get_step_slice)</code></pre>
               8 LOAD_CONST               3 (2)
              10 BUILD_SLICE              2
              12 BINARY_SUBSCR
-             22 RETURN_VALUE
+             16 RETURN_VALUE
     </div>
     <p>중요한 차이:</p>
     <ul>
@@ -1021,7 +1021,7 @@ dis.dis(get_step_slice)</code></pre>
     </p>
     <pre><code class="language-python">point = (3, 7)           # (x, y) 좌표
 color = (255, 128, 0)    # (R, G, B) 색상
-person = ("Alice", 30)   # (이름, 나이)
+person = ("김민수", 30)   # (이름, 나이)
 
 print(point[0])    # 3
 print(point[1])    # 7
@@ -1041,6 +1041,20 @@ print(type((42)))    # <class 'int'></code></pre>
 3
 &lt;class 'tuple'&gt;
 &lt;class 'int'&gt;
+    </div>
+    <div class="callout callout-warning">
+      <strong>🚨 함정 — 1개짜리 튜플은 쉼표가 필수!</strong><br>
+      <pre><code class="language-python"># ❌ 될 것 같은데 안 되는 코드
+한_과목 = ("수학")
+print(type(한_과목))   # &lt;class 'str'&gt; ← 튜플이 아니라 문자열!
+
+# 왜? 괄호만으로는 튜플이 되지 않습니다.
+# (42)는 그냥 42이고, ("수학")은 그냥 "수학"입니다.
+# 쉼표가 튜플을 만듭니다!
+
+# ✅ 올바른 방법
+한_과목 = ("수학",)     # 쉼표 필수!
+print(type(한_과목))    # &lt;class 'tuple'&gt;</code></pre>
     </div>
   </div>
 
@@ -1094,7 +1108,8 @@ print(grid[(0, 0)])  # 시작
 t = (1, [2, 3], 4)
 # hash(t)  ← TypeError: unhashable type: 'list'
 
-# 불변 원소로만 구성된 튜플만 hashable
+# hashable한 원소로만 구성된 튜플만 hashable
+# (참고: 불변≠hashable — 사용자 정의 클래스는 mutable이지만 기본적으로 hashable)
 t2 = (1, (2, 3), 4)
 print(hash(t2))   # 정상 동작
 
@@ -1104,8 +1119,8 @@ d = {fs: "frozenset을 키로"}
 print(d[frozenset([1, 2, 3])])</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
-2528502973977326415
--3550055125485641917
+529344067295497451          # (정수값 — 실행마다 다를 수 있음)
+-2725765923372356629        # (정수값 — 실행마다 다를 수 있음)
 frozenset을 키로
     </div>
   </div>
@@ -1113,7 +1128,7 @@ frozenset을 키로
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>PyTupleObject vs PyListObject — 구조 비교</h3>
+    <h3>Part A: PyTupleObject vs PyListObject — 구조 비교</h3>
     <p>
       CPython의 <code>Include/cpython/tupleobject.h</code>:
     </p>
@@ -1131,7 +1146,7 @@ frozenset을 키로
         <tr><td>메모리</td><td>포인터 + 별도 힙 배열</td><td>구조체 내부에 포인터 배열 (연속)</td></tr>
         <tr><td>allocated</td><td>있음 (과할당)</td><td>없음 (ob_size == 실제 크기)</td></tr>
         <tr><td>생성 비용</td><td>두 번 할당 (헤더 + 배열)</td><td>한 번 할당 (헤더 안에 배열)</td></tr>
-        <tr><td>소형 캐시</td><td>없음</td><td>있음 (빈 튜플 singleton)</td></tr>
+        <tr><td>소형 캐시</td><td>제한적 (free list)</td><td>적극적 (크기별 free list + 빈 튜플 singleton)</td></tr>
       </tbody>
     </table>
     <pre><code class="language-python">import sys, timeit
@@ -1253,17 +1268,17 @@ for x, y in matrix:      # 각 튜플을 x, y로 언패킹
     print(f"({x}, {y})")
 
 # 중첩 구조 언패킹
-data = ("Alice", (30, "서울"))
+data = ("김민수", (30, "서울"))
 name, (age, city) = data
-print(name, age, city)   # Alice 30 서울
+print(name, age, city)   # 김민수 30 서울
 
 # enumerate() 언패킹 — 인덱스와 값 동시에
-fruits = ["apple", "banana", "cherry"]
+fruits = ["사과", "바나나", "체리"]
 for i, fruit in enumerate(fruits):
     print(f"{i}: {fruit}")
 
 # zip() 언패킹 — 두 시퀀스를 병렬로
-names = ["Alice", "Bob", "Carol"]
+names = ["민수", "지영", "하진"]
 scores = [95, 82, 78]
 for name, score in zip(names, scores):
     print(f"{name}: {score}")</code></pre>
@@ -1272,13 +1287,13 @@ for name, score in zip(names, scores):
 (1, 2)
 (3, 4)
 (5, 6)
-Alice 30 서울
-0: apple
-1: banana
-2: cherry
-Alice: 95
-Bob: 82
-Carol: 78
+김민수 30 서울
+0: 사과
+1: 바나나
+2: 체리
+민수: 95
+지영: 82
+하진: 78
     </div>
     <div class="callout callout-warning">
       <strong>🚨 흔한 실수 — 언패킹(Unpacking) 개수 불일치:</strong>
@@ -1321,7 +1336,7 @@ print(start, end)          # 1 10</code></pre>
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>UNPACK_SEQUENCE와 UNPACK_EX 바이트코드</h3>
+    <h3>Part A: UNPACK_SEQUENCE와 UNPACK_EX 바이트코드</h3>
     <pre><code class="language-python">import dis
 
 def basic_unpack(t):
@@ -1334,7 +1349,7 @@ dis.dis(basic_unpack)
 print("---")
 dis.dis(extended_unpack)</code></pre>
     <div class="output-block">
-      <div class="output-label">실행 결과 (Python 3.12):</div>
+      <div class="output-label">실행 결과 (Python 3.12 기준, 버전마다 다를 수 있음):</div>
   1           0 RESUME                   0
 
   2           2 LOAD_FAST                0 (t)
@@ -1346,7 +1361,7 @@ dis.dis(extended_unpack)</code></pre>
   1           0 RESUME                   0
 
   2           2 LOAD_FAST                0 (lst)
-              4 UNPACK_EX                 1   (1 before, 0 after)
+              4 UNPACK_EX                 1
               8 STORE_FAST               1 (first)
              10 STORE_FAST               2 (rest)
              12 RETURN_CONST             0 (None)
@@ -1356,7 +1371,7 @@ dis.dis(extended_unpack)</code></pre>
       크기가 다르면 <code>ValueError: not enough/too many values to unpack</code>.
     </p>
     <p>
-      <code>UNPACK_EX</code>: 확장 언패킹. oparg는 두 부분으로 인코딩됩니다:
+      <code>UNPACK_EX 1</code>: 확장 언패킹 (1 before, 0 after). oparg는 두 부분으로 인코딩됩니다:
       하위 8비트 = 별표 앞 개수, 상위 8비트 = 별표 뒤 개수.
       <code>first, *rest = lst</code>: 앞 1개, 뒤 0개 → oparg = <code>1</code> (= 0b00000001).
       만약 <code>*rest, last = lst</code>이면: 앞 0개, 뒤 1개 → oparg = <code>256</code> (= 0b0000000100000000).
@@ -1390,9 +1405,9 @@ squares = [n ** 2 for n in range(6)]
 print(squares)  # [0, 1, 4, 9, 16, 25]
 
 # 형식: [표현식 for 변수 in 이터러블]
-names = ["alice", "BOB", "Charlie"]
-upper_names = [name.upper() for name in names]
-print(upper_names)  # ['ALICE', 'BOB', 'CHARLIE']
+words = ["hello", "WORLD", "Python"]
+upper_words = [word.upper() for word in words]
+print(upper_words)  # ['HELLO', 'WORLD', 'PYTHON']
 
 # 조건 필터링 추가
 evens = [n for n in range(10) if n % 2 == 0]
@@ -1401,7 +1416,7 @@ print(evens)  # [0, 2, 4, 6, 8]</code></pre>
       <div class="output-label">실행 결과:</div>
 [0, 1, 4, 9, 16, 25]
 [0, 1, 4, 9, 16, 25]
-['ALICE', 'BOB', 'CHARLIE']
+['HELLO', 'WORLD', 'PYTHON']
 [0, 2, 4, 6, 8]
     </div>
   </div>
@@ -1421,9 +1436,9 @@ flat = [n for row in matrix for n in row]
 print(flat)  # [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 # 조건 필터링 + 변환 동시에
-scores = [("Alice", 92), ("Bob", 75), ("Carol", 88)]
+scores = [("민수", 92), ("지영", 75), ("하진", 88)]
 high_scorers = [name for name, score in scores if score >= 88]
-print(high_scorers)  # ['Alice', 'Carol']
+print(high_scorers)  # ['민수', '하진']
 
 # 튜플 컴프리헨션처럼 보이지만 — 실은 제너레이터!
 # gen = (n**2 for n in range(5))  ← 제너레이터 표현식 (7주차 주제)</code></pre>
@@ -1431,7 +1446,7 @@ print(high_scorers)  # ['Alice', 'Carol']
       <div class="output-label">실행 결과:</div>
 ['음수', '음수', '영', '양수', '양수']
 [1, 2, 3, 4, 5, 6, 7, 8, 9]
-['Alice', 'Carol']
+['민수', '하진']
     </div>
   </div>
 
@@ -1443,10 +1458,9 @@ print(high_scorers)  # ['Alice', 'Carol']
 
 data = list(range(10000))
 
-# 세 가지 방법 비교
+# 두 가지 방법 비교
 t1 = timeit.timeit(lambda: [x*2 for x in data], number=1000)
 t2 = timeit.timeit(lambda: list(map(lambda x: x*2, data)), number=1000)
-t3 = timeit.timeit(lambda: list(map(lambda x: x*2, data)), number=1000)
 
 print(f"컴프리헨션: {t1:.4f}초")
 print(f"map+lambda: {t2:.4f}초")
@@ -1466,12 +1480,26 @@ roots = list(map(math.sqrt, range(10)))  # lambda 불필요 → 더 빠름
       <strong>Python 공식 문서(tutorial/datastructures §5.1.3):</strong><br>
       <em>"List comprehensions provide a concise way to create lists. Common applications are to make new lists where each element is the result of some operations applied to each member of another sequence or iterable."</em>
     </div>
+    <div class="callout callout-warning">
+      <strong>🚨 함정 — 소괄호 컴프리헨션은 튜플이 아니라 제너레이터!</strong><br>
+      <pre><code class="language-python"># ❌ 튜플 컴프리헨션을 만들려고 시도
+결과 = (x ** 2 for x in range(5))
+print(type(결과))   # &lt;class 'generator'&gt; ← 튜플이 아님!
+print(결과)         # &lt;generator object ...&gt;
+
+# 왜? []는 리스트 컴프리헨션, {}는 세트/딕셔너리 컴프리헨션이지만
+# ()는 튜플 컴프리헨션이 아닙니다 — 제너레이터 표현식입니다!
+
+# ✅ 튜플로 만들려면
+결과 = tuple(x ** 2 for x in range(5))
+print(결과)         # (0, 1, 4, 9, 16)</code></pre>
+    </div>
   </div>
 
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>PEP 709 — Python 3.12 인라인 컴프리헨션</h3>
+    <h3>Part A: PEP 709 — Python 3.12 인라인 컴프리헨션</h3>
     <p>
       Python 3.11 이하: 리스트 컴프리헨션은 <strong>별도의 코드 오브젝트(nested function)</strong>로 컴파일됐습니다.
       Python 3.12 (PEP 709): 컴프리헨션이 <strong>인라인</strong>으로 컴파일됩니다.
@@ -1483,21 +1511,24 @@ def f(data):
 
 dis.dis(f)</code></pre>
     <div class="output-block">
-      <div class="output-label">실행 결과 (Python 3.12 — PEP 709 적용):</div>
-  1           0 RESUME                   0
-
-  2           2 LOAD_FAST                0 (data)
+      <div class="output-label">실행 결과 (Python 3.12 — PEP 709 인라인 컴프리헨션, 핵심 부분 발췌):</div>
+              2 LOAD_FAST                0 (data)
               4 GET_ITER
-              6 BUILD_LIST               0
-              8 FOR_ITER                10 (to 30)
-             10 STORE_FAST               1 (x)
-             12 LOAD_FAST                1 (x)
-             14 LOAD_CONST               1 (2)
-             16 BINARY_OP               5 (*)
-             20 LIST_APPEND              2
-             22 JUMP_BACKWARD           8 (to 8)
-        >>   24 END_FOR
-             26 RETURN_VALUE
+              6 LOAD_FAST_AND_CLEAR      1 (x)    ← 기존 x 보호 (변수 누출 방지)
+              8 SWAP                     2
+             10 BUILD_LIST               0
+             12 SWAP                     2
+        >>   14 FOR_ITER                 7 (to 32)
+             18 STORE_FAST               1 (x)
+             20 LOAD_FAST                1 (x)
+             22 LOAD_CONST               1 (2)
+             24 BINARY_OP                5 (*)
+             28 LIST_APPEND              2
+             30 JUMP_BACKWARD            9 (to 14)
+        >>   32 END_FOR
+             34 SWAP                     2
+             36 STORE_FAST               1 (x)    ← 기존 x 복원
+             38 RETURN_VALUE
     </div>
     <p>Python 3.12 인라인 컴프리헨션의 이점:</p>
     <ul>
@@ -1554,14 +1585,16 @@ copy = original[:]       # 슬라이싱으로도 복사 가능</code></pre>
       <strong>☑ 체크 3: for 루프 안에서 리스트를 수정하는가?</strong>
     </div>
     <pre><code class="language-python"># ❌ 반복 중 수정 → 예측 불가
-nums = [1, 2, 3, 4, 5]
+nums = [2, 4, 1, 6, 3, 8, 5]
 for n in nums:
     if n % 2 == 0:
         nums.remove(n)   # 이터레이터가 혼란에 빠짐
-print(nums)   # [1, 3, 5]이길 기대하지만, 실제는 [1, 3, 5] 아닐 수 있음
+print(nums)   # [1, 3, 5]를 기대하지만, 실제는 [4, 1, 3, 5] — 연속 짝수를 건너뜀!
 
 # ✅ 새 리스트로 필터링
-nums = [n for n in nums if n % 2 != 0]</code></pre>
+nums = [2, 4, 1, 6, 3, 8, 5]
+nums = [n for n in nums if n % 2 != 0]
+print(nums)   # [1, 3, 5] — 정확</code></pre>
     <p>
       AI가 이 패턴들을 자주 틀리는 이유: AI는 코드를 확률적으로 생성합니다.
       인터넷에는 <code>sort()</code>와 <code>sorted()</code>가 뒤섞여 있고,
@@ -1668,7 +1701,7 @@ for sublist in matrix:
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>tracemalloc으로 AI 코드의 메모리 프로파일링</h3>
+    <h3>Part A: tracemalloc으로 AI 코드의 메모리 프로파일링</h3>
     <p>
       AI가 생성한 리스트 코드의 실제 메모리 사용량을 측정하고,
       <strong>의도치 않은 참조</strong>로 GC가 메모리를 해제하지 못하는 상황을 탐지합니다.
@@ -1804,14 +1837,14 @@ dis.dis(method_comp)
 default_scores = [0, 0, 0]   # 기본 점수: [수학, 영어, 과학]
 
 students = {}
-for name in ["Alice", "Bob", "Charlie"]:
+for name in ["민준", "서연", "지호"]:
     students[name] = default_scores   # 각 학생에게 기본 점수 배정
 
-# Alice 수학 점수 업데이트
-students["Alice"][0] = 95
+# 민준 수학 점수 업데이트
+students["민준"][0] = 95
 
 print(students)
-# 예상: {"Alice": [95, 0, 0], "Bob": [0, 0, 0], "Charlie": [0, 0, 0]}
+# 예상: {"민준": [95, 0, 0], "서연": [0, 0, 0], "지호": [0, 0, 0]}
 # 실제: ???
 
 # 분석 질문:
@@ -2073,8 +2106,8 @@ print(rotate([1, 2, 3, 4, 5], 0))   # [1, 2, 3, 4, 5]
 print(rotate([1, 2, 3, 4, 5], 7))   # k=7%5=2 → [4, 5, 1, 2, 3]
 
 # 핵심: lst[-k:]는 뒤에서 k개, lst[:-k]는 앞에서부터 (len-k)개
-# k=0일 때: lst[-0:] = lst[0:] = 전체 → lst[:-0] = lst[:0] = []
-# k=0 처리를 위해 k % len(lst) 먼저 적용</code></pre>
+# k % len(lst)로 k가 리스트 길이보다 클 때 처리 (k=7 → 7%5=2)
+# k=0일 때: lst[-0:] = lst[0:] = 전체, lst[:-0] = lst[:0] = [] → 결과 전체 (정상)</code></pre>
         </div>
       </div>
     </details>
@@ -2085,7 +2118,7 @@ print(rotate([1, 2, 3, 4, 5], 7))   # k=7%5=2 → [4, 5, 1, 2, 3]
     <span class="level-badge level-advanced">고급</span>
     <h3>불변 인터페이스 설계</h3>
     <p>
-      내부 데이터는 리스트로 관리하지만, 외부에 튜플로 반환해 불변성을 보장하는
+      외부에서 내용을 수정할 수 없도록 불변성을 보장하는
       <code>ImmutableStack</code> 클래스를 설계하세요:
     </p>
     <pre><code class="language-python">class ImmutableStack:
@@ -2095,6 +2128,7 @@ print(rotate([1, 2, 3, 4, 5], 7))   # k=7%5=2 → [4, 5, 1, 2, 3]
     - peek(): 맨 위 항목 반환 (스택 불변)
     - items: 현재 항목들을 튜플로 반환하는 프로퍼티
     - __bool__: 비어있으면 False
+    힌트: 내부 저장소도 튜플을 사용하면 불변성 보장이 쉽습니다.
     """
     pass
 
@@ -2202,7 +2236,7 @@ def access_list(lst, i):
     return lst[i]
 
 # 특화 전 바이트코드
-dis.dis(access_list)
+dis.dis(access_list, adaptive=True)
 print("--- 100번 실행 후 ---")
 
 lst = [1, 2, 3, 4, 5]
@@ -2210,7 +2244,7 @@ for _ in range(100):
     access_list(lst, 0)
 
 # 특화 후 바이트코드 (Python 3.12에서는 _specializations 통계 확인 가능)
-dis.dis(access_list)
+dis.dis(access_list, adaptive=True)
 
 # Q1: 특화 후 BINARY_SUBSCR가 다른 명령어로 바뀌었는가?
 # Q2: 다른 타입(dict, str)으로 같은 함수를 호출하면 특화가 해제(deoptimize)되는가?
@@ -2222,7 +2256,7 @@ dis.dis(access_list)
           <pre><code class="language-python"># Q1: 특화 여부
 # Python 3.12에서 리스트+int 인덱스로 반복 호출 시
 # BINARY_SUBSCR → BINARY_SUBSCR_LIST_INT 로 특화될 수 있음
-# (dis 출력에서는 여전히 BINARY_SUBSCR로 표시되지만 내부적으로 최적화)
+# dis.dis(f, adaptive=True)로 특화된 opcode 확인 가능 (adaptive=False면 일반 opcode만 표시)
 
 # Q2: 타입 불일치 시 deoptimize
 # dict나 str을 인자로 주면 특화 조건 불일치 → BINARY_SUBSCR로 복귀
@@ -2303,7 +2337,7 @@ print("\nco_consts:", comprehension_func.__code__.co_consts)
         </tr>
         <tr>
           <td>튜플</td>
-          <td>Immutable Sequence. 고정 크기. 리스트보다 작고 빠름. hashable</td>
+          <td>Immutable Sequence. 고정 크기. 리스트보다 작고 빠름. 조건부 hashable (원소가 모두 hashable일 때)</td>
           <td>Tuple, Immutable Sequence</td>
         </tr>
         <tr>
@@ -2368,7 +2402,7 @@ GET_ITER  →  BUILD_LIST 0  →  FOR_ITER loop {
     </div>
     <div class="glossary-item">
       <h4>Immutable Sequence (불변 시퀀스)</h4>
-      <p>생성 후 변경 불가. tuple, str, bytes. hashable할 수 있어 딕셔너리 키로 사용 가능.</p>
+      <p>생성 후 변경 불가. tuple, str, bytes. 원소가 모두 hashable이면 딕셔너리 키로 사용 가능.</p>
     </div>
     <div class="glossary-item">
       <h4>Index (인덱스)</h4>
@@ -2404,7 +2438,7 @@ GET_ITER  →  BUILD_LIST 0  →  FOR_ITER loop {
     </div>
     <div class="glossary-item">
       <h4>Hashable (해시 가능)</h4>
-      <p>hash() 함수를 사용할 수 있는 객체. 불변 객체만 hashable. 딕셔너리 키, set 요소가 될 수 있음.</p>
+      <p>hash() 함수를 사용할 수 있는 객체. 내장 타입 중 str, int, float 등은 항상 hashable. tuple은 원소가 모두 hashable일 때만 hashable. 사용자 정의 클래스는 기본적으로 id() 기반 해시를 가짐. 딕셔너리 키, set 요소가 될 수 있음.</p>
     </div>
     <div class="glossary-item">
       <h4>Unpacking (언패킹)</h4>

@@ -422,7 +422,7 @@ hello = make_greeter("안녕")
 hi = make_greeter("Hi")
 
 print(hello("철수"))   # 안녕, 철수!
-print(hi("Alice"))    # Hi, Alice!</code></pre>
+print(hi("영희"))     # Hi, 영희!</code></pre>
 
 <pre><code># 수정: nonlocal 필요
 def make_adder(start):
@@ -521,7 +521,7 @@ print(f.__closure__[0].cell_contents)   # 42</code></pre>
       <strong>Part A — Cell 공유 메커니즘:</strong>
       <code>outer</code>의 로컬 프레임과 <code>inner</code> 함수 객체가 동일한 <code>PyCell</code>을 가리킵니다.
       따라서 <code>outer</code>가 <code>x</code>를 수정하면 <code>inner</code>도 새 값을 봅니다.
-      Python 3.11+에서는 <code>MAKE_CELL</code> 명령어가 추가되어 지역 변수를 즉시 cell로 변환합니다.
+      Python 3.11에서 <code>MAKE_CELL</code> 명령어가 도입되어 (bpo-43693) 지역 변수를 즉시 cell로 변환합니다.
     </div>
 
     <h3>Part B: 함수형 프로그래밍과 클로저</h3>
@@ -713,7 +713,7 @@ print(func_a())       # A  ← 기능 그대로</code></pre>
 
   <div class="level-section expert">
     <div class="level-badge">전공자</div>
-    <h3>Part A: 데코레이터의 바이트코드 — CALL_FUNCTION</h3>
+    <h3>Part A: 데코레이터의 바이트코드 — CALL</h3>
 <pre><code>import dis
 
 # @decorator def func() 의 동작을 확인
@@ -726,10 +726,11 @@ def greet(): pass
 # 컴파일 후 바이트코드 확인
 compiled = compile(code, "&lt;string&gt;", "exec")
 dis.dis(compiled)
-# LOAD_GLOBAL   decorator
-# LOAD_GLOBAL   greet (함수 객체)
-# ... CALL    (decorator(greet) 호출)
-# STORE_NAME  greet</code></pre>
+# LOAD_NAME     decorator             ← 데코레이터 참조
+# LOAD_CONST    &lt;code object greet&gt;  ← 함수 코드 객체
+# MAKE_FUNCTION 0                     ← 함수 객체 생성
+# CALL          0                     ← decorator(greet) 호출
+# STORE_NAME    greet                 ← 결과를 greet에 바인딩</code></pre>
 
     <div class="callout callout-warning">
       <strong>Part A — 데코레이터 적용 순서:</strong>
@@ -1497,7 +1498,7 @@ def fib(n):
         return n
     return fib(n-1) + fib(n-2)
 
-# 캐시 없이: 2^30 번의 재귀 호출
+# 캐시 없이: 약 269만 번(2*fib(31)-1 ≈ 2,692,537)의 재귀 호출
 # 캐시 있을 때: 31번의 고유 호출
 print(fib(30))   # 832040
 print(fib.cache_info())
@@ -2032,7 +2033,7 @@ def fib(n):
     return fib(n-1) + fib(n-2)
 
 print(fib(35))           # 9227465
-print(fib.cache_info())  # {'size': 36, 'keys': [0, 1, 2, ..., 35]}</code></pre>
+print(fib.cache_info())  # {'size': 36, 'keys': [(0,), (1,), (2,), ..., (35,)]}</code></pre>
     </div>
   </details>
 
@@ -2060,7 +2061,44 @@ print(f())   # 3*4 + 7 = 19</code></pre>
   </details>
 
   <details>
-    <summary>문제 12 (전공자): Descriptor로 @property 재구현</summary>
+    <summary>문제 12 (전공자): 클래스 데코레이터의 __get__ 구현</summary>
+    <div class="answer">
+      클래스 기반 데코레이터를 메서드에 사용하면 <code>self</code>가 전달되지 않는 문제가 발생합니다.
+      <code>__get__</code>을 구현하여 해결하세요.
+<pre><code>from functools import wraps
+import types
+
+class LogCall:
+    def __init__(self, func):
+        wraps(func)(self)
+        self.func = func
+
+    def __call__(self, *args, **kwargs):
+        print(f"[LOG] {self.func.__name__} 호출")
+        return self.func(*args, **kwargs)
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        # MethodType으로 바인딩하여 self가 전달되게 함
+        return types.MethodType(self, obj)
+
+class MyClass:
+    @LogCall
+    def greet(self, name):
+        return f"안녕, {name}!"
+
+obj = MyClass()
+print(obj.greet("철수"))
+# [LOG] greet 호출
+# 안녕, 철수!
+
+# __get__ 없으면: TypeError: greet() missing 'self' argument</code></pre>
+    </div>
+  </details>
+
+  <details>
+    <summary>문제 13 (전공자): Descriptor로 @property 재구현</summary>
     <div class="answer">
       <code>property</code> 내장 클래스를 모방하는 <code>MyProperty</code> descriptor를 작성하세요.
 <pre><code>class MyProperty:

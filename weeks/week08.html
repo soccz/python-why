@@ -6,16 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>8주차: 반복문 while — 상태를 보는 루프 | PyWhy</title>
   <link rel="stylesheet" href="../css/style.min.css">
-  <meta name="description" content="함수 심화 — 스코프, 클로저, 람다를 분해합니다">
+  <meta name="description" content="반복문 while — 상태를 보는 루프. 조건 기반 반복의 내부를 바이트코드까지 분해합니다">
   <meta property="og:type" content="article">
   <meta property="og:title" content="8주차: 반복문 while — 상태를 보는 루프 | PyWhy">
-  <meta property="og:description" content="함수 심화 — 스코프, 클로저, 람다를 분해합니다">
+  <meta property="og:description" content="반복문 while — 상태를 보는 루프. 조건 기반 반복의 내부를 바이트코드까지 분해합니다">
   <meta property="og:url" content="https://soccz.github.io/python-why/weeks/week08.html">
   <meta property="og:site_name" content="PyWhy">
   <meta property="og:locale" content="ko_KR">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="8주차: 반복문 while — 상태를 보는 루프 | PyWhy">
-  <meta name="twitter:description" content="함수 심화 — 스코프, 클로저, 람다를 분해합니다">
+  <meta name="twitter:description" content="반복문 while — 상태를 보는 루프. 조건 기반 반복의 내부를 바이트코드까지 분해합니다">
 </head>
 <body data-week="8">
 <a href="#main-content" class="skip-link">본문 바로가기</a>
@@ -628,6 +628,13 @@ dis.dis(walrus_while)
       <code>STORE_FAST</code>로 변수에 할당하고, 원본 값을 조건 검사에 사용합니다.
       할당과 검사가 단일 표현식 안에서 처리됩니다.
     </p>
+    <div class="callout callout-warning">
+      <strong>함정:</strong> <code>while x := next(it, None):</code>는 <code>None</code>뿐 아니라
+      <code>0</code>, <code>""</code>, <code>False</code>, <code>[]</code> 등 모든 Falsy 값에서
+      조기 종료됩니다. 이터레이터가 Falsy 값을 산출할 수 있다면
+      <code>while (x := next(it, SENTINEL)) is not SENTINEL:</code> 패턴을 사용하세요
+      (§06 Sentinel 패턴 참조).
+    </div>
   </div>
 </section>
 
@@ -736,12 +743,16 @@ while True:
         n = int(input("정수 입력: "))
         if n == 0:
             break
-        print(f"역수: {1/n}")
+        result = 1 / n
+        print(f"역수: {result}")
     except ValueError:
-        print("정수가 아닙니다. 다시 입력하세요.")
-    except ZeroDivisionError:
-        print("0은 역수가 없습니다.")
-        break</code></pre>
+        print("정수가 아닙니다. 다시 입력하세요.")</code></pre>
+    <div class="callout callout-warning">
+      <strong>함정:</strong> 수정 전 코드에는 <code>except ZeroDivisionError</code>가 있었지만,
+      <code>n == 0</code> 체크가 <code>1/n</code>보다 먼저 실행되어 break로 빠져나가므로
+      <code>ZeroDivisionError</code>는 절대 발생하지 않는 dead code였습니다.
+      예외 핸들러 작성 시 <strong>해당 예외가 도달 가능한 코드 경로인지</strong> 반드시 확인하세요.
+    </div>
   </div>
 
   <!-- 전공자 -->
@@ -799,7 +810,7 @@ dis.dis(with_true)</code></pre>
       <code>while True:</code>에서 <code>LOAD_GLOBAL True + POP_JUMP_IF_FALSE</code>가
       완전히 제거됩니다. <strong>while True는 while 조건 중 가장 효율적입니다.</strong>
     </p>
-    <h3>Part B — CPython flowgraph.c의 상수 접기(Constant Folding)</h3>
+    <h3>Part B — CPython flowgraph.c의 Peephole Optimization (dead code elimination)</h3>
     <p>
       CPython의 <code>Python/flowgraph.c</code>에서 <code>while True:</code>는
       두 단계로 최적화됩니다:
@@ -1120,13 +1131,14 @@ import random
 rolls = list(iter(lambda: random.randint(1, 6), 6))
 print(rolls)   # 예: [3, 1, 4, 1] — 6이 나오기 직전까지
 
-# 파일에서 빈 줄이 나올 때까지 읽기
+# 파일에서 EOF까지 한 줄씩 읽기 (readline()은 EOF에서 "" 반환)
 with open("data.txt") as f:
-    lines = list(iter(f.readline, "\n"))
+    lines = list(iter(f.readline, ""))
+# 주의: iter(f.readline, "\n")으로 쓰면 빈 줄이 없을 때 무한 루프!
 
-# functools.reduce의 initializer도 sentinel 개념
+# functools.reduce의 initializer: 빈 시퀀스의 기본값(항등원) 역할
 from functools import reduce
-print(reduce(lambda a, b: a + b, [], 0))   # 0 — 빈 시퀀스의 sentinel</code></pre>
+print(reduce(lambda a, b: a + b, [], 0))   # 0 — 빈 시퀀스일 때 초기값 반환</code></pre>
     <div class="output-block">
       <div class="output-label">reduce([], initializer=0) 결과:</div>
 0
@@ -1175,8 +1187,9 @@ while (val := next(it, DONE)) is not DONE:
 1
 2
     </div>
-    <pre><code class="language-python"># CPython 내부: _Py_MISSING 라는 C 수준 sentinel이 존재
-# next()의 두 번째 인수 없음을 표시하는 데 사용
+    <pre><code class="language-python"># CPython 내부: next()의 default 인수 유무는
+# PyArg_UnpackTuple의 인수 개수 체크로 처리됨
+# (default 없으면 StopIteration 전파, 있으면 default 반환)
 # Objects/iterobject.c, Python/bltinmodule.c 참조</code></pre>
     <h3>Part B — object()의 CPython 구현</h3>
     <pre><code class="language-python">import sys
@@ -1189,8 +1202,8 @@ print(s1 is s2)              # False
 print(id(s1) == id(s2))      # False (다른 메모리 주소)
 print(sys.getsizeof(s1))     # 16 bytes (PyObject_HEAD만)
 
-# object()는 __eq__가 정의되지 않아 id 기반 비교 (is와 동일)
-print(s1 == s2)   # False (id 비교)
+# object.__eq__는 self is other일 때만 True, 아니면 NotImplemented 반환
+print(s1 == s2)   # False (identity 비교)
 print(s1 == s1)   # True  (동일 객체)</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
@@ -1202,7 +1215,7 @@ True
     </div>
     <p>
       <code>object()</code>의 CPython 구현(<code>Objects/typeobject.c</code>)은
-      <code>tp_richcompare</code>가 없어 <code>id</code> 기반 비교만 수행합니다.
+      <code>object_richcompare</code>는 <code>Py_EQ</code>에서 identity만 검사합니다.
       따라서 <code>is</code> 비교와 <code>==</code> 비교가 동일하게 동작 —
       sentinel로 쓰기에 완벽합니다.
     </p>
@@ -1639,11 +1652,13 @@ print(total)   # 55 ✅
     <strong>🚨 흔한 실수 3 — while 조건의 부작용:</strong>
     <pre><code class="language-python">data = [1, 2, 3, 4, 5]
 
-# ❌ 조건에서 pop() 사용 → 예상치 못한 소비
-# (조건 평가가 항상 일어나므로 원소가 2개씩 소비됨)
-while data.pop():   # 조건 평가에서 pop 발생!
+# ❌ 조건에서 pop() 사용 → 두 가지 함정
+# 1) pop()이 0(falsy)을 반환하면 루프가 조기 종료
+# 2) 리스트가 비면 IndexError 발생
+while data.pop():   # 조건 평가마다 pop 발생!
     print("처리 중")
-# 결과: 기대와 다를 수 있음
+# data = [0, 1, 2]라면 → 2 처리, 1 처리, 0에서 종료(0은 falsy!)
+# data = []라면 → IndexError!
 
 # ✅ 바디에서 명시적으로 처리
 data = [1, 2, 3, 4, 5]
@@ -1822,6 +1837,25 @@ comprehension:  0.187초  ← 보통 가장 빠름
     # → 임의의 프로그램에 대해 정지 여부를 결정할 수 없음
     raise NotImplementedError("정지 문제는 결정 불가능")
 
+# ── 귀류법 스케치 (대각선 논법) ──────────────────────
+# 가정: 범용 정지 판별 함수 will_halt(f, x)가 존재한다고 하자.
+
+def will_halt(f, x) -> bool:
+    """f(x)가 정지하면 True, 무한 루프면 False (가상)"""
+    ...   # 존재한다고 가정
+
+def paradox(x):
+    """will_halt를 이용해 모순을 만드는 함수"""
+    if will_halt(x, x):   # x(x)가 정지한다고 판정되면
+        while True: pass   # → 일부러 무한 루프 (정지 안 함!)
+    else:                  # x(x)가 정지 안 한다고 판정되면
+        return              # → 즉시 정지
+
+# paradox(paradox)를 호출하면?
+#   will_halt(paradox, paradox) == True  → 무한 루프 → 정지 안 함 → 모순!
+#   will_halt(paradox, paradox) == False → 즉시 정지 → 정지함 → 모순!
+# 어느 쪽이든 모순 → will_halt는 존재할 수 없다. ■
+
 # 실용적 대안: 정적 분석 + 타임아웃
 import signal
 
@@ -1834,28 +1868,7 @@ def with_timeout(func, seconds=5):
         return func()
     finally:
         signal.alarm(0)</code></pre>
-    <h3>Part B — 실용적 무한 루프 방어 패턴</h3>
-    <pre><code class="language-python">MAX_ITERATIONS = 10_000   # 안전 상한선
-
-def safe_while(condition_fn, body_fn):
-    """무한 루프 방어 래퍼"""
-    iterations = 0
-    while condition_fn():
-        body_fn()
-        iterations += 1
-        if iterations >= MAX_ITERATIONS:
-            raise RuntimeError(
-                f"루프가 {MAX_ITERATIONS}회 초과 — 무한 루프 의심"
-            )
-    return iterations
-
-# AI 생성 코드를 검토할 때:
-# 1. 루프 변수 업데이트 유무 확인 (정적 분석)
-# 2. 수렴 조건의 단조성 확인 (이진탐색: left는 증가, right는 감소)
-# 3. 상한 반복 횟수 추가 (방어적 프로그래밍)
-# 4. 실제 실행으로 검증 (profiling)</code></pre>
-
-    <h3>Part A (추가) — dis.dis()로 while 바이트코드 분석 + for와 비교</h3>
+    <h3>Part A — dis.dis()로 while 바이트코드 분석 + for와 비교</h3>
     <pre><code class="language-python">import dis
 
 def while_loop():
@@ -1902,7 +1915,7 @@ dis.dis(for_loop)</code></pre>
       • <code>JUMP_BACKWARD</code>: 루프 뒤로 점프 (Python 3.11+에서 JUMP_ABSOLUTE → JUMP_BACKWARD로 변경)
     </div>
 
-    <h3>Part A (추가) — while True + break의 바이트코드와 최적화</h3>
+    <h3>Part A — while True + break의 바이트코드와 최적화</h3>
     <pre><code class="language-python">import dis
 
 def while_true_break():
@@ -1921,9 +1934,31 @@ dis.dis(while_true_break)</code></pre>
       유연하고 경우에 따라 더 명확합니다.
     </div>
 
-    <h3>Part B (추가) — 루프 불변식(Loop Invariant)과 정확성 증명</h3>
+    <h3>Part B — 실용적 무한 루프 방어 패턴</h3>
+    <pre><code class="language-python">MAX_ITERATIONS = 10_000   # 안전 상한선
+
+def safe_while(condition_fn, body_fn):
+    """무한 루프 방어 래퍼"""
+    iterations = 0
+    while condition_fn():
+        body_fn()
+        iterations += 1
+        if iterations >= MAX_ITERATIONS:
+            raise RuntimeError(
+                f"루프가 {MAX_ITERATIONS}회 초과 — 무한 루프 의심"
+            )
+    return iterations
+
+# AI 생성 코드를 검토할 때:
+# 1. 루프 변수 업데이트 유무 확인 (정적 분석)
+# 2. 수렴 조건의 단조성 확인 (이진탐색: left는 증가, right는 감소)
+# 3. 상한 반복 횟수 추가 (방어적 프로그래밍)
+# 4. 실제 실행으로 검증 (profiling)</code></pre>
+
+    <h3>Part B — 루프 불변식(Loop Invariant)과 정확성 증명</h3>
     <p>
-      <strong>루프 불변식(Loop Invariant)</strong>은 루프의 각 반복에서 항상 참인 조건입니다.
+      <strong>루프 불변식(Loop Invariant)</strong>은 각 반복 <strong>시작 시점에서</strong> 항상 참인 조건입니다
+      (반복 도중에는 일시적으로 깨질 수 있으며, 반복 끝에 복원됩니다).
       올바른 알고리즘 설계의 핵심 도구이며, while 루프의 정확성을 증명하는 데 사용됩니다.
     </p>
     <pre><code class="language-python">def binary_search(arr, target):
@@ -2074,6 +2109,13 @@ while True:
         break
     total += n
 print(f"합계: {total}")</code></pre>
+          <p><strong>왜 이렇게?</strong>
+            종료 조건(0)을 <code>total += n</code> 앞에서 검사하는 이유: 순서를 바꾸면 0이 합계에 포함됩니다.
+            <code>break</code>와 누적의 순서가 결과를 바꾸는 전형적 함정입니다.</p>
+          <div class="callout callout-warning">
+            <strong>⚠️ 함정:</strong> <code>int(input())</code>에 문자열을 넣으면
+            <code>ValueError</code>. 실전에서는 <code>try/except</code>로 감싸야 합니다.
+          </div>
         </div>
       </div>
     </details>
@@ -2096,6 +2138,13 @@ while n > 0:
 while n > 0:
     print(n % 10)   # 마지막 자리
     n //= 10        # 마지막 자리 제거</code></pre>
+          <p><strong>왜 이렇게?</strong>
+            <code>% 10</code>으로 마지막 자리를 꺼내고 <code>//= 10</code>으로 그 자리를 버립니다.
+            매 반복마다 n이 줄어들어 0이 되면 종료 — 조건 변수 업데이트의 전형적 패턴입니다.</p>
+          <div class="callout callout-warning">
+            <strong>⚠️ 함정:</strong> <code>n = 0</code>이면 루프에 진입하지 않아 아무것도 출력되지 않습니다.
+            0도 처리하려면 <code>while True</code> + 끝에서 조건 검사(do-while 패턴)가 필요합니다.
+          </div>
         </div>
       </div>
     </details>
@@ -2131,6 +2180,13 @@ print(f"유효한 입력: {result}")</code></pre>
 
 result = get_valid_input()
 print(f"유효한 입력: {result}")</code></pre>
+          <p><strong>왜 이렇게?</strong>
+            <code>while True</code> + <code>return</code>은 "유효한 값이 올 때까지 반복"의 정석입니다.
+            <code>break</code> 대신 <code>return</code>을 쓰면 유효 값을 바로 돌려주므로 별도 변수가 필요 없습니다.</p>
+          <div class="callout callout-warning">
+            <strong>⚠️ 함정:</strong> <code>1 &lt;= n &lt;= 10</code>은 Python 체이닝 비교라서 올바르게 작동하지만,
+            C/Java에서는 <code>(1 &lt;= n) &lt;= 10</code>으로 해석되어 의도와 다른 결과가 나옵니다.
+          </div>
         </div>
       </div>
     </details>
@@ -2168,6 +2224,13 @@ print(to_binary(255))  # "11111111"</code></pre>
 
 print(to_binary(10))   # "1010"
 print(to_binary(255))  # "11111111"</code></pre>
+          <p><strong>왜 이렇게?</strong>
+            자릿수 분해(초급 2)와 동일한 원리입니다. <code>% 2</code>로 마지막 비트를, <code>//= 2</code>로 다음 비트를 꺼냅니다.
+            LSB(최하위 비트)부터 추출되므로 <code>reversed()</code>로 뒤집어야 올바른 이진수가 됩니다.</p>
+          <div class="callout callout-warning">
+            <strong>⚠️ 함정:</strong> <code>n = 0</code>을 별도 처리하지 않으면 루프에 진입하지 않아 빈 문자열 <code>""</code>이 반환됩니다.
+            음수도 처리 대상이라면 2의 보수 변환이 추가로 필요합니다.
+          </div>
         </div>
       </div>
     </details>
@@ -2187,7 +2250,7 @@ print(to_binary(255))  # "11111111"</code></pre>
 print(is_palindrome("racecar"))   # True
 print(is_palindrome("python"))    # False
 print(is_palindrome("a"))         # True
-print(is_palindrome(""))</code></pre>
+print(is_palindrome(""))          # True</code></pre>
     <details class="answer">
       <summary>💡 힌트 / 정답 보기</summary>
       <div class="answer-content">
@@ -2200,6 +2263,15 @@ print(is_palindrome(""))</code></pre>
         left += 1
         right -= 1
     return True</code></pre>
+          <p><strong>왜 이렇게?</strong>
+            두 포인터가 양쪽 끝에서 중앙으로 좁혀오므로, 불일치를 발견하면 즉시 <code>False</code>를 반환합니다.
+            <code>left &lt; right</code>가 거짓이 되면 모든 쌍이 일치한 것이므로 <code>True</code>입니다.
+            <code>s == s[::-1]</code>보다 메모리 효율적입니다 — 슬라이싱은 새 문자열을 생성하지만 두 포인터는 O(1) 공간입니다.</p>
+          <div class="callout callout-warning">
+            <strong>⚠️ 함정:</strong> 빈 문자열 <code>""</code>이면 <code>right = -1</code>이 되어
+            <code>left(0) &lt; right(-1)</code>이 거짓 → 루프 미진입 → <code>True</code> 반환.
+            이것은 수학적으로 올바르지만(공진술), 실무에서는 빈 문자열을 팰린드롬으로 볼지 요구사항 확인이 필요합니다.
+          </div>
         </div>
       </div>
     </details>
@@ -2240,6 +2312,15 @@ print(factorize(97))    # [97]</code></pre>
 print(factorize(12))    # [2, 2, 3]
 print(factorize(100))   # [2, 2, 5, 5]
 print(factorize(97))    # [97]</code></pre>
+          <p><strong>왜 이렇게?</strong>
+            <code>divisor * divisor &lt;= n</code>까지만 검사하는 이유: n의 소인수 중 하나는 반드시 &radic;n 이하입니다.
+            내부 <code>while</code>로 같은 소인수를 반복 추출하고, 다 빠지면 <code>divisor += 1</code>로 다음 수로 넘깁니다.
+            마지막에 <code>n &gt; 1</code>이면 남은 n 자체가 소수 — 이 처리를 빠뜨리면 큰 소인수가 누락됩니다.</p>
+          <div class="callout callout-warning">
+            <strong>⚠️ 함정:</strong> <code>factorize(1)</code>은 빈 리스트 <code>[]</code>를 반환합니다.
+            1은 소수도 합성수도 아니므로 올바른 결과이지만, 직관적으로 혼란을 줄 수 있습니다.
+            또한 <code>divisor += 1</code>은 짝수도 검사하므로 비효율적 — 2를 먼저 처리하고 3부터 2씩 증가하면 약 2배 빨라집니다.
+          </div>
         </div>
       </div>
     </details>
@@ -2293,6 +2374,15 @@ import math
 for n in [2, 9, 100, 1_000_000]:
     result, iters = sqrt_newton(n)
     print(f"√{n}: {result:.10f} ({iters}회)")</code></pre>
+          <p><strong>왜 이렇게?</strong>
+            뉴턴-랩슨법은 <code>x_{n+1} = (x_n + S/x_n) / 2</code>로 추정값을 갱신합니다.
+            매 반복마다 오차가 제곱으로 줄어드는(2차 수렴) 특성 덕분에 &radic;1000000도 20회 이내에 수렴합니다.
+            <code>while True</code> + 수렴 조건 <code>break</code>는 "종료 시점을 미리 알 수 없는 반복"의 전형적 패턴입니다.</p>
+          <div class="callout callout-warning">
+            <strong>⚠️ 함정:</strong> <code>tolerance</code>를 너무 작게 설정하면(예: <code>1e-300</code>)
+            부동소수점 정밀도 한계로 <code>x_new == x</code>가 되어도 <code>abs(x_new - x) == 0.0 &lt; tolerance</code>로
+            종료되긴 하지만, 중간 단계에서 정밀도 손실이 발생할 수 있습니다.
+          </div>
         </div>
       </div>
     </details>
@@ -2365,6 +2455,8 @@ def loop_c(n):
 
 # Q1: loop_a는 COMPARE_OP로 조건을 매 반복마다 평가.
 #     loop_b는 LOAD_CONST True를 조건으로 쓰므로 비교 연산 없음.
+#     (Python 3.12+에서는 peephole optimizer가 while True의 조건 자체를
+#      제거하므로 LOAD_CONST True도 생성되지 않고 JUMP_BACKWARD만 남음.)
 #     대신 내부 if에서 COMPARE_OP + JUMP 발생 → 명령어 수는 비슷하거나 많음.
 
 # Q2: loop_c의 flag는 LOAD_FAST/STORE_FAST로 처리.
@@ -2575,7 +2667,7 @@ print(f"래퍼:   {t2:.4f}초")
       <tr>
         <td>while True</td>
         <td>무한 루프. 컴파일러가 조건 평가 코드를 제거 (최적화)</td>
-        <td>break, Constant Folding</td>
+        <td>break, Peephole Optimization</td>
       </tr>
       <tr>
         <td>while-else</td>
@@ -2678,12 +2770,12 @@ while True:        ←→   >> body             (조건 평가 코드 없음!)
       <p>while 루프 body 실행 후 조건 검사 위치로 되돌아가는 바이트코드. for에서도 사용.</p>
     </div>
     <div class="glossary-item">
-      <h4>Constant Folding (상수 접기)</h4>
-      <p>컴파일 시간에 상수 표현식을 미리 계산하는 최적화. while True의 조건 제거에 적용.</p>
+      <h4>Peephole Optimization (핍홀 최적화)</h4>
+      <p>바이트코드 수준에서 불필요한 명령어를 제거하는 최적화. while True의 조건 평가 코드 제거(dead code elimination)에 적용.</p>
     </div>
     <div class="glossary-item">
       <h4>루프 불변식 (Loop Invariant)</h4>
-      <p>루프의 매 반복에서 항상 참인 조건. 이진탐색: "target이 있다면 arr[left..right] 안에 있다".</p>
+      <p>각 반복 시작 시점에서 항상 참인 조건 (반복 도중 일시적으로 깨질 수 있으며, 반복 끝에 복원). 이진탐색: "target이 있다면 arr[left..right] 안에 있다".</p>
     </div>
     <div class="glossary-item">
       <h4>정지 문제 (Halting Problem)</h4>

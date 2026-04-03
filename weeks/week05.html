@@ -6,16 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>5주차: 조건문 — 컴퓨터는 어떻게 결정하는가? | PyWhy</title>
   <link rel="stylesheet" href="../css/style.min.css">
-  <meta name="description" content="리스트와 튜플 — Python 시퀀스 타입의 내부 구조를 분해합니다">
+  <meta name="description" content="조건문 — 컴퓨터는 어떻게 결정하는가? if/elif/else, Truthiness, match/case">
   <meta property="og:type" content="article">
   <meta property="og:title" content="5주차: 조건문 — 컴퓨터는 어떻게 결정하는가? | PyWhy">
-  <meta property="og:description" content="리스트와 튜플 — Python 시퀀스 타입의 내부 구조를 분해합니다">
+  <meta property="og:description" content="조건문 — 컴퓨터는 어떻게 결정하는가? if/elif/else, Truthiness, match/case">
   <meta property="og:url" content="https://soccz.github.io/python-why/weeks/week05.html">
   <meta property="og:site_name" content="PyWhy">
   <meta property="og:locale" content="ko_KR">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="5주차: 조건문 — 컴퓨터는 어떻게 결정하는가? | PyWhy">
-  <meta name="twitter:description" content="리스트와 튜플 — Python 시퀀스 타입의 내부 구조를 분해합니다">
+  <meta name="twitter:description" content="조건문 — 컴퓨터는 어떻게 결정하는가? if/elif/else, Truthiness, match/case">
 </head>
 <body data-week="5">
 <a href="#main-content" class="skip-link">본문 바로가기</a>
@@ -303,11 +303,10 @@ else:
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>조건 분기의 하드웨어 기반</h3>
+    <h3>Part A — CPython의 ceval.c 조건 처리</h3>
     <p>
-      Python의 <code>if</code>는 결국 CPU의 <strong>조건 분기 명령(conditional branch instruction)</strong>으로 컴파일됩니다.
-      x86-64에서는 <code>JE</code>(Jump if Equal), <code>JNE</code>(Jump if Not Equal),
-      <code>JL</code>(Jump if Less) 등입니다.
+      Python의 <code>if</code>는 CPython bytecode의 <code>POP_JUMP_IF_FALSE</code>로 변환되고,
+      이는 <code>ceval.c</code>의 메인 루프에서 <code>switch(opcode)</code> 분기로 실행됩니다.
     </p>
     <p>
       Python → CPython bytecode → C 인터프리터 → 기계어의 실행 흐름:
@@ -319,6 +318,8 @@ CPython bytecode: COMPARE_OP(>) → POP_JUMP_IF_FALSE(target)
 C: ceval.c의 switch(opcode) 분기
     ↓
 x86-64: CMP rax, 0 / JLE target</code></pre>
+
+    <h3>Part B — CPU 분기 예측기(Branch Predictor)</h3>
     <p>
       현대 CPU는 <strong>분기 예측기(Branch Predictor)</strong>를 통해 조건이 평가되기 전에
       어느 쪽 경로를 실행할지 미리 추측합니다. 예측 성공률이 높을수록 파이프라인 스톨 없이 빠르게 실행됩니다.
@@ -356,16 +357,37 @@ else:
 정지!
     </div>
     <p>중요한 규칙: <code>elif</code>와 <code>else</code>는 <strong>앞 조건이 거짓일 때만</strong> 도달합니다.</p>
-    <pre><code class="language-python">x = 10
+    <pre><code class="language-python">온도 = 10
 
-if x > 5:
-    print("5보다 크다")   # ← 이게 출력되면
-elif x > 3:
-    print("3보다 크다")   # ← 이건 절대 실행 안 됨 (x=10은 5보다도 크니까)
+if 온도 > 5:
+    print("5도보다 높다")   # ← 이게 출력되면
+elif 온도 > 3:
+    print("3도보다 높다")   # ← 이건 절대 실행 안 됨 (10은 5보다도 크니까)
 </code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
-5보다 크다
+5도보다 높다
+    </div>
+    <div class="callout callout-warning">
+      <strong>함정: elif를 if로 바꾸면?</strong>
+      <pre><code class="language-python">점수 = 95
+
+# elif 대신 if를 쓰면 — "A"만 나올 것 같지만...
+if 점수 >= 90:
+    print("A")
+if 점수 >= 80:
+    print("B")      # ← 95는 80보다도 크니까 이것도 출력됨!
+if 점수 >= 70:
+    print("C")      # ← 이것도 출력됨!</code></pre>
+      <div class="output-block"><div class="output-label">실행 결과:</div>
+A
+B
+C</div>
+      <p>
+        <code>elif</code>는 "앞 조건이 거짓일 때만" 검사합니다.
+        <code>if</code>를 여러 개 쓰면 <strong>각각 독립적으로</strong> 검사하기 때문에
+        여러 조건이 동시에 참이 되어 모두 실행됩니다.
+      </p>
     </div>
     <div class="callout callout-tip">
       <strong>✏️ 지금 바로 해봐:</strong> 숫자를 바꿔가며 어떤 조건이 실행되는지 확인하세요.
@@ -399,16 +421,16 @@ else:
     블록</code></pre>
     <p>흔한 실수 3가지:</p>
     <pre><code class="language-python"># 실수 1: else에 조건을 붙임
-# else x > 10:  ← SyntaxError! else는 조건 없음
+# else 나이 > 10:  ← SyntaxError! else는 조건 없음
 
 # 실수 2: 대입과 비교 혼동
-x = 5
-# if x = 5:  ← SyntaxError! (= 는 대입, == 이 비교)
-if x == 5:
+나이 = 5
+# if 나이 = 5:  ← SyntaxError! (= 는 대입, == 이 비교)
+if 나이 == 5:
     print("맞습니다")
 
 # 실수 3: 들여쓰기 오류
-if x == 5:
+if 나이 == 5:
     print("첫 줄")
   # print("두 번째")  ← IndentationError! (4칸이 아님)
     print("올바른 두 번째")  # ← 이래야 같은 블록</code></pre>
@@ -471,8 +493,7 @@ if m := re.search(r"ORD-(\d+)", text):
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>POP_JUMP_IF_FALSE — if 문의 바이트코드</h3>
-    <h4>Part A: if/elif/else의 바이트코드 구조</h4>
+    <h3>Part A — POP_JUMP_IF_FALSE — if/elif/else의 바이트코드 구조</h3>
     <pre><code class="language-python">import dis
 
 def classify(n):
@@ -486,39 +507,39 @@ def classify(n):
 dis.dis(classify)</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과 (Python 3.12):</div>
-  1           0 RESUME                   0
+  4           0 RESUME                   0
 
-  2           2 LOAD_FAST                0 (n)
+  5           2 LOAD_FAST                0 (n)
               4 LOAD_CONST               1 (0)
-              6 COMPARE_OP               4 (>)
-             12 POP_JUMP_IF_FALSE       16 (to 16)
+              6 COMPARE_OP              68 (>)
+             10 POP_JUMP_IF_FALSE        1 (to 14)
 
-  3          14 RETURN_CONST             2 ('양수')
+  6          12 RETURN_CONST             2 ('양수')
 
-  4     >>   16 LOAD_FAST                0 (n)
-             18 LOAD_CONST               1 (0)
-             20 COMPARE_OP               0 (<)
-             26 POP_JUMP_IF_FALSE       30 (to 30)
+  7     >>   14 LOAD_FAST                0 (n)
+             16 LOAD_CONST               1 (0)
+             18 COMPARE_OP               2 (<)
+             22 POP_JUMP_IF_FALSE        1 (to 26)
 
-  5          28 RETURN_CONST             3 ('음수')
+  8          24 RETURN_CONST             3 ('음수')
 
-  7     >>   30 RETURN_CONST             4 ('영')
+ 10     >>   26 RETURN_CONST             4 ('영')
     </div>
     <p>바이트코드 해독:</p>
     <ul>
-      <li><code>COMPARE_OP 4 (&gt;)</code>: n과 0을 비교, True/False를 스택에 push</li>
-      <li><code>POP_JUMP_IF_FALSE 16</code>: 스택 top이 False이면 offset 16으로 점프 (elif 시작) → 스택 pop</li>
+      <li><code>COMPARE_OP 68 (&gt;)</code>: oparg 68 = <code>(4&lt;&lt;4|8)</code> — 상위 4비트가 비교 종류(4=GT), 하위 4비트가 캐시 힌트. n과 0을 비교, True/False를 스택에 push</li>
+      <li><code>POP_JUMP_IF_FALSE 1 (to 14)</code>: 스택 top이 False이면 offset 14로 점프 (elif 시작) → 스택 pop</li>
       <li>True이면 점프하지 않고 <code>RETURN_CONST '양수'</code> 실행</li>
-      <li>offset 16(<code>&gt;&gt;</code> 표시 = 점프 목적지)부터 elif 절 시작</li>
+      <li>offset 14(<code>&gt;&gt;</code> 표시 = 점프 목적지)부터 elif 절 시작</li>
       <li>모든 조건이 거짓이면 최종 <code>RETURN_CONST '영'</code></li>
     </ul>
     <p>
-      <strong>COMPARE_OP가 6바이트인 이유</strong>: Python 3.12의 Specializing Adaptive Interpreter가
-      자주 호출되는 비교 연산을 타입별로 최적화(specialize)하기 위해 4바이트의 인라인 캐시를 추가한다.
+      <strong>COMPARE_OP가 4바이트인 이유</strong>: Python 3.12의 Specializing Adaptive Interpreter가
+      자주 호출되는 비교 연산을 타입별로 최적화(specialize)하기 위해 2바이트(1 cache entry)의 인라인 캐시를 추가한다.
       초기에는 일반 경로로, 호출이 쌓이면 <code>COMPARE_OP_INT</code> 등으로 특화된다.
     </p>
 
-    <h4>Part B: RESUME 명령어의 역할</h4>
+    <h3>Part B — RESUME 명령어의 역할</h3>
     <p>
       모든 함수의 첫 줄에 등장하는 <code>RESUME 0</code>은 Python 3.11에서 도입됐다.
       이 명령어는 세 가지를 처리한다:
@@ -532,41 +553,9 @@ dis.dis(classify)</code></pre>
       일반 동기 함수에서는 거의 no-op이지만, 모든 함수 진입점에 일관성을 부여한다.
     </p>
 
-    <h3>Part A (추가) — dis.dis()로 조건문 바이트코드 분석</h3>
-    <pre><code class="language-python">import dis
-
-def classify(x):
-    if x > 0:
-        return "양수"
-    elif x < 0:
-        return "음수"
-    else:
-        return "0"
-
-dis.dis(classify)</code></pre>
-    <div class="output-block">
-      <div class="output-label">실행 결과 (Python 3.12):</div>
-  RESUME                   0
-
-  LOAD_FAST                0 (x)
-  LOAD_CONST               1 (0)
-  COMPARE_OP               4 (&gt;)
-  POP_JUMP_IF_FALSE        → elif 블록
-
-  LOAD_CONST               2 ('양수')
-  RETURN_VALUE
-
-  LOAD_FAST                0 (x)
-  LOAD_CONST               1 (0)
-  COMPARE_OP               0 (&lt;)
-  POP_JUMP_IF_FALSE        → else 블록
-
-  LOAD_CONST               3 ('음수')
-  RETURN_VALUE
-
-  LOAD_CONST               4 ('0')
-  RETURN_VALUE
-    </div>
+    <h3>Part A (추가) — and/or 단락 평가의 바이트코드</h3>
+    <p>위의 if/elif/else 바이트코드는 <code>POP_JUMP_IF_FALSE</code>로 분기했습니다.
+      <code>and</code>/<code>or</code>는 다른 점프 명령어를 사용합니다:</p>
     <pre><code class="language-python">import dis
 
 # and/or 단락 평가의 바이트코드
@@ -584,8 +573,9 @@ dis.dis(check_or)</code></pre>
       <strong>핵심 바이트코드:</strong><br>
       • <code>COMPARE_OP</code>: 비교 연산 (<code>&lt;</code>, <code>&gt;</code>, <code>==</code>, <code>!=</code>, <code>in</code>, <code>is</code>)<br>
       • <code>POP_JUMP_IF_FALSE</code>: 거짓이면 점프 (if 조건 실패 시 분기)<br>
-      • <code>JUMP_IF_FALSE_OR_POP</code>: <code>and</code>의 단락 평가 — 거짓이면 점프, 참이면 스택에서 제거<br>
-      • <code>JUMP_IF_TRUE_OR_POP</code>: <code>or</code>의 단락 평가 — 참이면 점프, 거짓이면 스택에서 제거
+      • <code>JUMP_IF_FALSE_OR_POP</code> (Python 3.11 이전): <code>and</code>의 단락 평가 — 거짓이면 점프, 참이면 스택에서 제거<br>
+      • <code>JUMP_IF_TRUE_OR_POP</code> (Python 3.11 이전): <code>or</code>의 단락 평가 — 참이면 점프, 거짓이면 스택에서 제거<br>
+      <em>※ Python 3.12+에서는 <code>COPY</code> + <code>POP_JUMP_IF_FALSE</code>/<code>POP_JUMP_IF_TRUE</code>로 대체됨</em>
     </div>
 
     <h3>Part B (추가) — CPU 분기 예측과 조건문 최적화</h3>
@@ -646,17 +636,17 @@ print(f"차이: {t2/t1:.1f}배")</code></pre>
     </p>
     <pre><code class="language-python"># 상황: 함수가 실패하면 None, 성공하면 값을 반환한다
 def find_age(name):
-    db = {"Alice": 30, "Bob": 0}   # Bob의 나이는 0살
+    db = {"민지": 30, "수호": 0}   # 수호의 나이는 0살
     return db.get(name)            # 없으면 None 반환
 
-age = find_age("Bob")
+age = find_age("수호")
 print(age)   # 0
 
 # 잘못된 체크: 0도 Falsy이므로 "나이 없음" 출력!
 if age:
     print(f"나이: {age}")
 else:
-    print("나이 없음")   # ← 버그! Bob의 나이는 0인데 없다고 함
+    print("나이 없음")   # ← 버그! 수호의 나이는 0인데 없다고 함
 
 # 올바른 체크: None만 걸러내기
 if age is not None:
@@ -665,6 +655,7 @@ else:
     print("나이 없음")</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
+0
 나이 없음
 나이: 0
     </div>
@@ -729,7 +720,7 @@ if x == True:
 
 # is True는 정말 불리언인지 확인할 때만
 if x is True:
-    print("진짜 True만")   # 실행 안 됨 (1은 True와 같지 않음)</code></pre>
+    print("진짜 True만")   # 실행 안 됨 (1 == True는 True이지만, 1 is True는 False — 동일 객체가 아님)</code></pre>
     </div>
   </div>
 
@@ -785,7 +776,7 @@ print(f"스택 비어있음: {not s}")  # __len__ 1 → Truthy</code></pre>
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>nb_bool의 반환값 -1과 예외 전파</h3>
+    <h3>Part A — nb_bool의 반환값 -1과 예외 전파</h3>
     <p>
       4주차 §06에서 <code>PyObject_IsTrue()</code>의 C 구현을 봤습니다.
       이번에는 <code>__bool__</code>이 <strong>예외를 raise할 때</strong> 어떤 일이 벌어지는지 살펴봅니다:
@@ -961,9 +952,9 @@ if color in ("red", "green", "blue"):
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>복합 조건의 바이트코드 — if + and/or의 결합</h3>
+    <h3>Part A — 복합 조건의 바이트코드 — if + and/or의 결합</h3>
     <p>
-      4주차 §07에서 <code>JUMP_IF_FALSE_OR_POP</code>과 <code>JUMP_IF_TRUE_OR_POP</code>을 봤습니다.
+      4주차 §07에서 단락 평가의 바이트코드를 봤습니다.
       이것이 <code>if</code> 조건과 결합하면 어떤 구조가 만들어지는지 확인합니다:
     </p>
     <pre><code class="language-python">import dis
@@ -976,26 +967,26 @@ def check(a, b):
 dis.dis(check)</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과 (Python 3.12):</div>
-  1           0 RESUME                   0
+  5           0 RESUME                   0
 
-  2           2 LOAD_FAST                0 (a)
-              4 JUMP_IF_FALSE_OR_POP    10 (to 10)
+  6           2 LOAD_FAST                0 (a)
+              4 POP_JUMP_IF_FALSE        3 (to 12)
               6 LOAD_FAST                1 (b)
-              8 POP_JUMP_IF_FALSE       14 (to 14)
+              8 POP_JUMP_IF_FALSE        1 (to 12)
 
-  3          10 RETURN_CONST             1 ('둘 다 True')
+  7          10 RETURN_CONST             1 ('둘 다 True')
 
-  4     >>   12 RETURN_CONST             2 ('아님')
-        >>   14 RETURN_CONST             2 ('아님')
+  8     >>   12 RETURN_CONST             2 ('아님')
     </div>
     <p>관찰 포인트:</p>
     <ul>
-      <li><code>a</code>가 Falsy이면 <code>JUMP_IF_FALSE_OR_POP</code>가 offset 10으로 점프 — <code>b</code>는 평가조차 안 됨</li>
-      <li><code>a</code>가 Truthy이면 팝 후 <code>b</code>를 평가, Falsy이면 <code>POP_JUMP_IF_FALSE</code>로 분기</li>
+      <li><code>a</code>가 Falsy이면 첫 번째 <code>POP_JUMP_IF_FALSE</code>가 offset 12로 점프 — <code>b</code>는 평가조차 안 됨</li>
+      <li><code>a</code>가 Truthy이면 <code>b</code>를 로드·평가, Falsy이면 두 번째 <code>POP_JUMP_IF_FALSE</code>로 offset 12 분기</li>
       <li>단락 평가가 bytecode 수준에서 "조건부 점프"로 구현된다는 것이 명확히 드러남</li>
+      <li>Python 3.11 이전의 <code>JUMP_IF_FALSE_OR_POP</code> / <code>JUMP_IF_TRUE_OR_POP</code>은 3.12에서 제거됨 — <code>POP_JUMP_IF_FALSE</code> / <code>POP_JUMP_IF_TRUE</code>로 통일</li>
     </ul>
     <p>
-      <code>or</code>는 <code>JUMP_IF_TRUE_OR_POP</code>를 사용하며, 대칭적으로 동작한다.
+      <code>or</code>는 <code>POP_JUMP_IF_TRUE</code>를 사용하며, 대칭적으로 동작한다.
     </p>
   </div>
 </section>
@@ -1073,12 +1064,12 @@ print(play_content_v2(False, True, True))  # 로그인 필요</code></pre>
   <!-- 고급 -->
   <div class="level-section advanced">
     <span class="level-badge level-advanced">고급</span>
-    <h3>인지 복잡도(Cognitive Complexity)와 코드 품질</h3>
+    <h3>순환 복잡도(Cyclomatic Complexity)와 코드 품질</h3>
     <p>
       <strong>Cyclomatic Complexity</strong>는 코드의 독립적인 실행 경로 수를 측정합니다.
       if 분기 하나 = +1, elif = +1, else = +0.
     </p>
-    <pre><code class="language-python"># Cyclomatic Complexity가 높은 함수 (CC = 5)
+    <pre><code class="language-python"># Cyclomatic Complexity가 높은 함수 (CC = 6)
 def process(x, y, flag):
     result = 0
     if x > 0:              # +1
@@ -1091,17 +1082,15 @@ def process(x, y, flag):
             result = -x
     return result
 
-# 리팩토링: Guard Clause + 조건 합치기 (CC = 3)
-def process_v2(x, y, flag):
-    if x < 0 and flag:
-        return -x
+# 리팩토링: Guard Clause + 조건 분리 (CC = 4, flag 매개변수 제거로 로직 단순화)
+def process_v2(x, y):
     if x <= 0:
         return 0
     if y > 0:
         return x * y
     if y < 0:
         return x + y
-    return 0</code></pre>
+    return x</code></pre>
     <p>
       Python 코드 품질 도구인 <code>radon</code>이나 <code>flake8</code>은
       Cyclomatic Complexity가 10을 넘으면 경고를 줍니다.
@@ -1112,7 +1101,14 @@ def process_v2(x, y, flag):
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>분기 예측과 성능 — 루프 안의 if</h3>
+    <h3>Part A — Guard Clause의 바이트코드 — 중첩 vs 평탄화</h3>
+    <p>
+      중첩 if는 <code>POP_JUMP_IF_FALSE</code>가 연쇄적으로 깊어지며 점프 목적지가 멀어집니다.
+      Guard Clause(early return)로 평탄화하면 각 <code>POP_JUMP_IF_FALSE</code>가 직후의 <code>RETURN_CONST</code>로 점프하여
+      바이트코드가 선형적이 되고, 분기 깊이가 1로 고정됩니다.
+    </p>
+
+    <h3>Part B — 분기 예측과 성능 — 루프 안의 if</h3>
     <p>
       현대 CPU는 <strong>분기 예측기(Branch Predictor)</strong>를 사용해
       조건 분기의 결과를 미리 추측하고 파이프라인을 채웁니다.
@@ -1208,6 +1204,16 @@ print(f"{'비어있음' if not items else f'{len(items)}개 항목'}")</code></p
       <strong>PEP 8 가이드라인:</strong> 조건식이 한 줄에 80자를 넘거나,
       두 번 이상 중첩되면 if/else 블록으로 전환하세요.
     </div>
+    <div class="callout callout-danger">
+      <strong>함정: 삼항 연산자와 연산 우선순위</strong><br>
+      조건식의 우선순위는 거의 모든 연산자보다 <strong>낮습니다</strong>:
+      <pre><code class="language-python"># 의도: x가 양수이면 x, 아니면 -x... 의 제곱
+result = (x if x > 0 else -x) ** 2   # 괄호 필요!
+
+# 괄호 없으면?
+result = x if x > 0 else -x ** 2     # -x ** 2 → -(x**2) 로 해석됨!
+# x = -3 → result = -((-3)**2) = -9 (의도: 9)</code></pre>
+    </div>
   </div>
 
   <!-- 고급 -->
@@ -1240,7 +1246,7 @@ print(signs)  # ['음수', '음수', '영', '양수', '양수']</code></pre>
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>조건식의 바이트코드 — JUMP_FORWARD</h3>
+    <h3>Part A — 조건식의 바이트코드 — JUMP_FORWARD</h3>
     <pre><code class="language-python">import dis
 
 def f(n):
@@ -1350,14 +1356,35 @@ n = 42
 match n:
     case x if x < 0:
         print(f"{x}는 음수")
+    case 0:
+        print("영")
     case x if x % 2 == 0:
-        print(f"{x}는 양의 짝수")
+        print(f"{x}는 짝수")
     case x:
-        print(f"{x}는 양의 홀수")</code></pre>
+        print(f"{x}는 홀수")</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
 y축 위의 점, y=5
-42는 양의 짝수
+42는 짝수
+    </div>
+    <div class="callout callout-danger">
+      <strong>함정: 변수 캡처 vs 상수 비교</strong><br>
+      <code>case</code>에서 이름만 쓰면 <strong>캡처 패턴</strong>이 됩니다 — 값 비교가 아닙니다!
+      <pre><code class="language-python">HTTP_OK = 200
+status = 404
+
+match status:
+    case HTTP_OK:          # 함정! 200과 비교하는 게 아니라,
+        print("성공")      #   status 값(404)을 HTTP_OK에 "캡처"합니다
+    case _:
+        print("실패")
+
+print(HTTP_OK)  # 404 ← 원래 값이 덮어써짐!</code></pre>
+      상수와 비교하려면 <strong>점(.)이 포함된 이름</strong> 또는 리터럴을 사용해야 합니다:
+      <pre><code class="language-python">import http
+match status:
+    case http.HTTPStatus.OK:   # 점 표기법 → 값 비교 (캡처 아님)
+        print("성공")</code></pre>
     </div>
   </div>
 
@@ -1416,8 +1443,7 @@ print(describe(Rectangle(Point(0, 3), Point(4, 0)))) # 사각형: (0,3)-(4,0)</c
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>PEP 634와 match/case의 CPython 구현</h3>
-    <h4>Part A: match/case의 바이트코드 전략</h4>
+    <h3>Part A — match/case의 바이트코드 전략</h3>
     <p>
       match/case는 패턴 유형에 따라 다른 바이트코드를 사용한다:
     </p>
@@ -1431,8 +1457,9 @@ OR 패턴 (|)        → 각 패턴을 순서대로 시도
 매핑 패턴           → MATCH_MAPPING + MATCH_KEYS
 클래스 패턴         → MATCH_CLASS</code></pre>
 
-    <h4>Part B: MATCH_CLASS의 동작 원리</h4>
+    <h3>Part B — MATCH_CLASS의 동작 원리</h3>
     <pre><code class="language-python">import dis
+from dataclasses import dataclass
 
 @dataclass
 class Point:
@@ -1546,8 +1573,8 @@ def validate_user_v2(user):
     return True
 
 # 테스트
-print(validate_user_v2({"email": "test@example.com", "age": 20}))   # True
-print(validate_user_v2({"email": "invalid", "age": 20}))             # False</code></pre>
+print(validate_user_v2({"email": "kim@naver.com", "age": 20}))   # True
+print(validate_user_v2({"email": "잘못된주소", "age": 20}))        # False</code></pre>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
 True
@@ -1595,12 +1622,16 @@ print(process_event({"type": "click", "x": 100, "y": 200}))</code></pre>
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>조건문 커버리지와 테스트 전략</h3>
+    <h3>Part A — CPython의 조건 분기 바이트코드와 브랜치 최적화</h3>
     <p>
-      AI가 생성한 조건문 코드에는 <strong>경계 조건(edge case)</strong>이 누락되기 쉽습니다.
-      구조적 테스트는 모든 분기를 커버해야 합니다.
+      CPython 컴파일러는 조건문을 바이트코드로 변환할 때, 각 분기마다
+      <code>POP_JUMP_IF_FALSE</code> / <code>POP_JUMP_IF_TRUE</code> 명령을 삽입합니다.
+      AI가 생성한 조건문 코드에서 <strong>경계 조건(edge case)</strong>이 누락되면,
+      특정 분기 경로가 테스트되지 않은 채 남게 됩니다.
     </p>
-    <pre><code class="language-python">def grade(score):
+    <pre><code class="language-python">import dis
+
+def grade(score):
     """점수를 학점으로 변환. 유효 범위: 0-100"""
     if score < 0 or score > 100:
         raise ValueError(f"유효하지 않은 점수: {score}")
@@ -1610,7 +1641,18 @@ print(process_event({"type": "click", "x": 100, "y": 200}))</code></pre>
     if score >= 60: return "D"
     return "F"
 
-# 분기 커버리지 100%를 위한 테스트 케이스
+dis.dis(grade)
+# 각 if 문마다 COMPARE_OP + POP_JUMP_IF_FALSE 쌍이 생성됨
+# 첫 번째 if의 or는 두 개의 COMPARE_OP으로 분해:
+#   score < 0 → POP_JUMP_IF_TRUE (단락평가: True면 바로 raise)
+#   score > 100 → POP_JUMP_IF_FALSE (False면 다음 if로)</code></pre>
+
+    <h3>Part B — 분기 커버리지와 테스트 전략 (소프트웨어 테스팅 이론)</h3>
+    <p>
+      조건문이 많은 코드는 분기 누락이 실무 버그의 주요 원인입니다.
+      구조적 테스트 기법으로 모든 분기를 커버해야 합니다.
+    </p>
+    <pre><code class="language-python"># 분기 커버리지 100%를 위한 테스트 케이스
 import unittest
 
 class TestGrade(unittest.TestCase):
@@ -1635,6 +1677,8 @@ class TestGrade(unittest.TestCase):
     <p>
       <strong>Branch Coverage</strong>: 모든 분기의 참/거짓 경로를 테스트했는가?<br>
       <strong>MC/DC (Modified Condition/Decision Coverage)</strong>: 항공/의료 소프트웨어 수준 — 각 조건이 독립적으로 결과에 영향을 주는지 확인.
+      <code>score &lt; 0 or score &gt; 100</code>에서 MC/DC를 만족하려면, 각 조건이 독립적으로 결과를 바꾸는 테스트 쌍이 필요합니다
+      (예: <code>score=-1 vs score=50</code>은 좌측 조건만 변경, <code>score=50 vs score=101</code>은 우측 조건만 변경).
     </p>
   </div>
 </section>
@@ -1770,8 +1814,8 @@ else:
       윤년 규칙: 4의 배수이면서, 100의 배수가 아니거나, 400의 배수이면 윤년.
     </p>
     <pre><code class="language-python">year = int(input("연도: "))
-# 조건 작성
-is_leap = (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
+# 윤년 조건을 작성하세요
+is_leap = ???
 print("윤년" if is_leap else "평년")
 
 # 테스트: 2000 → 윤년, 1900 → 평년, 2024 → 윤년, 2023 → 평년</code></pre>
@@ -1867,7 +1911,12 @@ print(f"result2: {result2}")
 # result2: check_b()만 호출됨
 # → check_b()가 True를 반환하면 or는 즉시 True 확정
 # → check_a(), check_c()는 평가 안 됨
-# 출력: "B 평가됨" / result2: True</code></pre>
+# 출력: "B 평가됨" / result2: True
+
+# 핵심: and/or는 bool이 아니라 피연산자 값 자체를 반환한다.
+# check_a() and check_b() → check_a()가 Falsy이면 check_a()의 반환값(False) 그대로 반환
+# check_b() or check_a() → check_b()가 Truthy이면 check_b()의 반환값(True) 그대로 반환
+# 즉, and는 첫 번째 Falsy 값을, or는 첫 번째 Truthy 값을 반환한다.</code></pre>
         </div>
       </div>
     </details>
@@ -1965,7 +2014,7 @@ def get_user_city_v2(data):
 
   <!-- 고급 7 -->
   <div class="exercise-block level-adv">
-    <span class="level-badge level-advanced">고급</span>
+    <span class="level-badge level-advanced">고급 7</span>
     <h3>조건식으로 함수형 변환</h3>
     <p>
       다음 함수를 조건식(ternary)과 Truthiness를 활용해서 더 간결하게 만드세요.
@@ -2272,16 +2321,16 @@ match v:
       <p>if 문의 구성 요소. <code>if</code> 절, <code>elif</code> 절, <code>else</code> 절.</p>
     </div>
     <div class="glossary-item">
-      <h4>Truthiness (참같음)</h4>
-      <p>불리언 컨텍스트에서 객체가 True처럼 동작하는지. __bool__ → __len__ 순으로 판단.</p>
+      <h4>Truthiness (참같음 — 개념)</h4>
+      <p>불리언 컨텍스트에서 참/거짓을 판단하는 개념적 속성. __bool__ → __len__ 순으로 판단하는 프로토콜 자체를 가리킨다.</p>
     </div>
     <div class="glossary-item">
       <h4>Falsy (거짓같음)</h4>
       <p>불리언 컨텍스트에서 False로 평가되는 값. <code>False</code>, <code>0</code>, <code>""</code>, <code>[]</code>, <code>None</code> 등.</p>
     </div>
     <div class="glossary-item">
-      <h4>Truthy (참같음)</h4>
-      <p>불리언 컨텍스트에서 True로 평가되는 값. Falsy가 아닌 모든 객체.</p>
+      <h4>Truthy (참같은 값)</h4>
+      <p>bool 컨텍스트에서 True로 평가되는 개별 값. Falsy가 아닌 모든 객체. Truthiness는 이 판단 체계 자체를, Truthy는 그 판단 결과 참인 개별 값을 가리킨다.</p>
     </div>
     <div class="glossary-item">
       <h4>Short-Circuit Evaluation (단락 평가)</h4>

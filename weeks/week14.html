@@ -472,8 +472,8 @@ print(double("abc"))   # abcabc</code></pre>
     <div class="callout callout-warning">
       <strong>Part A:</strong>
       <code>list[int]</code>가 동작하려면 <code>list.__class_getitem__(int)</code>가 호출되어야 합니다.
-      Python 3.9에서 <code>object.__class_getitem__</code>가 추가되어
-      C 구현 내장 타입(list, dict, tuple, set)도 제네릭 문법을 지원합니다.
+      Python 3.9에서 PEP 585에 의해 list, dict 등 내장 타입에 <code>__class_getitem__</code>이 직접 구현되어
+      (PEP 560으로 메커니즘 자체는 3.7에서 도입) C 구현 내장 타입(list, dict, tuple, set)도 제네릭 문법을 지원합니다.
       반환값은 <code>types.GenericAlias</code> 객체입니다:
 <pre><code>import types
 alias = list[int]
@@ -503,7 +503,7 @@ def add_cat(animals: list[Animal]) -&gt; None:
 
 add_cat(dogs)   # dogs에 Cat이 들어감 — 타입 안전성 파괴!</code></pre>
     <p>
-      이것이 <strong>Mutable 컨테이너가 Invariant(불변)인 이유</strong>입니다.
+      이것이 <strong>Mutable 컨테이너가 Invariant(무공변)인 이유</strong>입니다.
       쓰기가 가능하면 "하위 타입의 컨테이너를 상위 타입으로 취급"하는 순간
       잘못된 타입이 삽입될 수 있습니다.
     </p>
@@ -1040,12 +1040,14 @@ print(p)        # Point(x=3.0, y=4.0)
 # 수정 불가
 try:
     p.x = 5.0   # FrozenInstanceError!
-except AttributeError as e:
+except AttributeError as e:   # Python 3.11+: FrozenInstanceError (AttributeError 서브클래스)
     print(e)     # cannot assign to field 'x'
 
 # frozen이면 hash 가능 → dict 키, set 원소 가능!
 points = {Point(0, 0), Point(1, 1), Point(0, 0)}
-print(len(points))   # 2  (중복 제거됨)</code></pre>
+print(len(points))   # 2  (중복 제거됨)
+
+# 주의: frozen=True여도 list 같은 가변 필드의 내부는 변경 가능합니다 (진정한 불변이 아님)</code></pre>
 
     <details>
       <summary>frozen이 아닌 일반 dataclass는 hash 가능한가요?</summary>
@@ -1086,6 +1088,26 @@ class Manager(Employee):
 m = Manager("영희", 70000, department="개발팀")
 print(m)            # Manager(name='영희', salary=70000, bonus_rate=0.2, department='개발팀')
 print(m.total_pay)  # 84000.0</code></pre>
+
+<div class="callout callout-warning">
+  <strong>🚨 함정 — dataclass 상속 시 필드 순서 에러!</strong><br>
+  <pre><code class="language-python">@dataclass
+class Parent:
+    name: str = "기본"
+
+@dataclass
+class Child(Parent):
+    age: int  # ❌ TypeError: non-default argument 'age' follows default argument
+
+# 왜? Parent의 name에 기본값이 있는데 Child의 age에 기본값이 없으면
+# dataclass가 __init__(self, name="기본", age) 형태를 만들려 하지만
+# Python 함수에서 기본값 없는 인자가 있는 인자 뒤에 올 수 없음!
+
+# ✅ 해결: 자식에서도 기본값 부여
+@dataclass
+class Child(Parent):
+    age: int = 0</code></pre>
+</div>
 
     <h3>dataclass의 옵션들</h3>
 <pre><code># 모든 옵션
@@ -1720,7 +1742,48 @@ print(isinstance(MyCollection(), HasLength))  # True</code></pre>
   </details>
 
   <details>
-    <summary>문제 11 (전공자): __class_getitem__ 직접 구현</summary>
+    <summary>문제 11 (고급): isinstance() 타입 가드와 Union 처리</summary>
+    <div class="answer">
+      <code>isinstance()</code>를 사용하여 <code>Union[str, int]</code> 타입의 값을 안전하게 처리하는 함수를 작성하세요. mypy가 타입을 좁히는(narrowing) 원리를 설명하세요.
+<pre><code>from typing import Union
+
+def process_value(value: Union[str, int]) -&gt; str:
+    """str이면 대문자로, int이면 16진수 문자열로 변환"""
+    if isinstance(value, str):
+        # mypy는 여기서 value를 str로 좁힘 (narrowing)
+        return value.upper()
+    elif isinstance(value, int):
+        # mypy는 여기서 value를 int로 좁힘
+        return hex(value)
+    else:
+        # 이론상 도달 불가 — 방어적 코딩
+        raise TypeError(f"예상치 못한 타입: {type(value)}")
+
+# 테스트
+print(process_value("hello"))   # HELLO
+print(process_value(255))       # 0xff
+print(process_value("파이썬"))  # 파이썬 (대문자 변환 없음 — 한글)
+
+# 리스트 처리
+def process_list(items: list[Union[str, int]]) -&gt; list[str]:
+    return [process_value(item) for item in items]
+
+print(process_list(["abc", 10, "def", 255]))
+# ['ABC', '0xa', 'DEF', '0xff']
+
+# === mypy 타입 가드 원리 ===
+# 1. isinstance(value, str) 이후 분기 안에서 mypy는
+#    value의 타입을 Union[str, int]에서 str로 좁힘
+# 2. 이것은 "타입 가드(type guard)" 패턴이라 부름
+# 3. Python 3.10+에서는 TypeGuard를 사용하여 커스텀 가드 가능:
+#    from typing import TypeGuard
+#    def is_str_list(val: list[object]) -&gt; TypeGuard[list[str]]:
+#        return all(isinstance(x, str) for x in val)</code></pre>
+    </div>
+  </details>
+
+  <details>
+    <summary>문제 12 (전공자): __class_getitem__ 직접 구현</summary>
     <div class="answer">
 <pre><code>class TypedBox:
     """list[int]처럼 TypedBox[str] 문법을 지원하는 클래스"""
@@ -1750,34 +1813,77 @@ print(box)                # TypedBox(42)</code></pre>
   </details>
 
   <details>
-    <summary>문제 12 (전공자): Covariance 실험</summary>
+    <summary>문제 13 (전공자): Covariance 실험</summary>
     <div class="answer">
-<pre><code>from typing import TypeVar, Sequence
+<pre><code>from typing import TypeVar, Generic, Sequence
 
 # Covariant TypeVar
 T_co = TypeVar('T_co', covariant=True)
 
-class ReadOnlyList:
+class ReadOnlyList(Generic[T_co]):
     """읽기 전용이므로 공변 가능"""
-    def __init__(self, items: list):
-        self._items = items
+    def __init__(self, items: list[T_co]) -&gt; None:
+        self._items = tuple(items)
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -&gt; T_co:
         return self._items[index]
 
-    def __len__(self):
+    def __len__(self) -&gt; int:
         return len(self._items)
 
-# Sequence는 공변: list[int]는 Sequence[int|str]에 할당 가능
+# Sequence는 공변:
+# 1단계: list[int] <: Sequence[int] (명목적 서브타이핑 — list가 Sequence를 상속)
+# 2단계: Sequence[int] <: Sequence[int|float] (공변성 — Sequence의 T가 covariant)
 def sum_all(numbers: Sequence[int | float]) -&gt; float:
     return sum(numbers)
 
 ints: list[int] = [1, 2, 3]
 floats: list[float] = [1.1, 2.2, 3.3]
 
-# list[int]는 Sequence[int|float]의 서브타입 (Sequence은 불변 → 공변)
+# list[int]는 Sequence[int|float]의 서브타입 (Sequence은 읽기 전용 → 공변)
 print(sum_all(ints))     # 6
 print(sum_all(floats))   # 6.6</code></pre>
+    </div>
+  </details>
+
+  <details>
+    <summary>문제 14 (전공자): @dataclass의 코드 생성 — exec() 확인</summary>
+    <div class="answer">
+<pre><code>import dataclasses, inspect
+
+@dataclasses.dataclass(order=True, frozen=True)
+class Temperature:
+    celsius: float
+    label: str = "측정값"
+
+# 자동 생성된 메서드들 확인
+print("=== fields ===")
+for f in dataclasses.fields(Temperature):
+    print(f"  {f.name}: type={f.type}, default={f.default}")
+# celsius: type=&lt;class 'float'&gt;, default=MISSING
+# label: type=&lt;class 'str'&gt;, default=측정값
+
+# __init__ 소스 확인
+print("\n=== __init__ source ===")
+print(inspect.getsource(Temperature.__init__))
+
+# __eq__ 소스 확인
+print("=== __eq__ source ===")
+print(inspect.getsource(Temperature.__eq__))
+
+# __lt__ 소스 확인 (order=True)
+print("=== __lt__ source ===")
+print(inspect.getsource(Temperature.__lt__))
+
+# frozen이므로 hash 가능, 비교 가능
+t1 = Temperature(36.5)
+t2 = Temperature(38.0, "발열")
+t3 = Temperature(36.5)
+
+print(t1 == t3)          # True  (구조적 동치)
+print(t1 &lt; t2)           # True  (celsius 먼저 비교)
+print({t1, t2, t3})      # 2개 (중복 제거)
+print(hash(t1) == hash(t3))  # True</code></pre>
     </div>
   </details>
 </section>
@@ -1955,7 +2061,7 @@ print(sum_all(floats))   # 6.6</code></pre>
     </div>
     <div class="glossary-item">
       <span class="term">불변성 (Invariance)</span>
-      <span class="definition">정확한 타입 일치 요구. list[int] ≠ list[float]. 가변 컨테이너에 적용</span>
+      <span class="definition">정확한 타입 일치 요구. list[bool] ≠ list[int] (bool이 int의 서브클래스인데도 list[bool]은 list[int]의 서브타입이 아님 — list는 Invariant). 가변 컨테이너에 적용</span>
     </div>
     <div class="glossary-item">
       <span class="term">GenericAlias</span>

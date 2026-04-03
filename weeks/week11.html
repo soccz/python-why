@@ -463,17 +463,21 @@ dis.dis(with_comp)
 #   LOAD_GLOBAL    range
 #   CALL_FUNCTION
 #
-# Python 3.12+ (PEP 709):
+# Python 3.12+ (PEP 709) 실측:
 #   GET_ITER
-#   LOAD_FAST_AND_CLEAR  x
-#   BUILD_LIST
-#   SWAP
-#   FOR_ITER              ← 인라인 루프!
-#     LOAD_FAST  x
-#     LOAD_CONST 2
-#     BINARY_OP  (*)
-#     LIST_APPEND
-#   END_FOR</code></pre>
+#   LOAD_FAST_AND_CLEAR  x       ← 외부 x 보호 (저장 후 클리어)
+#   SWAP  2
+#   BUILD_LIST  0
+#   SWAP  2
+#   FOR_ITER                      ← 인라인 루프!
+#     STORE_FAST  x
+#     LOAD_FAST   x
+#     LOAD_CONST  2
+#     BINARY_OP   5 (*)
+#     LIST_APPEND 2
+#   END_FOR
+#   SWAP  2
+#   STORE_FAST   x               ← 보호된 외부 x 복원</code></pre>
 
     <div class="callout callout-warning">
       <strong>Part A — PEP 709의 설계 동기:</strong>
@@ -626,16 +630,25 @@ def dict_comp():
     return {k: k**2 for k in range(5)}
 
 dis.dis(dict_comp)
-# Python 3.12+:
-#   BUILD_MAP  0
+# Python 3.12+ 실측:
 #   LOAD_GLOBAL  range
-#   ...
+#   LOAD_CONST   5
+#   CALL  1
+#   GET_ITER
+#   LOAD_FAST_AND_CLEAR  k       ← 외부 k 보호 (저장 후 클리어)
+#   SWAP  2
+#   BUILD_MAP  0
+#   SWAP  2
 #   FOR_ITER
-#     LOAD_FAST  k
-#     LOAD_FAST  k
-#     BINARY_OP  (**)
-#     MAP_ADD              ← LIST_APPEND 대신 MAP_ADD
-#   END_FOR</code></pre>
+#     STORE_FAST  k
+#     LOAD_FAST   k              ← key
+#     LOAD_FAST   k              ← base for value
+#     LOAD_CONST  2
+#     BINARY_OP   8 (**)
+#     MAP_ADD     2              ← LIST_APPEND 대신 MAP_ADD
+#   END_FOR
+#   SWAP  2                       ← 보호된 외부 k 복원
+#   STORE_FAST  k</code></pre>
 
     <div class="callout callout-warning">
       <strong>Part A:</strong> 리스트 컴프리헨션은 <code>LIST_APPEND</code>,
@@ -715,8 +728,8 @@ print(y)        # 16  ← y가 외부로 새어나옴!</code></pre>
       PEP 572(Python 3.8)의 설계 결정입니다.
       walrus 연산자의 목적 자체가 "컴프리헨션 안에서 계산한 중간 결과를
       바깥에서도 쓸 수 있게 하는 것"입니다.
-      예: <code>[y := f(x) for x in data if y &gt; 0]</code> — f(x)를 한 번만 호출하고
-      조건문과 결과 리스트에서 모두 사용하는 패턴.
+      예: <code>[y for x in data if (y := f(x)) &gt; 0]</code> — f(x)를 한 번만 호출하고
+      조건 판정과 결과 수집에서 모두 사용하는 패턴.
     </div>
 
     <details>
@@ -745,11 +758,17 @@ print(results)   # ['123', '456']</code></pre>
     <div class="callout callout-warning">
       <strong>Part A:</strong>
       일반 컴프리헨션 변수는 <code>LOAD_FAST</code>/<code>STORE_FAST</code>로 로컬 프레임에 저장됩니다.
-      walrus 연산자(<code>:=</code>)의 변수는 <code>STORE_FAST</code> 대신
-      <code>STORE_NAME</code> 또는 <code>STORE_DEREF</code>(enclosing scope)를 사용합니다.
-      이것이 값이 외부 스코프로 전달되는 메커니즘입니다.
-      Python 3.12의 인라인 컴프리헨션에서는 <code>LOAD_FAST_AND_CLEAR</code>로
-      일반 변수만 격리하고 walrus 변수는 그대로 둡니다.
+      walrus 연산자(<code>:=</code>)의 타겟 변수가 외부 스코프에 전달되는 메커니즘은 버전에 따라 다릅니다:
+      <br><br>
+      <strong>Python 3.11 이전:</strong> 컴프리헨션이 별도 code object이므로
+      walrus 타겟은 <code>STORE_DEREF</code>(cell 변수)로 외부 스코프에 저장됩니다.
+      컴프리헨션 내부의 프레임과 외부 프레임을 cell/freevar 메커니즘으로 연결합니다.
+      <br><br>
+      <strong>Python 3.12+:</strong> 인라인 컴프리헨션(PEP 709)이므로 별도 프레임이 없습니다.
+      walrus 타겟은 일반 <code>STORE_FAST</code>를 사용하되,
+      <code>LOAD_FAST_AND_CLEAR</code>로 보호되지 않아 외부 스코프에 잔류합니다.
+      즉, 일반 루프 변수는 <code>LOAD_FAST_AND_CLEAR</code>/<code>STORE_FAST</code>로 저장→복원되어 격리되지만,
+      walrus 변수는 이 보호 없이 그대로 남습니다.
     </div>
   </div>
 </section>
@@ -866,17 +885,17 @@ for num in countdown(5):
     </div>
 
     <h3>지역 변수가 보존됩니다</h3>
-<pre><code>def accumulator():
-    total = 0
-    while True:
-        value = yield total   # total을 반환하고 멈춤
-        if value is None:
-            break
-        total += value
+<pre><code>def counter():
+    count = 0
+    while count < 5:
+        count += 1
+        yield count   # count를 반환하고 멈춤 — 다음 next()까지 count 보존
 
-gen = accumulator()
-print(next(gen))      # 0   (total = 0, 첫 yield에서 멈춤)
-# gen은 여전히 total = 0을 기억합니다</code></pre>
+gen = counter()
+print(next(gen))   # 1   (count = 1, 첫 yield에서 멈춤)
+print(next(gen))   # 2   (count = 2 — 이전 상태를 기억하고 이어서 실행!)
+print(next(gen))   # 3   (count = 3)
+# gen은 count = 3인 상태를 보존하고 다음 next()를 기다립니다</code></pre>
 
     <h3>메모리 비교: 리스트 vs 제너레이터</h3>
 <pre><code>import sys
@@ -1178,24 +1197,35 @@ print(gen.send(5))     # 35   (total = 30 + 5)</code></pre>
   <div class="level-section expert">
     <div class="level-badge">전공자</div>
     <h3>Part A: throw()와 close() — 제너레이터 생명주기 제어</h3>
-<pre><code>def safe_gen():
+<pre><code># throw() 예시
+def error_handling_gen():
+    try:
+        for i in range(100):
+            yield i
+    except ValueError as e:
+        print(f"ValueError 수신: {e}")
+        yield -1     # 에러 처리 후 값 반환
+
+g = error_handling_gen()
+print(next(g))     # 0
+print(next(g))     # 1
+print(g.throw(ValueError("오류!")))
+# ValueError 수신: 오류!
+# -1
+
+# close() 예시 — GeneratorExit 처리
+def closeable_gen():
     try:
         for i in range(100):
             yield i
     except GeneratorExit:
         print("제너레이터가 닫힙니다")
-        return       # GeneratorExit 전파 방지
-    except ValueError as e:
-        print(f"ValueError 수신: {e}")
-        yield -1     # 에러 처리 후 계속 진행
+        return       # GeneratorExit 후에는 yield 금지 — return만 가능
 
-g = safe_gen()
-print(next(g))     # 0
-print(next(g))     # 1
-print(g.throw(ValueError, "오류!"))
-# ValueError 수신: 오류!
-# -1
-g.close()          # "제너레이터가 닫힙니다" 출력</code></pre>
+g2 = closeable_gen()
+print(next(g2))    # 0
+print(next(g2))    # 1
+g2.close()         # "제너레이터가 닫힙니다" 출력</code></pre>
 
     <div class="callout callout-warning">
       <strong>Part A — throw()의 CPython 동작:</strong>
@@ -1487,7 +1517,8 @@ for key, group in itertools.groupby(data):
       사용자가 작성하는 코드는 가독성 좋은 Python이지만,
       <strong>그 코드가 호출하는 기반 도구</strong>는 성능을 위해 C로 만드는 계층 구조입니다.
     </p>
-<pre><code>import timeit
+<pre><code>import itertools
+import timeit
 
 # Python으로 chain을 구현하면:
 def py_chain(*iterables):
@@ -1588,18 +1619,25 @@ print(list(keys))     # ['a', 'b', 'c', 'd']  ← 실시간 반영!</code></pre>
     <p>
       Python은 왜 이 방식을 선택하지 않았는가? 구체적 사례를 봅시다:
     </p>
-<pre><code># Python에서 Lazy가 기본이면 생기는 문제
-results = []
-for i in range(5):
-    results.append(lambda: print(f"작업 {i}"))
+<pre><code># Lazy가 기본이면 생기는 진짜 문제: 부작용 실행 시점 불확실
+# ── 부작용이 있는 코드에서 Lazy는 치명적입니다 ──
 
-# Eager: 여기서 이미 i=4
-# Lazy라면: print가 "필요할 때" 실행되므로 "작업 4"가 5번?
-# 부작용(print)의 실행 순서가 예측 불가해짐
+# 예 1: 파일 삭제
+# x = delete_file("temp.txt")    # Lazy면 언제 삭제되는지 모름!
+#                                 # x를 사용할 때? 안 쓰면 영원히 안 삭제?
 
-# Python에서 부작용은 일상입니다:
-# - print(), file.write(), db.commit(), requests.post()
-# - 이것들의 실행 순서가 예측 불가하면 프로그램을 만들 수 없습니다</code></pre>
+# 예 2: 네트워크 요청
+# y = requests.post(url, data)   # Lazy면 요청 시점 불확실!
+#                                 # 서버는 이미 상태가 바뀌었을 수 있음
+
+# 예 3: 데이터베이스 커밋
+# db.commit()                    # Lazy면 커밋이 지연 → 다른 트랜잭션과 충돌
+
+# Python은 Eager이므로:
+x = delete_file("temp.txt")    # 이 줄에서 즉시 삭제
+y = requests.post(url, data)   # 이 줄에서 즉시 요청
+db.commit()                     # 이 줄에서 즉시 커밋
+# → 코드 순서 = 실행 순서. 예측 가능합니다.</code></pre>
     <p>
       <strong>Guido van Rossum의 선택:</strong>
       "Python은 실용적 언어이다. 대부분의 코드에 부작용이 있으므로
@@ -1677,18 +1715,16 @@ def process_large_file(filepath):
   <h2>11 — 실습 &amp; 연습문제</h2>
 
   <h3>실습: 제너레이터 파이프라인으로 로그 분석</h3>
-<pre><code>import itertools
-
-# 가상 로그 데이터
+<pre><code># 가상 로그 데이터
 def fake_log_lines():
     logs = [
-        "2024-01-01 INFO: 서버 시작",
-        "2024-01-01 ERROR: DB 연결 실패",
-        "2024-01-01 INFO: 재시도 중",
-        "2024-01-01 ERROR: 타임아웃",
-        "2024-01-01 WARN: 메모리 부족",
-        "2024-01-01 INFO: 복구 완료",
-        "2024-01-01 ERROR: 인증 실패",
+        "2024-01-01 INFO: Server started",
+        "2024-01-01 ERROR: db connection failed",
+        "2024-01-01 INFO: Retrying",
+        "2024-01-01 ERROR: timeout exceeded",
+        "2024-01-01 WARN: Memory low",
+        "2024-01-01 INFO: Recovery complete",
+        "2024-01-01 ERROR: auth denied",
     ]
     yield from logs
 
@@ -1699,7 +1735,7 @@ messages = (line.split(": ", 1)[1] for line in errors)
 upper_msgs = (msg.upper() for msg in messages)
 
 print(list(upper_msgs))
-# ['DB 연결 실패', '타임아웃', '인증 실패']</code></pre>
+# ['DB CONNECTION FAILED', 'TIMEOUT EXCEEDED', 'AUTH DENIED']</code></pre>
 
   <h3>연습문제</h3>
 

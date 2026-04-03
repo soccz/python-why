@@ -558,8 +558,9 @@ print("메인 종료 — daemon도 종료됩니다")
       바이트코드 실행은 GIL을 획득한 스레드만 가능합니다.
       <code>LOAD_GLOBAL</code>, <code>STORE_FAST</code> 같은 단일 바이트코드는
       GIL 덕분에 원자적이지만, <code>counter += 1</code>은
-      <code>LOAD_GLOBAL → LOAD_CONST → BINARY_ADD → STORE_GLOBAL</code> 4개 명령어이므로
+      <code>LOAD_GLOBAL 0 (counter) → LOAD_CONST 1 (1) → BINARY_OP 13 (+=) → STORE_GLOBAL 0 (counter)</code> 4개 명령어이므로
       중간에 GIL이 전환될 수 있습니다.
+      (Python 3.11 이하에서는 <code>BINARY_OP</code> 대신 <code>BINARY_ADD</code>였습니다.)
     </div>
   </div>
 </section>
@@ -830,6 +831,7 @@ asyncio.run(main())
         <li><strong>PEP 342 (Python 2.5)</strong>: <code>send()</code>, <code>throw()</code> 추가 — 양방향 제너레이터</li>
         <li><strong>PEP 380 (Python 3.3)</strong>: <code>yield from</code> — 서브제너레이터 위임</li>
         <li><strong>PEP 492 (Python 3.5)</strong>: <code>async def</code> / <code>await</code> — 네이티브 코루틴</li>
+        <li><strong>PEP 525 (Python 3.6)</strong>: <code>async def</code> + <code>yield</code> — 비동기 제너레이터</li>
       </ol>
       네이티브 코루틴(<code>async def</code>)의 내부 상태 머신은 제너레이터와 동일합니다:
       <code>gi_frame</code>(<code>cr_frame</code>)에 실행 위치를 저장하고,
@@ -1154,9 +1156,11 @@ with ThreadPoolExecutor(max_workers=3) as executor:
     <div class="callout callout-warning">
       <strong>max_workers 선택 기준:</strong>
       <ul>
-        <li><strong>ThreadPoolExecutor (I/O-bound)</strong>: 기본값 <code>min(32, os.cpu_count() + 4)</code>.
+        <li><strong>ThreadPoolExecutor (I/O-bound)</strong>: 기본값 <code>min(32, os.cpu_count() + 4)</code>
+        (Python 3.13+: <code>min(32, (os.process_cpu_count() or 1) + 4)</code>).
         I/O 대기가 길면 코어 수 × 5~10까지 올릴 수 있음. 너무 많으면 컨텍스트 스위칭 오버헤드</li>
-        <li><strong>ProcessPoolExecutor (CPU-bound)</strong>: 기본값 <code>os.cpu_count()</code>.
+        <li><strong>ProcessPoolExecutor (CPU-bound)</strong>: 기본값 <code>os.cpu_count()</code>
+        (Python 3.13+: <code>os.process_cpu_count()</code>).
         코어 수를 초과하면 프로세스 전환 비용만 증가</li>
       </ul>
     </div>
@@ -1278,9 +1282,9 @@ asyncio.run(async_main())
 asyncio_time = time.perf_counter() - start
 
 print(f"순차:      {N * DELAY:.1f}초")
-print(f"threading: {threading_time:.3f}초 ({N} 스레드)")  # 0.062초 (실측)
-print(f"asyncio:   {asyncio_time:.3f}초 (1 스레드)")      # 0.055초 (실측)
-# 100배 빠름! asyncio가 스레드 100개보다 약간 더 빠르면서 메모리는 훨씬 적음</code></pre>
+print(f"threading: {threading_time:.3f}초 ({N} 스레드)")  # ~0.1초 + 스레드 생성 오버헤드
+print(f"asyncio:   {asyncio_time:.3f}초 (1 스레드)")      # ~0.1초 + 이벤트루프 오버헤드
+# 순차 대비 ~100배 빠름! asyncio가 스레드보다 약간 더 빠르면서 메모리는 훨씬 적음</code></pre>
   </div>
 
   <div class="level-section expert">
@@ -1289,8 +1293,8 @@ print(f"asyncio:   {asyncio_time:.3f}초 (1 스레드)")      # 0.055초 (실측
     <div class="callout callout-warning">
       <strong>Part A:</strong>
       OS 스레드: 스택 크기 ~8MB (Linux 기본), 컨텍스트 스위칭 ~수 마이크로초.
-      코루틴: 초기 크기 ~200바이트, 전환은 Python 레벨 함수 호출과 동일.
-      따라서 1만 스레드 = ~80GB 스택 메모리, 1만 코루틴 = ~2MB.
+      코루틴: 초기 크기 ~100–200바이트 (코루틴 객체 셸 기준, 프레임 포함 시 더 큼), 전환은 Python 레벨 함수 호출과 동일.
+      따라서 1만 스레드 = ~80GB 가상 메모리 예약 (물리 메모리는 실사용량만큼만 commit), 1만 코루틴 = ~2MB.
       이것이 asyncio가 대량 동시 연결에 적합한 이유입니다.
       <code>sys.getsizeof</code>로 코루틴 크기를 확인할 수 있습니다.
     </div>
@@ -1703,18 +1707,15 @@ def blocking_download(url):
     time.sleep(1)
     return f"{url}: 완료"
 
-async def async_download(url, executor, loop):
-    result = await loop.run_in_executor(executor, blocking_download, url)
+async def async_download(url):
+    result = await asyncio.to_thread(blocking_download, url)
     return result
 
 async def main():
-    loop = asyncio.get_running_loop()
-    executor = ThreadPoolExecutor(max_workers=5)
-
     urls = [f"url_{i}" for i in range(5)]
     start = time.perf_counter()
     results = await asyncio.gather(
-        *[async_download(url, executor, loop) for url in urls]
+        *[async_download(url) for url in urls]
     )
     elapsed = time.perf_counter() - start
     print(f"결과: {results}")
@@ -1754,6 +1755,43 @@ for num_threads in [1, 2, 4]:
     elapsed = time.perf_counter() - start
     print(f"스레드 {num_threads}개: {elapsed:.3f}초")
 # GIL 때문에 스레드를 늘려도 빨라지지 않음!</code></pre>
+    </div>
+  </details>
+
+  <details>
+    <summary>문제 13 (전공자): 코루틴 내부 상태 탐색</summary>
+    <div class="answer">
+<pre><code>import asyncio
+import dis
+
+async def example(x):
+    await asyncio.sleep(0)
+    y = x + 1
+    await asyncio.sleep(0)
+    return y
+
+# 1. 코루틴 객체의 내부 속성 확인
+coro = example(42)
+print(f"타입: {type(coro)}")               # &lt;class 'coroutine'&gt;
+print(f"cr_frame: {coro.cr_frame}")         # 실행 프레임 (아직 시작 안 됨)
+print(f"cr_running: {coro.cr_running}")     # False
+print(f"cr_code: {coro.cr_code.co_name}")   # 'example'
+
+# 2. 바이트코드 확인 — async def의 내부 구조
+print("\n=== 바이트코드 ===")
+dis.dis(example)
+# GET_AWAITABLE, SEND 등 코루틴 전용 바이트코드 확인
+
+# 3. send()로 수동 구동 (이벤트 루프가 내부적으로 하는 일)
+coro2 = example(10)
+try:
+    # 첫 번째 send(None) — 첫 await까지 실행
+    awaitable = coro2.send(None)
+    print(f"첫 번째 양보: {type(awaitable)}")
+except StopIteration as e:
+    print(f"결과: {e.value}")
+
+coro2.close()  # 정리</code></pre>
     </div>
   </details>
 </section>
@@ -1873,7 +1911,7 @@ for num_threads in [1, 2, 4]:
     </div>
     <div class="glossary-item">
       <span class="term">asyncio.Queue</span>
-      <span class="definition">비동기 Producer-Consumer 패턴을 위한 스레드 안전 큐</span>
+      <span class="definition">비동기 Producer-Consumer 패턴을 위한 코루틴 안전 큐 (스레드 안전 아님 — 스레드용은 queue.Queue)</span>
     </div>
     <div class="glossary-item">
       <span class="term">asyncio.wait_for()</span>
