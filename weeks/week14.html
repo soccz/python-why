@@ -1092,7 +1092,8 @@ print(m.total_pay)  # 84000.0</code></pre>
 
 <div class="callout callout-warning">
   <strong>🚨 함정 — dataclass 상속 시 필드 순서 에러!</strong><br>
-  <pre><code class="language-python">@dataclass
+  <div class="code-block">
+<pre><code class="language-python" tabindex="0">@dataclass
 class Parent:
     name: str = "기본"
 
@@ -1108,6 +1109,7 @@ class Child(Parent):
 @dataclass
 class Child(Parent):
     age: int = 0</code></pre>
+</div>
 </div>
 
     <h3>dataclass의 옵션들</h3>

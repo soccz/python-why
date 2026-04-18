@@ -104,11 +104,18 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    // 다크 코드 배경을 계산 (axe-core contrast-checker가 fg span의 bg를
+    // 조상까지 올바르게 추적하지 못하는 이슈 우회 — 각 hl-* span에 직접 bg 주입)
+    const cs = getComputedStyle(document.documentElement);
+    const codeBg = cs.getPropertyValue('--code-bg').trim() || '#1e1e2e';
+
     document.querySelectorAll('code.language-python').forEach(el => {
-      // Avoid double-highlighting
       if (el.dataset.highlighted) return;
       el.dataset.highlighted = '1';
       el.innerHTML = highlight(el.textContent);
+      // inline bg on highlight spans
+      el.querySelectorAll('.hl-kw, .hl-bi, .hl-str, .hl-cmt, .hl-num, .hl-dec')
+        .forEach(span => { span.style.backgroundColor = codeBg; });
     });
   });
 })();

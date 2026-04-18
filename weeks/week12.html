@@ -186,13 +186,15 @@
       제너레이터가 <code>__iter__</code>와 <code>__next__</code>를 구현했기 때문입니다.
       이것이 던더 메서드(dunder method)의 핵심입니다 — Python 인터프리터와의 약속.
     </p>
-    <pre><code class="language-python"># 우리가 쓰는 코드
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 우리가 쓰는 코드
 v1 = Vector(3, 4)
 v2 = Vector(1, 2)
 v3 = v1 + v2     # 이게 어떻게 동작하는가?
 print(len(v1))   # 이건?
 print(v1 == v2)  # 이건?
 print(v1)        # 이건?</code></pre>
+</div>
     <p>
       Python은 <code>v1 + v2</code>를 보면 <code>v1.__add__(v2)</code>를 호출합니다.<br>
       <code>len(v1)</code>은 <code>v1.__len__()</code>을 호출합니다.<br>
@@ -253,7 +255,8 @@ print(p1)   # &lt;__main__.Point object at 0x...&gt;  ← 쓸모없는 정보</c
       <code>a[0]</code>는 "a.__getitem__(0)을 호출하라."<br>
       던더 메서드는 이 번역 규칙에 따른 <strong>약속된 이름</strong>입니다.
     </div>
-    <pre><code class="language-python">class Box:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Box:
     def __init__(self, items):
         self.items = items
 
@@ -277,13 +280,16 @@ print(box)             # Box([1, 2, 3, 4, 5])  ← __repr__ 호출
 for item in box:
     print(item, end=" ")
 # 1 2 3 4 5</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>던더는 직접 호출하지 않습니다</strong>
-      <pre><code class="language-python">box.__len__()   # 동작하긴 하지만 — 이렇게 쓰지 않는다
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">box.__len__()   # 동작하긴 하지만 — 이렇게 쓰지 않는다
 len(box)        # 올바른 방법
 
 # 이유: len()은 단순 호출이 아님
 # 내부적으로 타입 확인, 최적화, 오버로드 처리 등을 수행</code></pre>
+</div>
     </div>
   </div>
 
@@ -291,7 +297,8 @@ len(box)        # 올바른 방법
   <div class="level-section intermediate">
     <div class="level-badge">중급</div>
     <h3>주요 던더 메서드 분류</h3>
-    <pre><code class="language-python">class FullDemo:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class FullDemo:
     # --- 객체 생성 ---
     def __init__(self, value):         # 초기화
         self.value = value
@@ -331,6 +338,7 @@ b = FullDemo(20)
 print(a + b)           # FullDemo(30)
 print(a &lt; b)           # True
 print("1" in a)        # True (str(10)에 "1" 포함)</code></pre>
+</div>
   </div>
 
   <!-- 고급 -->
@@ -340,7 +348,8 @@ print("1" in a)        # True (str(10)에 "1" 포함)</code></pre>
     <p>
       <code>a + b</code>에서 <code>a.__add__(b)</code>가 <code>NotImplemented</code>를 반환하면, Python은 <code>b.__radd__(a)</code>를 시도합니다.
     </p>
-    <pre><code class="language-python">class Currency:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Currency:
     def __init__(self, amount):
         self.amount = amount
 
@@ -364,6 +373,7 @@ print(50 + c)     # Currency(150)  ← int.__add__(c) → NotImplemented → c._
 # sum()이 동작하려면 __radd__ 필요
 print(sum([Currency(10), Currency(20), Currency(30)]))
 # sum은 내부적으로 0 + item을 반복 — 첫 항이 0 + Currency(10) = __radd__ 호출</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>NotImplemented vs NotImplementedError</strong><br>
       <code>NotImplemented</code>: 반환값 — "이 타입은 처리 못해, 오른쪽 피연산자에게 물어봐"<br>
@@ -380,7 +390,8 @@ print(sum([Currency(10), Currency(20), Currency(30)]))
       CPython은 던더 메서드를 일반 속성 조회(<code>getattr</code>)로 찾지 않습니다.
       타입 객체의 C 함수 포인터 슬롯(<code>tp_*</code> 필드)을 직접 참조합니다.
     </p>
-    <pre><code class="language-python">import dis
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import dis
 
 class Slow:
     def __len__(self):
@@ -394,6 +405,7 @@ s = Slow()
 s.__len__ = lambda: 99
 print(len(s))    # 42  ← 인스턴스의 __len__ 무시, 클래스의 것을 씀
 print(s.__len__())  # 99  ← 직접 호출하면 인스턴스 것이 나옴</code></pre>
+</div>
     <p>
       이것이 Python에서 <strong>특수 메서드는 클래스에 정의해야 하는 이유</strong>입니다.
       인스턴스에 붙여도 내장 연산자는 무시합니다.
@@ -403,7 +415,8 @@ print(s.__len__())  # 99  ← 직접 호출하면 인스턴스 것이 나옴</co
       6개의 비교 메서드(<code>__lt__, __le__, __gt__, __ge__, __eq__, __ne__</code>) 중
       <code>__eq__</code>와 하나만 구현하면 나머지를 자동 생성해주는 데코레이터입니다.
     </p>
-    <pre><code class="language-python">from functools import total_ordering
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">from functools import total_ordering
 
 @total_ordering
 class Temperature:
@@ -426,6 +439,7 @@ print(t1 > t2)    # False — total_ordering이 __gt__ 자동 생성
 print(t1 &lt;= t2)   # True  — total_ordering이 __le__ 자동 생성
 print(sorted([Temperature(30), Temperature(10), Temperature(20)]))
 # [10°C, 20°C, 30°C]</code></pre>
+</div>
   </div>
 </section>
 
@@ -443,7 +457,8 @@ print(sorted([Temperature(30), Temperature(10), Temperature(20)]))
       <strong>__init__</strong>: 완성된 뼈대 안에 가구를 배치하고 색을 칠합니다. 이미 만들어진 인스턴스에 속성을 채웁니다.<br>
       생성자(constructor)는 <code>__new__</code>입니다. <code>__init__</code>은 초기화자(initializer)입니다.
     </div>
-    <pre><code class="language-python">class Dog:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Dog:
     def __init__(self, name, breed):
         # 이 시점에서 self는 이미 만들어진 빈 Dog 인스턴스
         # __new__가 이미 메모리를 할당함
@@ -459,6 +474,7 @@ print(sorted([Temperature(30), Temperature(10), Temperature(20)]))
 
 dog1 = Dog("바둑이", "진돗개")
 dog1.bark()  # 바둑이: 왈왈!</code></pre>
+</div>
     <p>
       대부분의 경우 <code>__new__</code>를 직접 구현할 필요 없습니다. <code>object.__new__</code>가 기본 동작을 합니다.
     </p>
@@ -468,7 +484,8 @@ dog1.bark()  # 바둑이: 왈왈!</code></pre>
   <div class="level-section intermediate">
     <div class="level-badge">중급</div>
     <h3>__new__를 오버라이드해야 할 때</h3>
-    <pre><code class="language-python"># 싱글톤 패턴 — 인스턴스가 하나뿐이어야 할 때
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 싱글톤 패턴 — 인스턴스가 하나뿐이어야 할 때
 class Singleton:
     _instance = None   # 클래스 변수
 
@@ -484,9 +501,11 @@ print(id(a), id(b))  # 같은 주소
 
 # __new__는 인스턴스를 반환해야 함
 # 반환하지 않으면 __init__이 호출되지 않음</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>불변 타입 서브클래싱 시 __new__ 필수</strong>
-      <pre><code class="language-python"># int, str, tuple은 불변 — __init__에서 값 변경 불가
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0"># int, str, tuple은 불변 — __init__에서 값 변경 불가
 # __new__에서 값을 설정해야 함
 class PositiveInt(int):
     def __new__(cls, value):
@@ -498,6 +517,7 @@ p = PositiveInt(5)
 print(p)           # 5
 print(p + 3)       # 8  (int처럼 동작)
 PositiveInt(-1)    # ValueError</code></pre>
+</div>
     </div>
   </div>
 
@@ -505,7 +525,8 @@ PositiveInt(-1)    # ValueError</code></pre>
   <div class="level-section advanced">
     <div class="level-badge">고급</div>
     <h3>__new__와 __init__의 인자 전달 규칙</h3>
-    <pre><code class="language-python">class Verbose:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Verbose:
     def __new__(cls, *args, **kwargs):
         print(f"__new__(cls={cls.__name__}, args={args}, kwargs={kwargs})")
         instance = super().__new__(cls)
@@ -519,11 +540,13 @@ PositiveInt(-1)    # ValueError</code></pre>
 obj = Verbose(42, label="test")
 # __new__(cls=Verbose, args=(42,), kwargs={'label': 'test'})
 # __init__(self=0x..., value=42, label=test)</code></pre>
+</div>
     <p>
       <code>__new__</code>와 <code>__init__</code>은 같은 인자를 받습니다.
       <code>__new__</code>가 현재 클래스와 다른 타입의 인스턴스를 반환하면 <code>__init__</code>은 <strong>호출되지 않습니다</strong>.
     </p>
-    <pre><code class="language-python">class Factory:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Factory:
     def __new__(cls, type_name):
         if type_name == "int":
             return 42       # int 반환 → __init__ 호출 안 됨
@@ -538,13 +561,15 @@ print(Factory("int"))    # 42  (__init__ 출력 없음)
 print(Factory("str"))    # hello (__init__ 출력 없음)
 obj = Factory("other")  # __init__ 호출됨: type_name=other
 print(type(obj))         # &lt;class '__main__.Factory'&gt;</code></pre>
+</div>
   </div>
 
   <!-- 전공자 -->
   <div class="level-section expert">
     <div class="level-badge">전공자</div>
     <h3>Part A: CPython — 객체 생성 전체 흐름</h3>
-    <pre><code class="language-python">import dis
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import dis
 
 class Point:
     def __init__(self, x, y):
@@ -571,6 +596,7 @@ def create():
 
 dis.dis(create)
 # CALL_INTRINSIC_1 또는 CALL → type.__call__로 연결</code></pre>
+</div>
     <h3>Part B: 왜 __init_subclass__가 필요했는가</h3>
     <p>
       Python 3.6 이전에는 "서브클래스가 만들어질 때 자동으로 뭔가를 하고 싶으면"
@@ -582,7 +608,8 @@ dis.dis(create)
       메타클래스 없이 "서브클래스 등록" 같은 간단한 훅을 구현할 수 있습니다.
       <strong>"간단한 일에는 간단한 도구를"</strong> — Python의 설계 원칙입니다.
     </p>
-    <pre><code class="language-python"># Python 3.6+ — 클래스가 서브클래싱될 때 자동 호출
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># Python 3.6+ — 클래스가 서브클래싱될 때 자동 호출
 class Plugin:
     _registry = {}
 
@@ -608,6 +635,7 @@ print(Plugin._registry)
 # 플러그인 동적 사용
 p = Plugin._registry["audio"]()
 print(p.process())  # 오디오 처리</code></pre>
+</div>
   </div>
 </section>
 
@@ -625,7 +653,8 @@ print(p.process())  # 오디오 처리</code></pre>
       <strong>__str__</strong>: 사용자용 자기소개 — "(3, 4)" — 보기 좋고 이해하기 쉬운 형식.<br>
       Python의 원칙: repr()은 eval()로 복원 가능해야 한다.
     </div>
-    <pre><code class="language-python">class Point:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Point:
     def __init__(self, x, y):
         self.x, self.y = x, y
 
@@ -645,6 +674,7 @@ print(f"{p!r}")   # Point(3, 4)   ← !r은 __repr__ 강제
 # 컨테이너 안에서는 항상 __repr__
 points = [Point(1, 2), Point(3, 4)]
 print(points)     # [Point(1, 2), Point(3, 4)]  ← 리스트는 repr 사용</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>__repr__만 정의하면 __str__도 됩니다</strong><br>
       <code>__str__</code>이 없으면 Python은 <code>__repr__</code>으로 대체합니다.<br>
@@ -656,7 +686,8 @@ print(points)     # [Point(1, 2), Point(3, 4)]  ← 리스트는 repr 사용</co
   <div class="level-section intermediate">
     <div class="level-badge">중급</div>
     <h3>__format__ — f-string의 커스터마이즈</h3>
-    <pre><code class="language-python">class Money:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Money:
     def __init__(self, amount, currency="KRW"):
         self.amount = amount
         self.currency = currency
@@ -680,13 +711,15 @@ print(repr(m))         # Money(130000, 'KRW')
 print(f"{m}")          # 130,000 KRW
 print(f"{m:usd}")      # $100.00
 print(f"{m:plain}")    # 130000</code></pre>
+</div>
   </div>
 
   <!-- 고급 -->
   <div class="level-section advanced">
     <div class="level-badge">고급</div>
     <h3>__repr__의 계약 — eval(repr(x)) == x</h3>
-    <pre><code class="language-python">import datetime
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import datetime
 
 # Python 내장 타입들은 이 계약을 따름
 d = datetime.date(2024, 1, 15)
@@ -709,6 +742,7 @@ c = Color(255, 0, 0)
 # eval(repr(c))는 Color 클래스가 네임스페이스에 있을 때 동작
 # 실무에서는 항상 가능하지 않을 수 있음
 # 하지만 "eval 가능한 형식"이 관례</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>eval(repr(x)) == x가 불가능한 경우</strong><br>
       파일 핸들, 소켓, 데이터베이스 연결 등 시스템 자원은 복원 불가능합니다.<br>
@@ -720,7 +754,8 @@ c = Color(255, 0, 0)
   <div class="level-section expert">
     <div class="level-badge">전공자</div>
     <h3>Part A: reprlib — 재귀 구조의 안전한 repr</h3>
-    <pre><code class="language-python">import reprlib
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import reprlib
 
 # 자기 참조 리스트
 lst = [1, 2, 3]
@@ -739,8 +774,10 @@ r.maxstring = 10 # 문자열은 최대 10자
 
 print(r.repr([1,2,3,4,5,6,7,8]))  # [1, 2, 3, ...]
 print(r.repr("Hello, World!"))    # 'Hello, W...'</code></pre>
+</div>
     <h3>Part B: __repr__과 logging</h3>
-    <pre><code class="language-python">import logging
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import logging
 logging.basicConfig(level=logging.DEBUG)
 
 class ApiRequest:
@@ -762,6 +799,7 @@ req = ApiRequest("GET", "https://api.example.com/data",
 logging.debug("요청: %r", req)
 # DEBUG:root:요청: ApiRequest('GET', 'https://api.example.com/data',
 #           headers={'Authorization': '***', 'Content-Type': 'application/json'})</code></pre>
+</div>
   </div>
 </section>
 
@@ -779,7 +817,8 @@ logging.debug("요청: %r", req)
       <code>==</code>: "생김새가 같은가?" — 값이 같은지 (동등성, equality)<br>
       쌍둥이는 생김새가 같지만(<code>==</code>) 같은 사람은 아닙니다(<code>is</code>).
     </div>
-    <pre><code class="language-python">a = [1, 2, 3]
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">a = [1, 2, 3]
 b = [1, 2, 3]
 c = a
 
@@ -789,8 +828,10 @@ print(a is c)    # True  — 같은 객체 (같은 주소)
 
 print(id(a), id(b), id(c))
 # a와 c는 같은 id, b는 다른 id</code></pre>
+</div>
     <p>기본적으로 클래스의 <code>==</code>는 <code>is</code>와 같습니다 — <code>__eq__</code>를 정의하지 않으면 동일성을 비교합니다.</p>
-    <pre><code class="language-python">class Point:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Point:
     def __init__(self, x, y):
         self.x, self.y = x, y
 
@@ -809,6 +850,7 @@ class BetterPoint:
 p3 = BetterPoint(1, 2)
 p4 = BetterPoint(1, 2)
 print(p3 == p4)  # True</code></pre>
+</div>
   </div>
 
   <!-- 중급 -->
@@ -820,7 +862,8 @@ print(p3 == p4)  # True</code></pre>
       이 계약이 깨지면 딕셔너리와 세트가 망가집니다.<br>
       Python은 <code>__eq__</code>를 오버라이드하면 <code>__hash__</code>를 <code>None</code>으로 설정합니다 — "안전하게 해시 불가 타입으로."
     </div>
-    <pre><code class="language-python">class Point:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Point:
     def __init__(self, x, y):
         self.x, self.y = x, y
     def __eq__(self, other):
@@ -851,13 +894,15 @@ print(len(s))   # 1 — 같은 원소로 인식
 
 d = {p1: "origin에서 가까운 점"}
 print(d[p2])    # origin에서 가까운 점 (p2로 조회해도 됨)</code></pre>
+</div>
   </div>
 
   <!-- 고급 -->
   <div class="level-section advanced">
     <div class="level-badge">고급</div>
     <h3>해시 충돌과 딕셔너리 성능</h3>
-    <pre><code class="language-python"># 나쁜 __hash__ — 충돌이 많음
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 나쁜 __hash__ — 충돌이 많음
 class BadHash:
     def __init__(self, value):
         self.value = value
@@ -881,6 +926,7 @@ class GoodHash:
 # PYTHONHASHSEED=0으로 고정 가능 (테스트용)
 import os
 print(os.environ.get("PYTHONHASHSEED", "random"))   # random이면 랜덤</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>가변 객체는 해시 불가로 두는 게 맞다</strong><br>
       값이 바뀌면 해시도 바뀌어야 하는데, 딕셔너리는 키의 해시가 변하면 찾을 수 없습니다.<br>
@@ -900,7 +946,8 @@ print(os.environ.get("PYTHONHASHSEED", "random"))   # random이면 랜덤</code>
       <li>엔트리 배열: <code>(hash, key, value)</code> 튜플을 삽입 순서로 저장</li>
       <li>충돌 해결: open addressing + perturbation (선형 탐사 변형)</li>
     </ul>
-    <pre><code class="language-python">import sys
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import sys
 
 # 딕셔너리 메모리 크기 — 8개 미만이면 8 슬롯 할당
 d = {}
@@ -912,8 +959,10 @@ for i in range(20):
 # 크기가 점프하는 지점이 리사이징 지점 (부하율 2/3 초과 시)
 print(sizes)
 # 리사이징: 8→16→32→... (대략 2배씩, 삭제가 많으면 4배 성장도 가능)</code></pre>
+</div>
     <h3>Part B: __eq__와 None 비교 관례</h3>
-    <pre><code class="language-python"># None과 비교할 때는 항상 is/is not을 씁니다
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># None과 비교할 때는 항상 is/is not을 씁니다
 # == 를 쓰면 __eq__가 호출되어 의도치 않은 동작 가능
 
 class Tricky:
@@ -927,6 +976,7 @@ print(t is None)  # False  ← 올바름
 # 실제 PEP 8도 명시:
 # Comparisons to singletons like None should always be done
 # with is or is not, never the equality operators</code></pre>
+</div>
   </div>
 </section>
 
@@ -943,7 +993,8 @@ print(t is None)  # False  ← 올바름
       모든 강아지는 동물입니다. 동물의 특성(숨쉬기, 먹기)을 강아지도 가집니다.<br>
       클래스 상속은 이것입니다 — 부모 클래스의 모든 메서드와 속성을 자식 클래스가 물려받습니다.
     </div>
-    <pre><code class="language-python">class Animal:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Animal:
     def __init__(self, name):
         self.name = name
 
@@ -968,6 +1019,7 @@ dog.bark()      # Dog만의 메서드
 
 print(isinstance(dog, Dog))     # True
 print(isinstance(dog, Animal))  # True — Dog는 Animal이기도 함</code></pre>
+</div>
   </div>
 
   <!-- 중급 -->
@@ -980,7 +1032,8 @@ print(isinstance(dog, Animal))  # True — Dog는 Animal이기도 함</code></pr
       B는 "나도 위에 C한테 물어봐"합니다. 이것이 <code>super()</code>입니다.<br>
       단순히 "부모"가 아니라 MRO(Method Resolution Order, 메서드 탐색 순서) 상의 다음 클래스에게 위임합니다.
     </div>
-    <pre><code class="language-python">class A:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class A:
     def hello(self):
         print("A.hello")
 
@@ -1008,6 +1061,7 @@ D().hello()
 # B.hello   ← super()가 B → C를 알고 있음 (A가 아님!)
 # C.hello   ← super()가 C → A를 알고 있음
 # A.hello</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>super()가 중요한 이유: 다이아몬드 문제 해결</strong><br>
       D → B, C → A 구조(다이아몬드)에서 A.hello가 두 번 호출되는 문제를 MRO + super()가 해결합니다.<br>
@@ -1015,7 +1069,8 @@ D().hello()
     </div>
     <div class="callout callout-warning">
       <strong>함정: super().__init__() 호출 누락</strong>
-      <pre><code class="language-python"># 될 것 같은데 안 되는 코드
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 될 것 같은데 안 되는 코드
 class Animal:
     def __init__(self, name):
         self.name = name
@@ -1035,8 +1090,10 @@ class Dog(Animal):
     def __init__(self, name, breed):
         super().__init__(name)    # 부모 초기화를 명시적으로 호출
         self.breed = breed</code></pre>
+</div>
     </div>
-    <pre><code class="language-python"># __init__에서 super() 사용 — 다중 상속 안전 패턴
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># __init__에서 super() 사용 — 다중 상속 안전 패턴
 class Base:
     def __init__(self, **kwargs):
         super().__init__(**kwargs)    # object.__init__ 으로 이어짐
@@ -1061,6 +1118,7 @@ obj = Combined(a=1, b=2)
 # Mixin1.__init__(a=1)
 # Mixin2.__init__(b=2)
 print(obj.a, obj.b)  # 1 2</code></pre>
+</div>
   </div>
 
   <!-- 고급 -->
@@ -1073,7 +1131,8 @@ print(obj.a, obj.b)  # 1 2</code></pre>
       <li>부모 클래스의 순서가 유지된다</li>
       <li>위 규칙이 충돌하면 <code>TypeError</code></li>
     </ol>
-    <pre><code class="language-python"># C3 수동 계산 예시
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># C3 수동 계산 예시
 # class D(B, C): B는 A를 상속, C는 A를 상속
 # L[D] = D + merge(L[B], L[C], [B, C])
 # L[B] = [B, A, object]
@@ -1095,13 +1154,15 @@ try:
     class C(A, B): pass  # X와 Y의 순서가 A, B에서 충돌
 except TypeError as e:
     print(e)  # Cannot create a consistent method resolution order...</code></pre>
+</div>
   </div>
 
   <!-- 전공자 -->
   <div class="level-section expert">
     <div class="level-badge">전공자</div>
     <h3>Part A: super()의 내부 구현</h3>
-    <pre><code class="language-python"># super()는 두 인자 형식이 있음
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># super()는 두 인자 형식이 있음
 # super()         — 셀 변수에서 __class__와 self를 자동으로 가져옴 (Python 3)
 # super(cls, obj) — 명시적 지정
 
@@ -1124,6 +1185,7 @@ class B(A):
 import inspect
 print(inspect.getclosurevars(B.method))
 # ClosureVars(nonlocals={'__class__': &lt;class 'B'&gt;}, ...)</code></pre>
+</div>
     <h3>Part B: 왜 믹스인(Mixin)이 다중 상속의 올바른 사용법인가</h3>
     <p>
       다중 상속은 위험합니다 — 다이아몬드 문제, 이름 충돌, 복잡한 MRO.
@@ -1140,7 +1202,8 @@ print(inspect.getclosurevars(B.method))
       Django의 View 시스템(<code>LoginRequiredMixin</code>, <code>PermissionRequiredMixin</code>)이
       이 패턴의 실전 예입니다.
     </p>
-    <pre><code class="language-python"># 믹스인: 단일 책임의 작은 클래스들을 조합
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 믹스인: 단일 책임의 작은 클래스들을 조합
 class JSONMixin:
     def to_json(self):
         import json
@@ -1169,6 +1232,7 @@ u.validate()           # 통과
 
 # MRO: User → JSONMixin → LogMixin → ValidationMixin → object
 print([c.__name__ for c in User.mro()])</code></pre>
+</div>
   </div>
 </section>
 
@@ -1186,7 +1250,8 @@ print([c.__name__ for c in User.mro()])</code></pre>
       회의 도중 무슨 일이 있어도(예외 발생) 비서는 반드시 회의 후 청소를 합니다.<br>
       <code>with</code>문은 자원을 안전하게 열고 닫는 것을 보장합니다.
     </div>
-    <pre><code class="language-python"># with 없이 — 예외 발생 시 파일이 닫히지 않을 수 있음
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># with 없이 — 예외 발생 시 파일이 닫히지 않을 수 있음
 f = open("data.txt", "w")
 f.write("데이터")
 # 여기서 예외가 나면 f.close()가 호출되지 않음!
@@ -1204,9 +1269,11 @@ with open("data.txt", "w") as f:
 #     f.write("데이터")
 # finally:
 #     mgr.__exit__(None, None, None)  ← __exit__ 호출 (예외 시 예외 정보 전달)</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>as 뒤의 변수는 __enter__의 반환값</strong>
-      <pre><code class="language-python">with open("data.txt") as f:
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">with open("data.txt") as f:
     # f = __enter__()의 반환값
     # open()은 파일 객체의 __enter__()가 self를 반환
     content = f.read()
@@ -1214,6 +1281,7 @@ with open("data.txt", "w") as f:
 # __enter__()가 None을 반환하면 as 생략하거나 None이 됨
 with some_context() as val:
     print(val)  # __enter__()가 반환한 것</code></pre>
+</div>
     </div>
   </div>
 
@@ -1221,7 +1289,8 @@ with some_context() as val:
   <div class="level-section intermediate">
     <div class="level-badge">중급</div>
     <h3>직접 컨텍스트 매니저 구현하기</h3>
-    <pre><code class="language-python">import time
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import time
 
 class Timer:
     """코드 블록의 실행 시간을 측정하는 컨텍스트 매니저"""
@@ -1248,8 +1317,10 @@ print(f"합계: {total}")
 # exc_tb:   traceback 객체 (없으면 None)
 # return True → 예외 억제 (with 블록 밖으로 전파 안 됨)
 # return False/None → 예외 전파</code></pre>
+</div>
     <h3>contextmanager 데코레이터 — 더 간단한 방법</h3>
-    <pre><code class="language-python">from contextlib import contextmanager
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">from contextlib import contextmanager
 
 @contextmanager
 def timer():
@@ -1263,13 +1334,15 @@ def timer():
 
 with timer():
     total = sum(range(1_000_000))</code></pre>
+</div>
   </div>
 
   <!-- 고급 -->
   <div class="level-section advanced">
     <div class="level-badge">고급</div>
     <h3>__exit__에서 예외 처리</h3>
-    <pre><code class="language-python">class DatabaseTransaction:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class DatabaseTransaction:
     def __init__(self, connection):
         self.conn = connection
 
@@ -1311,9 +1384,11 @@ except ValueError:
 #   쿼리 실행 중...
 # 롤백 (ROLLBACK) — 예외: ValueError: 제약 조건 위반
 # 예외 처리 완료</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>contextlib.suppress — 특정 예외 무시하기</strong>
-      <pre><code class="language-python">from contextlib import suppress
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">from contextlib import suppress
 
 # 파일이 없어도 괜찮을 때
 with suppress(FileNotFoundError):
@@ -1322,6 +1397,7 @@ with suppress(FileNotFoundError):
     # FileNotFoundError가 발생해도 조용히 넘어감
 
 print("계속 실행됨")</code></pre>
+</div>
     </div>
   </div>
 
@@ -1329,7 +1405,8 @@ print("계속 실행됨")</code></pre>
   <div class="level-section expert">
     <div class="level-badge">전공자</div>
     <h3>Part A: with문의 바이트코드</h3>
-    <pre><code class="language-python">import dis
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import dis
 
 def use_with():
     with open("test.txt", "w") as f:
@@ -1348,8 +1425,10 @@ dis.dis(use_with)
 #
 # 예외 시: 예외 테이블에서 핸들러 블록을 찾아 점프 → __exit__(exc_type, exc_val, exc_tb) 호출
 # (Python 3.11+ zero-cost exception handling: 예외 테이블이 별도 관리)</code></pre>
+</div>
     <h3>Part B: ExitStack — 동적 컨텍스트 관리</h3>
-    <pre><code class="language-python">from contextlib import ExitStack
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">from contextlib import ExitStack
 
 # 개수가 런타임에 결정되는 파일들을 열 때
 filenames = ["a.txt", "b.txt", "c.txt"]
@@ -1369,6 +1448,7 @@ def process(use_lock=True):
         if use_lock:
             stack.enter_context(lock)
         # use_lock이 False면 lock 없이 진행</code></pre>
+</div>
   </div>
 </section>
 
@@ -1388,7 +1468,8 @@ def process(use_lock=True):
       <strong>finally</strong>: 착륙이든 추락이든, 항상 블랙박스는 기록 (자원 정리)<br>
       finally는 어떤 상황에서도 반드시 실행됩니다.
     </div>
-    <pre><code class="language-python">def divide(a, b):
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">def divide(a, b):
     try:
         result = a / b          # 여기서 예외 발생 가능
     except ZeroDivisionError:
@@ -1410,9 +1491,11 @@ divide(10, 2)
 divide(10, 0)
 # 0으로 나눌 수 없습니다
 # --- 항상 실행됨 ---</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>except Exception: — 너무 넓게 잡지 마세요</strong>
-      <pre><code class="language-python"># 나쁜 패턴 — 모든 예외를 무시
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 나쁜 패턴 — 모든 예외를 무시
 try:
     do_something()
 except:      # KeyboardInterrupt, SystemExit도 잡힘!
@@ -1429,6 +1512,7 @@ try:
     result = int(user_input)
 except ValueError:
     print("숫자를 입력하세요")</code></pre>
+</div>
     </div>
   </div>
 
@@ -1436,7 +1520,8 @@ except ValueError:
   <div class="level-section intermediate">
     <div class="level-badge">중급</div>
     <h3>예외 계층 구조와 커스텀 예외</h3>
-    <pre><code class="language-python"># Python 예외 계층 (일부)
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># Python 예외 계층 (일부)
 # BaseException
 # ├── SystemExit
 # ├── KeyboardInterrupt
@@ -1474,8 +1559,10 @@ except ValidationError as e:
     print(f"검증 오류 [{e.field}]: {e}")
 except AppError as e:
     print(f"앱 오류: {e}")</code></pre>
+</div>
     <h3>예외 연쇄 — raise from</h3>
-    <pre><code class="language-python">def read_config(path):
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">def read_config(path):
     try:
         with open(path) as f:
             import json
@@ -1491,13 +1578,15 @@ except RuntimeError as e:
     print(f"원인: {e.__cause__}")
     # 설정 파일을 찾을 수 없음: missing.json
     # 원인: [Errno 2] No such file or directory: 'missing.json'</code></pre>
+</div>
   </div>
 
   <!-- 고급 -->
   <div class="level-section advanced">
     <div class="level-badge">고급</div>
     <h3>finally의 반환값 주의사항</h3>
-    <pre><code class="language-python">def tricky():
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">def tricky():
     try:
         return "try에서 반환"
     finally:
@@ -1514,11 +1603,13 @@ def suppress_exception():
 
 print(suppress_exception())  # "finally가 예외를 억제함"
 # ValueError가 사라짐 — 대부분 의도치 않은 버그</code></pre>
+</div>
     <div class="callout callout-warning">
       <strong>finally에서 return/break/continue를 쓰지 마세요</strong><br>
       finally는 정리(close, rollback, log)용입니다. 제어 흐름을 바꾸면 원래 예외나 반환값이 사라집니다.
     </div>
-    <pre><code class="language-python"># 올바른 finally 사용 패턴
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 올바른 finally 사용 패턴
 def safe_read(filepath):
     f = None
     try:
@@ -1530,13 +1621,15 @@ def safe_read(filepath):
     finally:
         if f:
             f.close()   # 항상 닫힘 보장 — 반환값/예외 영향 없음</code></pre>
+</div>
   </div>
 
   <!-- 전공자 -->
   <div class="level-section expert">
     <div class="level-badge">전공자</div>
     <h3>Part A: 예외 처리의 바이트코드</h3>
-    <pre><code class="language-python">import dis
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import dis
 
 def handle():
     try:
@@ -1550,8 +1643,10 @@ dis.dis(handle)
 # Python 3.11+: zero-cost exception handling
 # 예외가 발생하지 않으면 try 블록에 추가 비용 없음
 # 예외 발생 시에만 테이블 참조하여 except 블록으로 점프</code></pre>
+</div>
     <h3>Part B: ExceptionGroup — Python 3.11+</h3>
-    <pre><code class="language-python"># Python 3.11+ — 여러 예외를 동시에 발생/처리
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># Python 3.11+ — 여러 예외를 동시에 발생/처리
 import asyncio
 
 # 여러 태스크가 동시에 실패할 때
@@ -1569,6 +1664,7 @@ async def main():
         # ExceptionGroup으로 여러 예외를 한 번에 처리
 
 asyncio.run(main())</code></pre>
+</div>
   </div>
 </section>
 
@@ -1580,7 +1676,8 @@ asyncio.run(main())</code></pre>
     <p>
       Claude, OpenAI API를 사용할 때 Python 클라이언트는 던더 메서드를 활용합니다.
     </p>
-    <pre><code class="language-python"># Anthropic Python SDK의 내부 구조 (개념 코드)
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># Anthropic Python SDK의 내부 구조 (개념 코드)
 class MessageResponse:
     def __init__(self, content, usage, model):
         self.content = content    # list of ContentBlock
@@ -1607,9 +1704,11 @@ class MessageResponse:
 # print(response[0].text)    ← __getitem__
 # for block in response:     ← __iter__
 # len(response)              ← __len__</code></pre>
+</div>
 
     <h3>컨텍스트 매니저와 API 연결 관리</h3>
-    <pre><code class="language-python"># AI API 클라이언트는 보통 컨텍스트 매니저 지원
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># AI API 클라이언트는 보통 컨텍스트 매니저 지원
 # with 블록을 벗어나면 연결 정리가 자동으로 됨
 
 class AISession:
@@ -1638,6 +1737,7 @@ class AISession:
 with AISession("sk-...") as session:
     r1 = session.chat("안녕하세요")
     r2 = session.chat("파이썬 알려줘")</code></pre>
+</div>
 
     <div class="why-box">
       <strong>AI가 OOP를 설계하는 패턴</strong><br>
@@ -1662,7 +1762,8 @@ with AISession("sk-...") as session:
     </p>
 
     <h3>실습 A — 기본 구조</h3>
-    <pre><code class="language-python">class Vector:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Vector:
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -1678,9 +1779,11 @@ v = Vector(3, 4)
 print(repr(v))   # Vector(3, 4)
 print(str(v))    # (3, 4)
 print(v)         # (3, 4)</code></pre>
+</div>
 
     <h3>실습 B — 연산자 구현</h3>
-    <pre><code class="language-python">import math
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import math
 
 class Vector:
     def __init__(self, x, y):
@@ -1729,9 +1832,11 @@ print(abs(v1))      # 5.0
 print(bool(v1))     # True
 print(Vector(0,0))  # Vector(0, 0)  ← __repr__ 호출 (bool이 아님)
 print(bool(Vector(0,0)))  # False</code></pre>
+</div>
 
     <h3>실습 C — 컨텍스트 매니저로 연산 추적</h3>
-    <pre><code class="language-python">from contextlib import contextmanager
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">from contextlib import contextmanager
 
 @contextmanager
 def vector_ops_tracker():
@@ -1772,6 +1877,7 @@ with vector_ops_tracker() as ops:
 print(f"연산 횟수: {ops}")
 # 결과: 10.63
 # 연산 횟수: {'add': 1, 'mul': 1, 'abs': 1}</code></pre>
+</div>
   </div>
 </section>
 
@@ -1783,7 +1889,8 @@ print(f"연산 횟수: {ops}")
 
   <div class="problem">
     <p><strong>문제 1.</strong> 다음 코드의 출력을 예측하고 이유를 설명하세요.</p>
-    <pre><code class="language-python">class Cat:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Cat:
     def __repr__(self): return "Cat.__repr__"
     def __str__(self): return "Cat.__str__"
 
@@ -1793,13 +1900,16 @@ print(repr(c))
 print(f"{c}")
 print(f"{c!r}")
 print([c])</code></pre>
+</div>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">Cat.__str__     # print() → __str__ 우선
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">Cat.__str__     # print() → __str__ 우선
 Cat.__repr__    # repr() 명시
 Cat.__str__     # f-string → __str__ 기본
 Cat.__repr__    # !r → __repr__ 강제
 [Cat.__repr__]  # 리스트는 repr 사용</code></pre>
+</div>
       <p>print()와 f-string은 <code>__str__</code>을 먼저 찾습니다. 리스트나 repr()은 <code>__repr__</code>을 씁니다.</p>
     </details>
   </div>
@@ -1808,7 +1918,8 @@ Cat.__repr__    # !r → __repr__ 강제
     <p><strong>문제 2.</strong> __eq__만 구현된 클래스에서 hash()를 호출하면 어떤 일이 일어나는지 코드로 확인하세요.</p>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">class Point:
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Point:
     def __init__(self, x, y):
         self.x, self.y = x, y
     def __eq__(self, other):
@@ -1824,12 +1935,14 @@ except TypeError as e:
 
 # __eq__ 오버라이드 시 Python이 자동으로 __hash__ = None 설정
 # 딕셔너리 키나 세트에 사용하려면 __hash__도 구현해야 함</code></pre>
+</div>
     </details>
   </div>
 
   <div class="problem">
     <p><strong>문제 3.</strong> 다음 MRO를 예측하고 <code>D().method()</code>의 출력을 구하세요.</p>
-    <pre><code class="language-python">class A:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class A:
     def method(self): return "A"
 class B(A):
     def method(self): return "B"
@@ -1840,29 +1953,36 @@ class D(B, C):
 
 print(D.mro())
 print(D().method())</code></pre>
+</div>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">print(D.mro())
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">print(D.mro())
 # [&lt;class 'D'&gt;, &lt;class 'B'&gt;, &lt;class 'C'&gt;, &lt;class 'A'&gt;, &lt;class 'object'&gt;]
 
 print(D().method())
 # "B"
 # MRO: D → B → C → A → object
 # D에 method 없음 → B에서 찾음 → B.method() = "B"</code></pre>
+</div>
     </details>
   </div>
 
   <div class="problem">
     <p><strong>문제 4.</strong> with문을 사용하지 않고 동등한 코드를 try/finally로 작성하세요.</p>
-    <pre><code class="language-python">with open("data.txt", "w") as f:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">with open("data.txt", "w") as f:
     f.write("안녕하세요")</code></pre>
+</div>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">f = open("data.txt", "w")  # with문에서는 여기서 __enter__ 호출 → 파일 객체 반환
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">f = open("data.txt", "w")  # with문에서는 여기서 __enter__ 호출 → 파일 객체 반환
 try:
     f.write("안녕하세요")
 finally:
     f.close()  # with문에서는 __exit__이 이 역할을 담당</code></pre>
+</div>
     </details>
   </div>
 
@@ -1872,7 +1992,8 @@ finally:
     <p><strong>문제 5.</strong> 다음 조건을 모두 만족하는 <code>BoundedList</code> 클래스를 구현하세요: 최대 크기(max_size) 제한, __len__, __getitem__, __contains__, __repr__ 구현. 최대 크기를 초과하면 ValueError를 발생시킵니다.</p>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">class BoundedList:
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">class BoundedList:
     def __init__(self, max_size):
         self.max_size = max_size
         self._items = []
@@ -1897,12 +2018,14 @@ try:
     bl.add(4)        # ValueError
 except ValueError as e:
     print(e)</code></pre>
+</div>
     </details>
   </div>
 
   <div class="problem">
     <p><strong>문제 6.</strong> 다음 super() 호출의 결과를 예측하세요.</p>
-    <pre><code class="language-python">class A:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class A:
     def method(self):
         return "A"
 
@@ -1919,15 +2042,18 @@ class D(B, C):
         return "D→" + super().method()
 
 print(D().method())</code></pre>
+</div>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">print(D().method())
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">print(D().method())
 # "D→B→C→A"
 # MRO: D → B → C → A → object
 # D.method: "D→" + B.method()
 # B.method: "B→" + super().method() → C.method() (MRO에서 B 다음은 C)
 # C.method: "C→" + super().method() → A.method() (MRO에서 C 다음은 A)
 # A.method: "A"</code></pre>
+</div>
     </details>
   </div>
 
@@ -1935,7 +2061,8 @@ print(D().method())</code></pre>
     <p><strong>문제 7.</strong> 실행 시간을 측정하는 컨텍스트 매니저를 <code>contextmanager</code> 데코레이터와 클래스 두 가지 방법으로 구현하세요.</p>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">import time
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">import time
 from contextlib import contextmanager
 
 # 방법 1: contextmanager 데코레이터
@@ -1961,6 +2088,7 @@ with timer_func():
 
 with TimerClass():
     sum(range(100_000))</code></pre>
+</div>
     </details>
   </div>
 
@@ -1968,7 +2096,8 @@ with TimerClass():
     <p><strong>문제 8.</strong> try-except-else-finally의 각 블록이 실행되는 조건을 정리하고, else가 except 뒤에 오는 이유를 설명하세요.</p>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python"># 각 블록 실행 조건:
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 각 블록 실행 조건:
 # try      → 항상 실행 시도
 # except   → try에서 해당 예외가 발생했을 때
 # else     → try가 예외 없이 완료되었을 때 (except 실행 안 됐을 때)
@@ -1985,6 +2114,7 @@ else:
     print(f"변환 성공: {result}")  # 이 코드는 예외가 없을 때만
 finally:
     print("항상 실행")</code></pre>
+</div>
     </details>
   </div>
 
@@ -1994,7 +2124,8 @@ finally:
     <p><strong>문제 9.</strong> 불변(immutable) 좌표 클래스 <code>ImmutablePoint</code>를 구현하세요. 생성 후 x, y를 변경할 수 없어야 하며, 딕셔너리 키로 사용 가능해야 합니다. <code>__new__</code>와 <code>__setattr__</code>을 활용하세요.</p>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">class ImmutablePoint:
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">class ImmutablePoint:
     def __new__(cls, x, y):
         instance = super().__new__(cls)
         # 초기화 중 object.__setattr__으로 직접 설정
@@ -2030,6 +2161,7 @@ try:
     p1.x = 10        # AttributeError
 except AttributeError as e:
     print(e)</code></pre>
+</div>
     </details>
   </div>
 
@@ -2037,7 +2169,8 @@ except AttributeError as e:
     <p><strong>문제 10.</strong> <code>Temperature</code> 클래스에 <code>__lt__</code>, <code>__le__</code>, <code>__gt__</code>, <code>__ge__</code>를 구현하고, <code>functools.total_ordering</code>으로 간소화한 버전과 비교하세요.</p>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python"># 방법 1: 직접 구현
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 방법 1: 직접 구현
 class Temperature:
     def __init__(self, celsius):
         self.celsius = celsius
@@ -2104,6 +2237,7 @@ s1 = TemperatureSimple(36.5)
 s2 = TemperatureSimple(38.0)
 print(s1 <= s2)    # True (자동 생성됨)
 print(s1 > s2)     # False (자동 생성됨)</code></pre>
+</div>
       <p><strong>핵심:</strong> <code>total_ordering</code>은 편리하지만, 자동 생성된 메서드는 2번의 비교를 수행하므로 성능이 중요하면 직접 구현이 낫습니다. 또한 <code>NotImplemented</code>를 반환해야 Python이 역방향 비교(<code>__rlt__</code> 등)를 시도할 수 있습니다.</p>
     </details>
   </div>
@@ -2112,12 +2246,14 @@ print(s1 > s2)     # False (자동 생성됨)</code></pre>
 
   <div class="problem">
     <p><strong>문제 11.</strong> 다음 코드에서 <code>s.__len__ = lambda: 99</code>가 <code>len(s)</code>에 영향을 주지 않는 이유를 CPython 내부 구현 관점에서 설명하세요.</p>
-    <pre><code class="language-python">class Slow:
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Slow:
     def __len__(self): return 42
 
 s = Slow()
 s.__len__ = lambda: 99
 print(len(s))       # 42?  99?</code></pre>
+</div>
     <details class="answer">
       <summary>정답 보기</summary>
       <p><code>42</code>가 출력됩니다.</p>
@@ -2130,7 +2266,8 @@ print(len(s))       # 42?  99?</code></pre>
     <p><strong>문제 12.</strong> C3 선형화 알고리즘을 직접 구현하세요. 입력으로 클래스와 부모 클래스 리스트를 받아 MRO를 반환합니다.</p>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">def c3_merge(sequences):
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">def c3_merge(sequences):
     result = []
     while True:
         # 비어있지 않은 시퀀스만
@@ -2169,6 +2306,7 @@ actual = list(D.__mro__)
 print(computed)  # [D, B, C, A, object]
 print(actual)    # [D, B, C, A, object]
 print(computed == actual)  # True</code></pre>
+</div>
     </details>
   </div>
 
@@ -2176,7 +2314,8 @@ print(computed == actual)  # True</code></pre>
     <p><strong>문제 13.</strong> <code>__init_subclass__</code>를 사용해서 플러그인 레지스트리 시스템을 구현하세요. 서브클래스를 만들 때 자동으로 등록되고, 이름으로 조회 가능해야 합니다.</p>
     <details class="answer">
       <summary>정답 보기</summary>
-      <pre><code class="language-python">class Serializer:
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">class Serializer:
     _registry = {}
 
     def __init_subclass__(cls, format_name=None, **kwargs):
@@ -2211,6 +2350,7 @@ print(s2.serialize([1, 2, 3]))         # 1,2,3
 
 print(Serializer._registry)
 # {'json': &lt;class 'JSONSerializer'&gt;, 'csv': &lt;class 'CSVSerializer'&gt;}</code></pre>
+</div>
     </details>
   </div>
 </section>
@@ -2382,132 +2522,132 @@ for card in deck[:3]:
   <h2>용어 사전 (32개)</h2>
   <div class="glossary-grid">
     <div class="glossary-item">
-      <dt>Dunder Method (던더 메서드)</dt>
-      <dd>__이름__ 형식의 메서드. Python 인터프리터가 특정 연산 시 자동으로 호출하는 약속된 메서드.</dd>
+      <div class="glossary-term">Dunder Method (던더 메서드)</div>
+      <div class="glossary-def">__이름__ 형식의 메서드. Python 인터프리터가 특정 연산 시 자동으로 호출하는 약속된 메서드.</div>
     </div>
     <div class="glossary-item">
-      <dt>Magic Method (매직 메서드)</dt>
-      <dd>던더 메서드의 별칭. Special method라고도 불림.</dd>
+      <div class="glossary-term">Magic Method (매직 메서드)</div>
+      <div class="glossary-def">던더 메서드의 별칭. Special method라고도 불림.</div>
     </div>
     <div class="glossary-item">
-      <dt>__new__</dt>
-      <dd>객체 메모리 할당 담당. 새 인스턴스를 반환. 진짜 생성자. cls를 첫 인자로 받음.</dd>
+      <div class="glossary-term">__new__</div>
+      <div class="glossary-def">객체 메모리 할당 담당. 새 인스턴스를 반환. 진짜 생성자. cls를 첫 인자로 받음.</div>
     </div>
     <div class="glossary-item">
-      <dt>__init__</dt>
-      <dd>객체 초기화 담당. 이미 만들어진 인스턴스(self)에 속성을 설정. 생성자가 아닌 초기화자.</dd>
+      <div class="glossary-term">__init__</div>
+      <div class="glossary-def">객체 초기화 담당. 이미 만들어진 인스턴스(self)에 속성을 설정. 생성자가 아닌 초기화자.</div>
     </div>
     <div class="glossary-item">
-      <dt>__repr__</dt>
-      <dd>개발자용 문자열 표현. eval(repr(x)) == x가 이상적. 항상 구현해야 함.</dd>
+      <div class="glossary-term">__repr__</div>
+      <div class="glossary-def">개발자용 문자열 표현. eval(repr(x)) == x가 이상적. 항상 구현해야 함.</div>
     </div>
     <div class="glossary-item">
-      <dt>__str__</dt>
-      <dd>사용자용 문자열 표현. print(), str()에서 사용. 없으면 __repr__ 폴백.</dd>
+      <div class="glossary-term">__str__</div>
+      <div class="glossary-def">사용자용 문자열 표현. print(), str()에서 사용. 없으면 __repr__ 폴백.</div>
     </div>
     <div class="glossary-item">
-      <dt>__format__</dt>
-      <dd>f-string 포맷 스펙 처리. f"{obj:spec}"에서 spec을 받음.</dd>
+      <div class="glossary-term">__format__</div>
+      <div class="glossary-def">f-string 포맷 스펙 처리. f"{obj:spec}"에서 spec을 받음.</div>
     </div>
     <div class="glossary-item">
-      <dt>__eq__</dt>
-      <dd>== 연산자 구현. 오버라이드 시 __hash__가 자동으로 None이 됨.</dd>
+      <div class="glossary-term">__eq__</div>
+      <div class="glossary-def">== 연산자 구현. 오버라이드 시 __hash__가 자동으로 None이 됨.</div>
     </div>
     <div class="glossary-item">
-      <dt>__hash__</dt>
-      <dd>hash() 함수 구현. 딕셔너리 키, 세트에 필요. a==b → hash(a)==hash(b) 계약.</dd>
+      <div class="glossary-term">__hash__</div>
+      <div class="glossary-def">hash() 함수 구현. 딕셔너리 키, 세트에 필요. a==b → hash(a)==hash(b) 계약.</div>
     </div>
     <div class="glossary-item">
-      <dt>Identity (동일성)</dt>
-      <dd>같은 객체인지 — is 연산자. id()가 같으면 동일.</dd>
+      <div class="glossary-term">Identity (동일성)</div>
+      <div class="glossary-def">같은 객체인지 — is 연산자. id()가 같으면 동일.</div>
     </div>
     <div class="glossary-item">
-      <dt>Equality (동등성)</dt>
-      <dd>값이 같은지 — == 연산자. __eq__로 정의.</dd>
+      <div class="glossary-term">Equality (동등성)</div>
+      <div class="glossary-def">값이 같은지 — == 연산자. __eq__로 정의.</div>
     </div>
     <div class="glossary-item">
-      <dt>NotImplemented</dt>
-      <dd>반사 메서드에서 반환하는 싱글톤. "이 타입은 처리 못함, 반대쪽에 물어봐".</dd>
+      <div class="glossary-term">NotImplemented</div>
+      <div class="glossary-def">반사 메서드에서 반환하는 싱글톤. "이 타입은 처리 못함, 반대쪽에 물어봐".</div>
     </div>
     <div class="glossary-item">
-      <dt>Reflected Method (반사 메서드)</dt>
-      <dd>__radd__, __rmul__ 등. 왼쪽 피연산자가 NotImplemented 반환 시 오른쪽 피연산자가 시도.</dd>
+      <div class="glossary-term">Reflected Method (반사 메서드)</div>
+      <div class="glossary-def">__radd__, __rmul__ 등. 왼쪽 피연산자가 NotImplemented 반환 시 오른쪽 피연산자가 시도.</div>
     </div>
     <div class="glossary-item">
-      <dt>MRO (Method Resolution Order)</dt>
-      <dd>메서드 탐색 순서. C3 선형화 알고리즘으로 결정됨. cls.mro() 또는 cls.__mro__로 확인.</dd>
+      <div class="glossary-term">MRO (Method Resolution Order)</div>
+      <div class="glossary-def">메서드 탐색 순서. C3 선형화 알고리즘으로 결정됨. cls.mro() 또는 cls.__mro__로 확인.</div>
     </div>
     <div class="glossary-item">
-      <dt>C3 Linearization</dt>
-      <dd>Python 2.3+의 MRO 계산 알고리즘. 자식 우선, 부모 순서 유지, 일관성 검사.</dd>
+      <div class="glossary-term">C3 Linearization</div>
+      <div class="glossary-def">Python 2.3+의 MRO 계산 알고리즘. 자식 우선, 부모 순서 유지, 일관성 검사.</div>
     </div>
     <div class="glossary-item">
-      <dt>super()</dt>
-      <dd>MRO 상의 다음 클래스에 위임하는 프록시. "부모"가 아님. 다중 상속에서 안전한 호출.</dd>
+      <div class="glossary-term">super()</div>
+      <div class="glossary-def">MRO 상의 다음 클래스에 위임하는 프록시. "부모"가 아님. 다중 상속에서 안전한 호출.</div>
     </div>
     <div class="glossary-item">
-      <dt>Diamond Problem</dt>
-      <dd>A→B, A→C, D→B+C 구조에서 A의 메서드가 두 번 호출되는 문제. MRO+super()로 해결.</dd>
+      <div class="glossary-term">Diamond Problem</div>
+      <div class="glossary-def">A→B, A→C, D→B+C 구조에서 A의 메서드가 두 번 호출되는 문제. MRO+super()로 해결.</div>
     </div>
     <div class="glossary-item">
-      <dt>Mixin</dt>
-      <dd>단일 책임의 작은 클래스. 여러 믹스인을 상속해서 기능을 조합. 자체 인스턴스 생성 안 함.</dd>
+      <div class="glossary-term">Mixin</div>
+      <div class="glossary-def">단일 책임의 작은 클래스. 여러 믹스인을 상속해서 기능을 조합. 자체 인스턴스 생성 안 함.</div>
     </div>
     <div class="glossary-item">
-      <dt>Context Manager (컨텍스트 매니저)</dt>
-      <dd>__enter__와 __exit__을 구현한 객체. with문으로 자원을 안전하게 관리.</dd>
+      <div class="glossary-term">Context Manager (컨텍스트 매니저)</div>
+      <div class="glossary-def">__enter__와 __exit__을 구현한 객체. with문으로 자원을 안전하게 관리.</div>
     </div>
     <div class="glossary-item">
-      <dt>__enter__</dt>
-      <dd>with 블록 진입 시 호출. 반환값이 as 변수에 바인딩됨.</dd>
+      <div class="glossary-term">__enter__</div>
+      <div class="glossary-def">with 블록 진입 시 호출. 반환값이 as 변수에 바인딩됨.</div>
     </div>
     <div class="glossary-item">
-      <dt>__exit__</dt>
-      <dd>with 블록 종료 시 항상 호출. exc_type, exc_val, exc_tb 3인자. True 반환 시 예외 억제.</dd>
+      <div class="glossary-term">__exit__</div>
+      <div class="glossary-def">with 블록 종료 시 항상 호출. exc_type, exc_val, exc_tb 3인자. True 반환 시 예외 억제.</div>
     </div>
     <div class="glossary-item">
-      <dt>contextmanager</dt>
-      <dd>contextlib의 데코레이터. yield 기반으로 컨텍스트 매니저를 간단히 만듦.</dd>
+      <div class="glossary-term">contextmanager</div>
+      <div class="glossary-def">contextlib의 데코레이터. yield 기반으로 컨텍스트 매니저를 간단히 만듦.</div>
     </div>
     <div class="glossary-item">
-      <dt>ExitStack</dt>
-      <dd>contextlib. 동적으로 컨텍스트 매니저를 쌓을 수 있는 도구. 개수가 런타임에 결정될 때.</dd>
+      <div class="glossary-term">ExitStack</div>
+      <div class="glossary-def">contextlib. 동적으로 컨텍스트 매니저를 쌓을 수 있는 도구. 개수가 런타임에 결정될 때.</div>
     </div>
     <div class="glossary-item">
-      <dt>try-except-else-finally</dt>
-      <dd>예외 처리 구조. else: 예외 없을 때만. finally: 항상. finally에서 return 금지.</dd>
+      <div class="glossary-term">try-except-else-finally</div>
+      <div class="glossary-def">예외 처리 구조. else: 예외 없을 때만. finally: 항상. finally에서 return 금지.</div>
     </div>
     <div class="glossary-item">
-      <dt>raise from</dt>
-      <dd>예외 연쇄. raise NewError() from original_error. __cause__에 원인 저장.</dd>
+      <div class="glossary-term">raise from</div>
+      <div class="glossary-def">예외 연쇄. raise NewError() from original_error. __cause__에 원인 저장.</div>
     </div>
     <div class="glossary-item">
-      <dt>BaseException</dt>
-      <dd>모든 예외의 최상위. SystemExit, KeyboardInterrupt를 포함. except Exception으로는 잡히지 않음.</dd>
+      <div class="glossary-term">BaseException</div>
+      <div class="glossary-def">모든 예외의 최상위. SystemExit, KeyboardInterrupt를 포함. except Exception으로는 잡히지 않음.</div>
     </div>
     <div class="glossary-item">
-      <dt>total_ordering</dt>
-      <dd>functools 데코레이터. __eq__와 하나의 비교 메서드만으로 6개 비교 메서드를 자동 생성.</dd>
+      <div class="glossary-term">total_ordering</div>
+      <div class="glossary-def">functools 데코레이터. __eq__와 하나의 비교 메서드만으로 6개 비교 메서드를 자동 생성.</div>
     </div>
     <div class="glossary-item">
-      <dt>Singleton Pattern</dt>
-      <dd>인스턴스가 하나뿐인 클래스. __new__에서 구현. _instance 클래스 변수로 관리.</dd>
+      <div class="glossary-term">Singleton Pattern</div>
+      <div class="glossary-def">인스턴스가 하나뿐인 클래스. __new__에서 구현. _instance 클래스 변수로 관리.</div>
     </div>
     <div class="glossary-item">
-      <dt>__init_subclass__</dt>
-      <dd>Python 3.6+. 서브클래스가 만들어질 때 자동 호출되는 훅. 플러그인 등록에 활용.</dd>
+      <div class="glossary-term">__init_subclass__</div>
+      <div class="glossary-def">Python 3.6+. 서브클래스가 만들어질 때 자동 호출되는 훅. 플러그인 등록에 활용.</div>
     </div>
     <div class="glossary-item">
-      <dt>Hash Collision</dt>
-      <dd>다른 객체가 같은 해시값을 가지는 경우. 피할 수는 없지만 최소화해야 딕셔너리 성능 유지.</dd>
+      <div class="glossary-term">Hash Collision</div>
+      <div class="glossary-def">다른 객체가 같은 해시값을 가지는 경우. 피할 수는 없지만 최소화해야 딕셔너리 성능 유지.</div>
     </div>
     <div class="glossary-item">
-      <dt>Hash Randomization</dt>
-      <dd>Python 3.3+. str/bytes 해시가 매 실행마다 다름. PYTHONHASHSEED로 고정 가능.</dd>
+      <div class="glossary-term">Hash Randomization</div>
+      <div class="glossary-def">Python 3.3+. str/bytes 해시가 매 실행마다 다름. PYTHONHASHSEED로 고정 가능.</div>
     </div>
     <div class="glossary-item">
-      <dt>tp_slots</dt>
-      <dd>CPython 타입 객체의 C 함수 포인터 슬롯. 내장 연산자가 이 슬롯을 직접 참조 (인스턴스 딕셔너리 무시).</dd>
+      <div class="glossary-term">tp_slots</div>
+      <div class="glossary-def">CPython 타입 객체의 C 함수 포인터 슬롯. 내장 연산자가 이 슬롯을 직접 참조 (인스턴스 딕셔너리 무시).</div>
     </div>
   </div>
 </section>
@@ -2520,7 +2660,8 @@ for card in deck[:3]:
       클래스와 던더 메서드를 배웠으니, 이제 함수를 변환하는 패턴을 배울 차례입니다.
       <strong>데코레이터</strong>는 함수를 인자로 받아 새 함수를 반환하는 패턴입니다.
     </p>
-    <pre><code class="language-python"># 13주차 미리보기: 데코레이터
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 13주차 미리보기: 데코레이터
 import time
 from functools import wraps
 
@@ -2542,6 +2683,7 @@ slow_sum(1_000_000)   # slow_sum: 0.0XXX초
 
 # @timer는 다음과 동일:
 # slow_sum = timer(slow_sum)</code></pre>
+</div>
     <p>
       <strong>13주차 주제:</strong> 클로저와 데코레이터, functools.wraps, 인자를 받는 데코레이터,
       클래스 데코레이터, 데코레이터 스택, 실전 패턴(캐싱, 로깅, 인증, 재시도).

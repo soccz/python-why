@@ -253,19 +253,23 @@ print(2 ** 10)   # 1024 — 거듭제곱</code></pre>
     <div class="callout callout-warning">
       <strong>함정 — 같은 기호인데 왜 에러?</strong><br>
       <code>+</code>는 숫자끼리, 문자열끼리 되지만, 섞으면 에러입니다.
-      <pre><code class="language-python">print("내 점수: " + 95)       # TypeError: can only concatenate str to str
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">print("내 점수: " + 95)       # TypeError: can only concatenate str to str
 print("내 점수: " + str(95))  # 내 점수: 95</code></pre>
+</div>
       Python은 자동으로 타입을 바꿔주지 않습니다. <code>str()</code>로 직접 변환해야 합니다.
     </div>
     <div class="callout callout-tip">
       <strong>✏️ 지금 바로 해봐:</strong> 아래 식의 결과를 먼저 예상해보고, 실행해서 확인하세요.<br>
-      <pre><code class="language-python">print(10 + 3)    # 더하기
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">print(10 + 3)    # 더하기
 print(10 - 3)    # 빼기
 print(10 * 3)    # 곱하기
 print(10 / 3)    # 나누기 (소수 포함)
 print(10 // 3)   # 몫만
 print(10 % 3)    # 나머지만
 print(10 ** 3)   # 거듭제곱</code></pre>
+</div>
       // 와 % 의 결과가 예상과 같았나요? 다음에 이 두 연산자가 중요해집니다.
     </div>
   </div>
@@ -317,7 +321,7 @@ if 10 % 2 == 0:              # 표현식을 조건으로
         <span class="code-label">왈러스 연산자 활용</span>
         <button class="copy-btn">복사</button>
       </div>
-      <pre><code class="language-python"># 기존 방식: while 루프에서 입력 받기
+      <pre><code class="language-python" tabindex="0"># 기존 방식: while 루프에서 입력 받기
 while True:
     line = input("입력: ")
     if line == "quit":
@@ -350,13 +354,15 @@ if m := re.search(r'\d{3}-\d{4}-\d{4}', text):
     </div>
     <div class="callout callout-warning">
       <strong>함정 — if 안에서 = 을 쓰면?</strong><br>
-      <pre><code class="language-python"># 될 것 같은데 안 된다
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0"># 될 것 같은데 안 된다
 if x = 10:          # SyntaxError: invalid syntax
     print(x)
 
 # 올바른 방법: := 를 사용하고 괄호로 감싼다
 if (x := 10) > 5:  # x에 10 대입 + 5보다 큰지 비교
     print(x)        # 10</code></pre>
+</div>
       <code>=</code>는 문(Statement)이라 조건식 안에서 사용 불가합니다. <code>:=</code>만 가능합니다.
     </div>
   </div>
@@ -613,7 +619,8 @@ True
     </p>
     <div class="callout callout-warning">
       <strong>🚨 흔한 실수 — 음수에서 // 와 % 의 동작:</strong><br>
-      <pre><code class="language-python">print(7 // 2)    # 3   (예상대로)
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">print(7 // 2)    # 3   (예상대로)
 print(-7 // 2)   # -4  ← -3.5에서 내림(floor) → -4 (예상 밖!)
 print(7 // -2)   # -4  ← 마찬가지
 
@@ -624,6 +631,7 @@ print(7 % -2)    # -1  ← 나누는 수와 부호가 같음
 # Python의 // 는 C언어 / 와 다름!
 # Python: floor division (내림 나눗셈)
 # C:      truncation division (0 방향으로 버림)</code></pre>
+</div>
     </div>
   </div>
 
@@ -718,7 +726,8 @@ print(result)            # 11</code></pre>
     </div>
     <div class="callout callout-warning">
       <strong>🚨 흔한 실수 — 예상과 다른 연산자 우선순위:</strong><br>
-      <pre><code class="language-python">print(2 + 3 * 4)      # 14, 20 아님 (* 먼저)
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">print(2 + 3 * 4)      # 14, 20 아님 (* 먼저)
 print(2 ** 3 ** 2)    # 512, 64 아님 (** 은 오른쪽부터: 2**(3**2) = 2**9 = 512)
 print(-2 ** 2)        # -4, 4 아님 (단항 - 보다 ** 이 먼저: -(2**2) = -4)
 print(True + True)    # 2 (bool은 int의 서브클래스: True=1, False=0)
@@ -727,6 +736,7 @@ print(True * 5)       # 5
 # 헷갈리면 괄호를 명시적으로 써라
 print((2 + 3) * 4)    # 20
 print((-2) ** 2)      # 4</code></pre>
+</div>
     </div>
   </div>
 
@@ -836,12 +846,14 @@ True
       리터럴로만 이루어진 표현식은 CPython의 peephole optimizer가 컴파일 시점에 미리 계산한다.
       <code>2 + 3 * 4</code>는 런타임에 전혀 계산되지 않는다:
     </p>
-    <pre><code class="language-python">import dis
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import dis
 
 def f():
     return 2 + 3 * 4  # 컴파일 시점에 이미 14로 평가됨
 
 dis.dis(f)</code></pre>
+</div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
   1           0 RESUME                   0
@@ -855,10 +867,12 @@ dis.dis(f)</code></pre>
 
     <h4>변수 표현식: 런타임에 드러나는 우선순위</h4>
     <p>변수가 포함되면 constant folding 불가. BINARY_OP 순서가 우선순위를 증명한다:</p>
-    <pre><code class="language-python">def g(x, y, z):
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">def g(x, y, z):
     return x + y * z  # y*z 먼저, 결과를 x에 더함
 
 dis.dis(g)</code></pre>
+</div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
   1           0 RESUME                   0
@@ -985,7 +999,8 @@ True
     </div>
     <div class="callout callout-warning">
       <strong>🚨 흔한 실수 — <code>==</code>과 <code>is</code>의 차이:</strong><br>
-      <pre><code class="language-python">a = [1, 2, 3]
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">a = [1, 2, 3]
 b = [1, 2, 3]
 
 print(a == b)   # True  ← 값이 같은가?
@@ -1004,6 +1019,7 @@ print(x is y)   # False ← 257은 캐시 없음 (CPython 구현 세부사항)
 
 # 결론: 값 비교는 항상 ==, is는 None 비교에만
 print(None is None)   # True ← 유일한 None 객체</code></pre>
+</div>
     </div>
   </div>
 
@@ -1536,7 +1552,8 @@ line3
     </div>
 
     <h3>Part A: COPY와 조건 점프로 구현되는 단락 평가</h3>
-    <pre><code class="language-python">import dis
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">import dis
 
 def f_and(x, y): return x and y
 def f_or(x, y):  return x or y
@@ -1544,6 +1561,7 @@ def f_or(x, y):  return x or y
 dis.dis(f_and)
 print("---")
 dis.dis(f_or)</code></pre>
+</div>
     <div class="output-block">
       <div class="output-label">실행 결과 (Python 3.12+):</div>
               0 RESUME                   0
@@ -1578,8 +1596,10 @@ dis.dis(f_or)</code></pre>
     </div>
 
     <h4><code>not</code>은 다르다 — UNARY_NOT</h4>
-    <pre><code class="language-python">def f_not(x): return not x
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">def f_not(x): return not x
 dis.dis(f_not)</code></pre>
+</div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
   1           0 RESUME                   0
@@ -1592,9 +1612,11 @@ dis.dis(f_not)</code></pre>
       <code>UNARY_NOT</code>는 내부적으로 <code>PyObject_IsTrue(v)</code>를 호출하고 결과를 반전한다.
       결과는 항상 Python의 <code>True</code> 또는 <code>False</code>만 반환한다 — 원래 값을 반환하지 않는다.
     </p>
-    <pre><code class="language-python">print("hello" and "world")   # "world" — 원래 값 반환
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">print("hello" and "world")   # "world" — 원래 값 반환
 print(not "hello")            # False  — 항상 bool 반환
 print(not not "hello")        # True   — 항상 bool 반환</code></pre>
+</div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
 world
@@ -1757,7 +1779,8 @@ dis.dis(compile("x += 1", "&lt;s&gt;", "exec"))</code></pre>
       <li>없거나 <code>NotImplemented</code> → <code>type(x).__add__(x, y)</code> 시도</li>
       <li>새 객체 생성 → <code>STORE_NAME</code>/<code>STORE_FAST</code>로 이름 재바인딩</li>
     </ol>
-    <pre><code class="language-python"># int: __iadd__ 없음 → __add__ → 새 객체 생성 + 재바인딩
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0"># int: __iadd__ 없음 → __add__ → 새 객체 생성 + 재바인딩
 x = 1000  # 작은 정수 캐시(-5~256) 범위 밖
 id_before = id(x)
 x += 1
@@ -1770,6 +1793,7 @@ id_before = id(lst)
 lst += [3]
 print(id(lst) == id_before)  # True — 같은 객체
 print(alias)                  # [1, 2, 3] — alias도 변경됨!</code></pre>
+</div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
 False
@@ -1783,8 +1807,10 @@ True
     </p>
 
     <h3>Part B: dict에 += 가 없는 이유 (PEP 584)</h3>
-    <pre><code class="language-python">d = {"a": 1}
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">d = {"a": 1}
 d += {"b": 2}  # TypeError: unsupported operand type(s) for +=: 'dict' and 'dict'</code></pre>
+</div>
     <p>
       <code>dict</code>에는 <code>__iadd__</code>도 <code>__add__</code>도 정의되어 있지 않다. 이유:
     </p>
@@ -1796,7 +1822,8 @@ d += {"b": 2}  # TypeError: unsupported operand type(s) for +=: 'dict' and 'dict
       Python 3.9에서 PEP 584가 이 문제를 해결했다: <code>|</code>(merge, 새 dict 반환)와
       <code>|=</code>(update, in-place) 연산자를 추가. 충돌 시 오른쪽이 우선:
     </p>
-    <pre><code class="language-python">d1 = {"a": 1, "b": 2}
+    <div class="code-block">
+<pre><code class="language-python" tabindex="0">d1 = {"a": 1, "b": 2}
 d2 = {"b": 99, "c": 3}
 
 merged = d1 | d2   # 새 dict 반환
@@ -1804,6 +1831,7 @@ print(merged)       # {'a': 1, 'b': 99, 'c': 3}
 
 d1 |= d2            # d1 in-place 업데이트 (__ior__ 사용)
 print(d1)           # {'a': 1, 'b': 99, 'c': 3}</code></pre>
+</div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
 {'a': 1, 'b': 99, 'c': 3}

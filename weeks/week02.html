@@ -242,11 +242,13 @@ print(3 + 3)       # 숫자 더하기 → 6</code></pre>
     </div>
     <div class="callout callout-tip">
       <strong>✏️ 지금 바로 해봐:</strong> 각 타입을 직접 확인해보세요.<br>
-      <pre><code class="language-python">print(type(42))        # 정수
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">print(type(42))        # 정수
 print(type(3.14))      # 소수
 print(type("안녕"))    # 문자열
 print(type(True))      # 참/거짓
 print(type(None))      # 없음</code></pre>
+</div>
       각 줄에 무엇이 출력되는지 예상해보고, 실제로 확인해보세요!
     </div>
   </div>
@@ -522,7 +524,8 @@ print(hex(255))  # '0xff'</code></pre>
 
     <div class="callout callout-warning">
       <strong>🚨 흔한 실수 — <code>is</code>와 <code>==</code> 혼동:</strong><br>
-      <pre><code class="language-python">a = 256
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">a = 256
 b = 256
 print(a is b)    # True  ← CPython이 -5~256을 캐싱!
 
@@ -533,6 +536,7 @@ print(a is b)    # False ← 257은 캐시 범위 밖, 다른 객체
 # 규칙: 값 비교는 반드시 ==, 동일 객체 확인에만 is
 print(a == b)    # True  ← 값이 같음 (항상 신뢰 가능)
 print(a is b)    # False ← 같은 객체가 아님</code></pre>
+</div>
       <strong>결론:</strong> 숫자·문자열 비교는 항상 <code>==</code>. <code>is</code>는 <code>is None</code>, <code>is not None</code>에서만 사용하세요.
     </div>
   </div>
@@ -789,7 +793,8 @@ print(1 / 0)  # ZeroDivisionError (파이썬은 C와 달리 예외 발생)</code
     <h3>float의 함정 — IEEE 754 부동소수점</h3>
     <div class="callout callout-warning">
       <strong>🚨 파이썬 개발자 99%가 한 번은 당황하는 버그:</strong>
-      <pre><code class="language-python">print(0.1 + 0.2)          # 0.30000000000000004 ← 0.3이 아님!
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">print(0.1 + 0.2)          # 0.30000000000000004 ← 0.3이 아님!
 print(0.1 + 0.2 == 0.3)   # False ← 충격!
 
 # 왜? 컴퓨터는 소수를 2진수로 저장
@@ -798,13 +803,14 @@ import decimal
 print(decimal.Decimal(0.1))
 # 0.1000000000000000055511151231257827021181583404541015625
 # ← 0.1은 사실 이 값을 저장하고 있음!</code></pre>
+</div>
     </div>
     <div class="code-block">
       <div class="code-header">
         <span class="code-label">IEEE 754 정밀도 문제 해결책</span>
         <button class="copy-btn">복사</button>
       </div>
-      <pre><code class="language-python"># IEEE 754 double-precision (64비트):
+      <pre><code class="language-python" tabindex="0"># IEEE 754 double-precision (64비트):
 # 부호 1비트 + 지수 11비트 + 가수 52비트
 import struct
 # 0.1을 64비트 부동소수점으로 보기 (빅엔디언)
@@ -946,7 +952,8 @@ hahaha
 
     <div class="callout callout-warning">
       <strong>🚨 함정 — 문자열은 수정할 수 없다 (Immutable)!</strong><br>
-      <pre><code class="language-python"># ❌ 될 것 같은데 안 되는 코드
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0"># ❌ 될 것 같은데 안 되는 코드
 이름 = "Python"
 이름[0] = "p"    # TypeError: 'str' object does not support item assignment
 
@@ -956,6 +963,7 @@ hahaha
 # ✅ 새로운 문자열을 만들어야 합니다
 이름 = "p" + 이름[1:]      # "python"
 이름 = 이름.replace("P", "p")  # "python"</code></pre>
+</div>
     </div>
 
   <!-- 중급 -->
@@ -1063,7 +1071,7 @@ print(hash("python"))  # 고정된 해시값
         <span class="code-label">str과 bytes — 인코딩/디코딩</span>
         <button class="copy-btn">복사</button>
       </div>
-      <pre><code class="language-python"># Python 3의 str은 유니코드(Unicode) 문자열
+      <pre><code class="language-python" tabindex="0"># Python 3의 str은 유니코드(Unicode) 문자열
 s = "안녕하세요"
 print(len(s))           # 5 (문자 수)
 print(type(s))          # &lt;class 'str'&gt;
@@ -1227,7 +1235,8 @@ if 3 &gt; 2:
     </div>
     <div class="callout callout-warning">
       <strong>🚨 함정 — bool("False")는 True다!</strong><br>
-      <pre><code class="language-python"># ❌ 될 것 같은데 예상과 다른 코드
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0"># ❌ 될 것 같은데 예상과 다른 코드
 print(bool("False"))   # True ← False가 아니다!
 print(bool("0"))       # True ← 0이 아니다!
 print(bool(""))        # False ← 빈 문자열만 False
@@ -1241,6 +1250,7 @@ print(bool(""))        # False ← 빈 문자열만 False
 user_input = "False"
 result = user_input.lower() not in ("false", "0", "no", "")
 # 또는 직접 조건 판별이 필요</code></pre>
+</div>
     </div>
   </div>
 
@@ -1284,7 +1294,8 @@ print(False + 1)     # 1</code></pre>
     </div>
     <div class="callout callout-warning">
       <strong>🚨 함정 — True == 1이지만 True is 1은 아니다!</strong><br>
-      <pre><code class="language-python">print(True == 1)    # True ← 값이 같다
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">print(True == 1)    # True ← 값이 같다
 print(True is 1)    # False ← 같은 객체는 아니다!
 # (Python 3.8+에서는 SyntaxWarning 발생)
 
@@ -1295,6 +1306,7 @@ print(type(1))      # &lt;class 'int'&gt;
 
 # ✅ 값 비교는 ==, 정체 확인은 is
 # None 비교만 is를 씁니다: if x is None</code></pre>
+</div>
     </div>
     <div class="callout callout-tip">
       <strong>실용 팁:</strong> <code>if len(items) != 0:</code> 대신 <code>if items:</code>를 씁니다.
@@ -1465,7 +1477,8 @@ print_number("hi")   # 숫자가 아닙니다</code></pre>
     </div>
     <div class="callout callout-warning">
       <strong>🚨 함정 — type(True) == int는 False!</strong><br>
-      <pre><code class="language-python"># ❌ 예상과 다른 결과
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0"># ❌ 예상과 다른 결과
 print(type(True) == int)      # False ← True는 int가 아니라 bool!
 print(type(True) == bool)     # True
 
@@ -1478,6 +1491,7 @@ print(isinstance(True, int))  # True ← bool은 int의 서브클래스!
 
 # ✅ 대부분의 경우 isinstance()가 더 적절
 # type() == 은 정확한 타입 일치가 필요할 때만</code></pre>
+</div>
     </div>
   </div>
 
@@ -1604,12 +1618,14 @@ print(bool("0"))  # True  ← "0"은 비어있지 않으므로 True!</code></pre
 
     <div class="callout callout-warning">
       <strong>🚨 흔한 실수 — 문자열과 숫자 더하기:</strong><br>
-      <pre><code class="language-python">age = input("나이를 입력하세요: ")   # "20" (문자열로 받음!)
+      <div class="code-block">
+<pre><code class="language-python" tabindex="0">age = input("나이를 입력하세요: ")   # "20" (문자열로 받음!)
 next_year = age + 1   # ❌ TypeError: can only concatenate str (not "int") to str
 
 # 해결: 명시적 타입 변환
 next_year = int(age) + 1   # ✅
 print(f"내년 나이: {next_year}")</code></pre>
+</div>
       <strong>원인:</strong> <code>input()</code>은 항상 <code>str</code>을 반환합니다. 숫자 계산 전에 반드시 <code>int()</code> 또는 <code>float()</code>으로 변환하세요.
     </div>
   </div>

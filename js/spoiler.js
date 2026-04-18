@@ -1,16 +1,12 @@
 // Spoiler Toggle - 답안 접기/펼치기
-// <details>/<summary> 기본 동작 사용 (JS 없이도 작동)
-// 이 파일은 추가 기능(애니메이션 등)을 위한 확장용
+// <details>/<summary> 기본 동작 사용
 document.addEventListener('DOMContentLoaded', () => {
-  // 답안을 모두 접은 상태로 시작 (기본)
-  document.querySelectorAll('details.answer').forEach(d => {
-    d.removeAttribute('open');
-  });
-});
+  // 답안 모두 접은 상태로 시작
+  document.querySelectorAll('details.answer').forEach(d => d.removeAttribute('open'));
 
-// A11y — make scrollable <pre> keyboard-accessible (axe: scrollable-region-focusable)
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.code-block pre, pre.code-block').forEach(pre => {
-    if (!pre.hasAttribute('tabindex')) pre.setAttribute('tabindex', '0');
+  // A11y — 가로 스크롤 가능한 요소를 키보드 접근 가능하게
+  // (axe: scrollable-region-focusable)
+  document.querySelectorAll('pre, pre code.language-python').forEach(el => {
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
   });
 });

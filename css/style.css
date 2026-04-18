@@ -332,6 +332,19 @@ a {
   transition: color 0.2s var(--ease-out);
 }
 
+/* 본문 속 인라인 링크는 밑줄로 주변 텍스트와 구분 (WCAG 2.4.4/1.4.1).
+   --accent-hover (#a85c3a)를 쓰면 주변 본문(#1a1410) 대비 3.9:1,
+   배경(#faf7f2) 대비 4.67:1 — 두 조건 동시 통과. */
+p a, li a, td a, dd a, .story-block a, .level-section a,
+.why-box a, .ai-box a, .computer-box a, .caution-box a, .docs-box a,
+.reading-box a {
+  color: var(--accent-hover);
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
 a:hover {
   color: var(--accent-hover);
 }
@@ -1015,6 +1028,7 @@ p {
 }
 
 pre {
+  isolation: isolate;
   margin: 0;
   padding: 20px 22px;
   background: var(--code-bg);
@@ -1044,13 +1058,30 @@ code {
   font-variant-ligatures: contextual;
 }
 
-/* Syntax highlighting tokens (set by js/highlight.js) */
+/* Syntax highlighting tokens (set by js/highlight.js).
+   Explicit background ensures contrast checkers resolve the dark code bg
+   even when the span's DOM parent has transparent bg. */
+.hl-kw, .hl-bi, .hl-str, .hl-cmt, .hl-num, .hl-dec {
+  background-color: var(--code-bg) !important;
+}
 .hl-kw  { color: var(--code-keyword);   font-weight: 600; }
 .hl-bi  { color: var(--code-builtin);   }
 .hl-str { color: var(--code-string);    }
 .hl-cmt { color: var(--code-comment);   font-style: italic; }
 .hl-num { color: var(--code-number);    }
 .hl-dec { color: var(--code-decorator); }
+
+/* <pre><code class="language-python"> — explicit dark bg on the <code>
+   element itself (not just <pre>) so axe contrast-checker can resolve
+   the correct bg for syntax-highlighted spans.
+   Keep display: inline (default) so the <pre> remains the scrollable
+   region — prevents axe/scrollable-region-focusable from flagging the
+   <code> as an independent scroll target. */
+pre code.language-python,
+.code-block pre code.language-python {
+  background: var(--code-bg) !important;
+  color: var(--code-text) !important;
+}
 
 /* Inline code */
 p code,
@@ -1710,6 +1741,16 @@ table {
   overflow: hidden;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-xs);
+}
+
+/* 좁은 뷰포트에서 테이블이 넘치면 가로 스크롤 (wrap 없는 콘텐츠 보호) */
+@media (max-width: 640px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
 }
 
 th,
