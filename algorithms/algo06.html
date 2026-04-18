@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 6주차: O(n log n) 정렬들 | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="병합·힙·퀵 — Ω(n log n) 하한에 닿는 세 거인. introsort, 3-way partition, 비비교 정렬(counting/radix/bucket)까지.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 6주차: O(n log n) 정렬들 | PyWhy">
+  <meta property="og:description" content="힙 정렬·퀵소트·introsort + 하한을 우회하는 비비교 정렬">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo06.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A6">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo05.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo07.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 06</div>
+  <h1 class="week-title">O(n log n) 정렬들<br>하한에 닿는 세 거인과, 그것을 우회하는 변종들</h1>
+  <p class="week-subtitle">
+    Algo 05에서 본 Ω(n log n) 하한 — 비교 기반 정렬의 근본적 한계. 이번 주는 이 하한에 <strong>정확히 닿는</strong> 세 알고리즘(병합·힙·퀵)과,
+    <em>비교가 아닌 정보</em>를 써서 <strong>하한을 우회하는</strong> 세 알고리즘(counting·radix·bucket)을 봅니다.<br>
+    이번 주의 핵심 질문: <em>"왜 퀵소트는 최악 Θ(n²)인데도 표준 선택지인가? 왜 힙 정렬은 더 안전한데도 퀵소트에 밀리는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 1조 원소와 세 가지 전략</a>
+    </div>
+    <div class="toc-section">
+      <a href="#why-nlogn" class="toc-section-link"><span class="toc-num">02</span>세 거인 개요 — 하한에 닿는 법</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#merge-review" class="toc-section-link"><span class="toc-num">03</span>병합 정렬 재방문 — 안정성과 공간 트레이드오프</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#heap-sort" class="toc-section-link"><span class="toc-num">04</span>힙 정렬 (CLRS §6)</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#heap-analysis" class="toc-section-link"><span class="toc-num">05</span>힙 정렬의 복잡도 — Build-Heap이 왜 Θ(n)인가</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#quicksort-review" class="toc-section-link"><span class="toc-num">06</span>퀵소트 재방문 (CLRS §7)</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#quicksort-variants" class="toc-section-link"><span class="toc-num">07</span>Partition 변종 — Hoare · Lomuto · 3-way</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#introsort" class="toc-section-link"><span class="toc-num">08</span>Introsort — C++ std::sort의 심장</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#non-comparison" class="toc-section-link"><span class="toc-num">09</span>비비교 정렬 — Ω(n log n) 우회 (CLRS §8.2~8.4)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#stability" class="toc-section-link"><span class="toc-num">10</span>세 정렬 종합 비교 — 언제 무엇을</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#real-world" class="toc-section-link"><span class="toc-num">11</span>실무의 선택 — Python / Java / C++ / Go / Rust</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#ai-sorts" class="toc-section-link"><span class="toc-num">12</span>AI와 O(n log n) 정렬</a>
+    </div>
+    <div class="toc-section">
+      <a href="#practice" class="toc-section-link"><span class="toc-num">13</span>실습 — 세 정렬 벤치마크 + 최악 입력 찾기</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 1조 원소와 세 가지 전략</h2>
+  <blockquote>
+    데이터 엔지니어 A씨는 1조(10¹²)개의 로그 레코드를 정렬해야 합니다.
+    O(n²) 정렬이면 10²⁴ 연산 — 지구의 모든 CPU를 다 써도 수조 년. 답은 O(n log n) 외엔 없습니다.<br>
+    그런데 O(n log n) 정렬도 세 가지가 있습니다. 어느 것을 고를까요?
+  </blockquote>
+
+  <div class="story-block">
+    <h3>병합 정렬 — 안전하지만 메모리 2배</h3>
+    <p>
+      "항상 Θ(n log n) 보장, 안정 정렬." 하지만 <strong>보조 공간 O(n)</strong>이 필요합니다. 1조 레코드가 100GB라면 200GB 메모리를 써야 함.
+      디스크 기반 외부 정렬(external sort)에 최적 — 대규모 데이터베이스의 표준.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>힙 정렬 — 보장되는데 아무도 안 씀</h3>
+    <p>
+      "Θ(n log n) 보장 + 제자리(O(1) 보조)." 완벽해 보이는데, 표준 라이브러리 어디도 힙 정렬을 기본으로 안 씁니다.
+      이유는 <strong>캐시 친화도</strong> — 힙의 자식 노드 접근 패턴이 메모리를 건너뛰어 캐시 미스가 잦습니다.
+      실측에선 퀵소트보다 2~3배 느립니다.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>퀵소트 — 최악 Θ(n²)인데 모두가 사랑함</h3>
+    <p>
+      "평균 Θ(n log n), 최악 Θ(n²), 제자리." 최악 케이스가 있는데도 — <strong>상수가 가장 작고 캐시 친화적</strong>이라 실측에서 가장 빠릅니다.
+      무작위 피벗(Algo 04 §06) + introsort 트릭으로 최악 케이스를 무력화하면, 더할 나위 없는 선택.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 세 거인의 공존 이유</div>
+    <p>
+      같은 Θ(n log n)이지만 세 정렬은 <strong>전혀 다른 트레이드오프 프로파일</strong>을 갖습니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>속성</th><th>병합</th><th>힙</th><th>퀵</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>최악 시간</td><td>Θ(n log n)</td><td>Θ(n log n)</td><td>Θ(n²) ⚠️</td></tr>
+        <tr><td>보조 공간</td><td>Θ(n) ⚠️</td><td>Θ(1) ✓</td><td>Θ(log n) ✓</td></tr>
+        <tr><td>안정성</td><td>✓</td><td>❌</td><td>❌</td></tr>
+        <tr><td>실측 속도</td><td>중</td><td>느림 (캐시)</td><td>가장 빠름 ✓</td></tr>
+        <tr><td>적응성</td><td>없음</td><td>없음</td><td>부분적</td></tr>
+      </tbody>
+    </table>
+    <p>
+      이번 주는 <em>"왜 이 트레이드오프가 발생하는지"</em>를 내부 구조에서 뜯어 봅니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 02. 세 거인 개요 ==================== -->
+<section id="why-nlogn">
+  <h2>02 — 세 거인 개요: 하한에 닿는 법</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">같은 Θ(n log n)의 세 가지 기원</h3>
+    </div>
+    <p>
+      Algo 05 §07에서 본 결정 트리 논증: 비교 기반 정렬은 최소 Θ(n log n)번의 비교가 필요.
+      세 거인은 <strong>모두 이 하한에 정확히 닿지만</strong>, 그 방법이 서로 다릅니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>알고리즘</th><th>기원</th><th>n log n이 나오는 이유</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>병합 정렬</td>
+          <td>재귀적 반분</td>
+          <td>재귀 깊이 log n × 각 깊이의 병합 O(n) (Algo 03)</td>
+        </tr>
+        <tr>
+          <td>힙 정렬</td>
+          <td>힙의 log n 깊이</td>
+          <td>n번의 extract-max × 각 O(log n)</td>
+        </tr>
+        <tr>
+          <td>퀵소트</td>
+          <td>기댓값 분석</td>
+          <td>무작위 피벗의 평균 분할 비율 × log n 깊이 (Algo 04)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      이 세 가지는 <em>"log n을 얻는 세 가지 방식"</em>의 대표입니다 — 분할 정복, 트리 자료구조, 확률 분석.
+      다른 O(n log n) 알고리즘들(예: 이진 탐색 트리 정렬, FFT 기반 정렬)도 이 중 하나의 변종.
+    </p>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원서 인용 — CLRS 4판, §6 도입부</div>
+    <p>
+      <em>"Like merge sort, but unlike insertion sort, heapsort's running time is O(n lg n). Like insertion sort, but unlike merge sort, heapsort sorts in place: only a constant number of array elements are stored outside the input array at any time."</em>
+    </p>
+    <p style="font-size:0.84rem;color:var(--text-secondary);margin-top:8px;">
+      — CLRS 4th ed., §6 "Heapsort"
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. 병합 재방문 ==================== -->
+<section id="merge-review">
+  <h2>03 — 병합 정렬 재방문: 안정성과 공간 트레이드오프</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">Algo 03에서 본 것 요약</h3>
+    </div>
+    <p>
+      <a href="algo03.html#case-merge">Algo 03 §04</a>에서 병합 정렬의 정의·증명·복잡도를 자세히 다뤘습니다. 여기선 세 거인 비교 관점에서 요점만.
+    </p>
+    <ul>
+      <li>Θ(n log n) — 최선·평균·최악 모두 같음 (적응성 없음)</li>
+      <li>Θ(n) 보조 공간 — 병합에 임시 배열 필요</li>
+      <li>안정 정렬 — <code>&lt;=</code>로 비교하면 같은 키의 원소 순서 유지</li>
+      <li>순차 접근 — 캐시 친화적</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Bottom-up 병합 정렬 — 재귀 없는 버전</h3>
+    </div>
+    <p>
+      보통 소개하는 top-down 병합 정렬은 재귀를 씁니다. bottom-up은 같은 결과를 <strong>반복문</strong>으로 얻습니다.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">merge_sort_bottom_up.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">merge_sort_bu</span>(A):
+    n = <span class="hl-bi">len</span>(A)
+    width = <span class="hl-num">1</span>
+    <span class="hl-kw">while</span> width &lt; n:
+        <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">0</span>, n, <span class="hl-num">2</span> * width):
+            mid = <span class="hl-bi">min</span>(i + width, n)
+            right = <span class="hl-bi">min</span>(i + <span class="hl-num">2</span> * width, n)
+            A[i:right] = _merge(A[i:mid], A[mid:right])
+        width *= <span class="hl-num">2</span>
+    <span class="hl-kw">return</span> A
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">_merge</span>(L, R):
+    out, i, j = [], <span class="hl-num">0</span>, <span class="hl-num">0</span>
+    <span class="hl-kw">while</span> i &lt; <span class="hl-bi">len</span>(L) <span class="hl-kw">and</span> j &lt; <span class="hl-bi">len</span>(R):
+        <span class="hl-kw">if</span> L[i] &lt;= R[j]:
+            out.append(L[i]); i += <span class="hl-num">1</span>
+        <span class="hl-kw">else</span>:
+            out.append(R[j]); j += <span class="hl-num">1</span>
+    out.extend(L[i:]); out.extend(R[j:])
+    <span class="hl-kw">return</span> out</code></pre>
+    </div>
+    <p>
+      크기 1인 구간들부터 시작해 2, 4, 8, …로 확장하며 병합. <strong>재귀 호출 스택 없음</strong> — 매우 큰 배열에서도 <code>RecursionError</code> 걱정 없음.
+      Timsort는 이 bottom-up 접근을 더 정교하게 발전시킨 것.
+    </p>
+
+    <div class="why-box">
+      <div class="box-header">WHY — 외부 정렬(external sort)의 기본</div>
+      <p>
+        데이터가 메모리에 안 들어가면 (예: 1TB 파일, 16GB RAM)? — <strong>병합 정렬이 유일한 실용적 답</strong>입니다.
+      </p>
+      <ol>
+        <li>파일을 RAM에 들어갈 만한 청크로 쪼개 각각 메모리에서 정렬 (quicksort 등).</li>
+        <li>정렬된 청크들을 파일로 써둠.</li>
+        <li><strong>bottom-up k-way 병합</strong>으로 파일들을 합침 (k는 가용 메모리에 맞게).</li>
+      </ol>
+      <p>
+        이게 GNU <code>sort</code> 명령, 데이터베이스 ORDER BY, MapReduce shuffle 등이 내부에서 하는 일. <em>병합 정렬의 공간 비용이 디스크 I/O에서는 오히려 장점</em>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 04. 힙 정렬 ==================== -->
+<section id="heap-sort">
+  <h2>04 — 힙 정렬 (Heapsort, CLRS §6)</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">아이디어 — "항상 최댓값을 꺼낼 수 있는 자료구조"</h3>
+    </div>
+    <p style="color:var(--text-secondary);font-size:0.92em;">
+      <strong>J.W.J. Williams, 1964</strong> (CACM Algorithm 232, Vol. 7, June 1964). 같은 해 R.W. Floyd가 <em>선형 시간</em> build-heap(sift-down bottom-up)을 추가로 제안.
+    </p>
+    <p>
+      <strong>최대 힙(max-heap)</strong>: 부모가 자식보다 항상 크거나 같은 완전 이진 트리.
+      루트는 전체 최댓값. "루트를 빼서 마지막에 놓고, 힙을 다시 정돈" — 이걸 n번 반복하면 정렬 완료.
+    </p>
+
+    <div class="viz-box">
+      <svg viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="힙의 트리 구조와 배열 표현 매핑">
+        <text x="150" y="20" class="viz-label" text-anchor="middle">트리 표현 (max-heap)</text>
+        <text x="450" y="20" class="viz-label" text-anchor="middle">배열 표현</text>
+        <!-- 트리 -->
+        <g transform="translate(20, 40)">
+          <!-- 루트 [0]=7 -->
+          <circle cx="130" cy="30" r="22" class="viz-node"/>
+          <text x="130" y="35" class="viz-label" text-anchor="middle">7</text>
+          <text x="130" y="12" class="viz-label-small" text-anchor="middle">[0]</text>
+          <!-- L1 -->
+          <circle cx="65" cy="100" r="22" class="viz-node"/>
+          <text x="65" y="105" class="viz-label" text-anchor="middle">5</text>
+          <text x="40" y="100" class="viz-label-small" text-anchor="middle">[1]</text>
+          <circle cx="195" cy="100" r="22" class="viz-node"/>
+          <text x="195" y="105" class="viz-label" text-anchor="middle">4</text>
+          <text x="220" y="100" class="viz-label-small" text-anchor="middle">[2]</text>
+          <line x1="115" y1="48" x2="80" y2="82" class="viz-edge"/>
+          <line x1="145" y1="48" x2="180" y2="82" class="viz-edge"/>
+          <!-- L2 -->
+          <circle cx="30" cy="170" r="20" class="viz-node"/>
+          <text x="30" y="175" class="viz-label" text-anchor="middle">2</text>
+          <text x="6" y="170" class="viz-label-small" text-anchor="middle">[3]</text>
+          <circle cx="100" cy="170" r="20" class="viz-node"/>
+          <text x="100" y="175" class="viz-label" text-anchor="middle">1</text>
+          <text x="124" y="170" class="viz-label-small" text-anchor="middle">[4]</text>
+          <circle cx="170" cy="170" r="20" class="viz-node"/>
+          <text x="170" y="175" class="viz-label" text-anchor="middle">3</text>
+          <text x="146" y="170" class="viz-label-small" text-anchor="middle">[5]</text>
+          <line x1="55" y1="118" x2="40" y2="152" class="viz-edge"/>
+          <line x1="80" y1="118" x2="92" y2="152" class="viz-edge"/>
+          <line x1="185" y1="118" x2="175" y2="152" class="viz-edge"/>
+        </g>
+        <!-- 배열 -->
+        <g transform="translate(310, 80)" font-family="JetBrains Mono, monospace" font-size="14">
+          <rect x="0" y="0" width="36" height="32" class="viz-node"/><text x="18" y="22" text-anchor="middle">7</text>
+          <rect x="36" y="0" width="36" height="32" class="viz-node"/><text x="54" y="22" text-anchor="middle">5</text>
+          <rect x="72" y="0" width="36" height="32" class="viz-node"/><text x="90" y="22" text-anchor="middle">4</text>
+          <rect x="108" y="0" width="36" height="32" class="viz-node"/><text x="126" y="22" text-anchor="middle">2</text>
+          <rect x="144" y="0" width="36" height="32" class="viz-node"/><text x="162" y="22" text-anchor="middle">1</text>
+          <rect x="180" y="0" width="36" height="32" class="viz-node"/><text x="198" y="22" text-anchor="middle">3</text>
+          <text x="18" y="50" class="viz-label-small" text-anchor="middle">[0]</text>
+          <text x="54" y="50" class="viz-label-small" text-anchor="middle">[1]</text>
+          <text x="90" y="50" class="viz-label-small" text-anchor="middle">[2]</text>
+          <text x="126" y="50" class="viz-label-small" text-anchor="middle">[3]</text>
+          <text x="162" y="50" class="viz-label-small" text-anchor="middle">[4]</text>
+          <text x="198" y="50" class="viz-label-small" text-anchor="middle">[5]</text>
+        </g>
+        <!-- 인덱스 공식 -->
+        <g transform="translate(310, 160)">
+          <text x="0" y="0" class="viz-label-small">parent(i) = (i−1)//2</text>
+          <text x="0" y="20" class="viz-label-small">left(i) = 2i+1</text>
+          <text x="0" y="40" class="viz-label-small">right(i) = 2i+2</text>
+          <text x="0" y="65" class="viz-label-small">예: parent(3) = 1, left(2) = 5</text>
+        </g>
+      </svg>
+      <div class="viz-caption"><strong>힙은 완전 이진 트리이자 배열.</strong> 인덱스 공식만으로 부모-자식 관계 O(1) 계산. 포인터 없이 메모리 효율 + 캐시 친화.</div>
+    </div>
+
+    <div class="viz-box">
+      <style>
+        @keyframes a06-show { 0%,2%{opacity:0} 4%,15%{opacity:1} 17%,100%{opacity:0} }
+        .a06-S0{animation:a06-show 12s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+        .a06-S1{animation:a06-show 12s linear infinite;animation-delay:2s;animation-fill-mode:backwards}
+        .a06-S2{animation:a06-show 12s linear infinite;animation-delay:4s;animation-fill-mode:backwards}
+        .a06-S3{animation:a06-show 12s linear infinite;animation-delay:6s;animation-fill-mode:backwards}
+        .a06-S4{animation:a06-show 12s linear infinite;animation-delay:8s;animation-fill-mode:backwards}
+        .a06-S5{animation:a06-show 12s linear infinite;animation-delay:10s;animation-fill-mode:backwards}
+      </style>
+      <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="힙 정렬 단계별">
+        <text x="360" y="22" class="viz-label" text-anchor="middle">⛰️ 힙 정렬: "루트(최댓값)을 끝으로 보내고 다시 정돈" 반복</text>
+
+        <g font-family="JetBrains Mono, monospace" font-size="14">
+          <!-- Step 0: 초기 max-heap -->
+          <text class="a06-S0" x="40" y="60" font-weight="700">1️⃣ max-heap 완성: 루트=7 (최댓값)</text>
+          <g class="a06-S0" transform="translate(180, 70)">
+            <rect x="0" y="0" width="36" height="32" fill="rgba(212,147,12,0.3)" stroke="#d4930c" stroke-width="2.5"/><text x="18" y="20" text-anchor="middle" font-weight="700">7</text>
+            <rect x="36" y="0" width="36" height="32" class="viz-node"/><text x="54" y="20" text-anchor="middle">5</text>
+            <rect x="72" y="0" width="36" height="32" class="viz-node"/><text x="90" y="20" text-anchor="middle">4</text>
+            <rect x="108" y="0" width="36" height="32" class="viz-node"/><text x="126" y="20" text-anchor="middle">2</text>
+            <rect x="144" y="0" width="36" height="32" class="viz-node"/><text x="162" y="20" text-anchor="middle">1</text>
+            <rect x="180" y="0" width="36" height="32" class="viz-node"/><text x="198" y="20" text-anchor="middle">3</text>
+          </g>
+
+          <!-- Step 1: 7을 끝으로 -->
+          <text class="a06-S1" x="40" y="60" font-weight="700">2️⃣ 7 ↔ 끝 swap, heap에서 제외</text>
+          <g class="a06-S1" transform="translate(180, 70)">
+            <rect x="0" y="0" width="36" height="32" class="viz-node"/><text x="18" y="20" text-anchor="middle">5</text>
+            <rect x="36" y="0" width="36" height="32" class="viz-node"/><text x="54" y="20" text-anchor="middle">3</text>
+            <rect x="72" y="0" width="36" height="32" class="viz-node"/><text x="90" y="20" text-anchor="middle">4</text>
+            <rect x="108" y="0" width="36" height="32" class="viz-node"/><text x="126" y="20" text-anchor="middle">2</text>
+            <rect x="144" y="0" width="36" height="32" class="viz-node"/><text x="162" y="20" text-anchor="middle">1</text>
+            <rect x="180" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="198" y="20" text-anchor="middle" font-weight="700">7</text>
+          </g>
+          <text class="a06-S1 viz-label-small" x="380" y="125" fill="var(--why-accent)">↑ 정렬 끝</text>
+
+          <!-- Step 2: 5 끝으로 -->
+          <text class="a06-S2" x="40" y="60" font-weight="700">3️⃣ heapify → 5 끝으로</text>
+          <g class="a06-S2" transform="translate(180, 70)">
+            <rect x="0" y="0" width="36" height="32" class="viz-node"/><text x="18" y="20" text-anchor="middle">4</text>
+            <rect x="36" y="0" width="36" height="32" class="viz-node"/><text x="54" y="20" text-anchor="middle">3</text>
+            <rect x="72" y="0" width="36" height="32" class="viz-node"/><text x="90" y="20" text-anchor="middle">1</text>
+            <rect x="108" y="0" width="36" height="32" class="viz-node"/><text x="126" y="20" text-anchor="middle">2</text>
+            <rect x="144" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="162" y="20" text-anchor="middle" font-weight="700">5</text>
+            <rect x="180" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="198" y="20" text-anchor="middle" font-weight="700">7</text>
+          </g>
+
+          <!-- Step 3: 4 끝으로 -->
+          <text class="a06-S3" x="40" y="60" font-weight="700">4️⃣ 4 끝으로</text>
+          <g class="a06-S3" transform="translate(180, 70)">
+            <rect x="0" y="0" width="36" height="32" class="viz-node"/><text x="18" y="20" text-anchor="middle">3</text>
+            <rect x="36" y="0" width="36" height="32" class="viz-node"/><text x="54" y="20" text-anchor="middle">2</text>
+            <rect x="72" y="0" width="36" height="32" class="viz-node"/><text x="90" y="20" text-anchor="middle">1</text>
+            <rect x="108" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="126" y="20" text-anchor="middle" font-weight="700">4</text>
+            <rect x="144" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="162" y="20" text-anchor="middle" font-weight="700">5</text>
+            <rect x="180" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="198" y="20" text-anchor="middle" font-weight="700">7</text>
+          </g>
+
+          <!-- Step 4: 3, 2 -->
+          <text class="a06-S4" x="40" y="60" font-weight="700">5️⃣ 3, 2 끝으로</text>
+          <g class="a06-S4" transform="translate(180, 70)">
+            <rect x="0" y="0" width="36" height="32" class="viz-node"/><text x="18" y="20" text-anchor="middle">1</text>
+            <rect x="36" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="54" y="20" text-anchor="middle" font-weight="700">2</text>
+            <rect x="72" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="90" y="20" text-anchor="middle" font-weight="700">3</text>
+            <rect x="108" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="126" y="20" text-anchor="middle" font-weight="700">4</text>
+            <rect x="144" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="162" y="20" text-anchor="middle" font-weight="700">5</text>
+            <rect x="180" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="198" y="20" text-anchor="middle" font-weight="700">7</text>
+          </g>
+
+          <!-- Step 5: 완성 -->
+          <text class="a06-S5" x="40" y="60" font-weight="700" fill="#3b9b6e">6️⃣ 완성 ✅</text>
+          <g class="a06-S5" transform="translate(180, 70)">
+            <rect x="0" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="18" y="20" text-anchor="middle" font-weight="700">1</text>
+            <rect x="36" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="54" y="20" text-anchor="middle" font-weight="700">2</text>
+            <rect x="72" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="90" y="20" text-anchor="middle" font-weight="700">3</text>
+            <rect x="108" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="126" y="20" text-anchor="middle" font-weight="700">4</text>
+            <rect x="144" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="162" y="20" text-anchor="middle" font-weight="700">5</text>
+            <rect x="180" y="0" width="36" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="198" y="20" text-anchor="middle" font-weight="700">7</text>
+          </g>
+        </g>
+
+        <!-- 메시지 -->
+        <g transform="translate(40, 175)">
+          <rect x="0" y="0" width="640" height="60" rx="6" fill="rgba(196,114,78,0.06)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6,4"/>
+          <text x="320" y="22" text-anchor="middle" class="viz-label" font-weight="700">⛰️ 힙 정렬 = "max-heap에서 최댓값 빼기" × n번</text>
+          <text x="320" y="42" text-anchor="middle" class="viz-label-small">매 단계: 루트(최대) ↔ 마지막 swap → heap 크기 1 감소 → heapify → 반복</text>
+        </g>
+
+        <text x="360" y="265" class="viz-label-small" text-anchor="middle">애니메이션 12초 주기 — 6단계로 [5,2,4,7,1,3] → [1,2,3,4,5,7]</text>
+      </svg>
+      <div class="viz-caption"><strong>힙 정렬은 "최댓값을 뒤로 보내기" 반복.</strong> 각 단계마다 max-heap 루트(가장 큰 값)을 배열의 끝으로 옮김. 끝에서부터 정렬된 영역(녹색)이 자라남.</div>
+    </div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">배열을 이용한 힙 표현</h3>
+    </div>
+    <p>
+      완전 이진 트리는 배열로 아주 깔끔하게 표현됩니다. 루트를 A[0]이라 하면:
+    </p>
+    <div class="formula-box">
+      parent(i) = (i − 1) // 2, &nbsp; left(i) = 2i + 1, &nbsp; right(i) = 2i + 2
+    </div>
+    <p>
+      포인터 따라갈 필요 없이 인덱스 계산만으로 트리 순회 — O(1) 접근. 힙을 배열로 쓰는 게 자연스러운 이유.
+    </p>
+    <p>
+      <em>(CLRS는 1-indexed 의사코드를 씁니다: parent(i) = i/2, left(i) = 2i, right(i) = 2i+1. 여기서는 Python 관례에 맞게 0-indexed.)</em>
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">핵심 3개 루틴 — MAX-HEAPIFY / BUILD-MAX-HEAP / HEAPSORT</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">heapsort.py (CLRS §6.1~§6.4 구현)</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">max_heapify</span>(A, i, size):
+    <span class="hl-cmt">"""i번 노드 위치에서 '내려가며' 힙 속성 복구. O(log n)."""</span>
+    l = <span class="hl-num">2</span> * i + <span class="hl-num">1</span>
+    r = <span class="hl-num">2</span> * i + <span class="hl-num">2</span>
+    largest = i
+    <span class="hl-kw">if</span> l &lt; size <span class="hl-kw">and</span> A[l] &gt; A[largest]:
+        largest = l
+    <span class="hl-kw">if</span> r &lt; size <span class="hl-kw">and</span> A[r] &gt; A[largest]:
+        largest = r
+    <span class="hl-kw">if</span> largest != i:
+        A[i], A[largest] = A[largest], A[i]
+        max_heapify(A, largest, size)
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">build_max_heap</span>(A):
+    <span class="hl-cmt">"""마지막 내부 노드부터 루트까지 heapify. O(n)."""</span>
+    n = <span class="hl-bi">len</span>(A)
+    <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n // <span class="hl-num">2</span> - <span class="hl-num">1</span>, -<span class="hl-num">1</span>, -<span class="hl-num">1</span>):
+        max_heapify(A, i, n)
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">heapsort</span>(A):
+    <span class="hl-cmt">"""O(n log n)."""</span>
+    build_max_heap(A)
+    <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-bi">len</span>(A) - <span class="hl-num">1</span>, <span class="hl-num">0</span>, -<span class="hl-num">1</span>):
+        A[<span class="hl-num">0</span>], A[i] = A[i], A[<span class="hl-num">0</span>]   <span class="hl-cmt"># 루트(최댓값)을 끝으로</span>
+        max_heapify(A, <span class="hl-num">0</span>, i)     <span class="hl-cmt"># 줄어든 힙 복구</span>
+    <span class="hl-kw">return</span> A
+
+
+<span class="hl-bi">print</span>(heapsort([<span class="hl-num">5</span>, <span class="hl-num">2</span>, <span class="hl-num">4</span>, <span class="hl-num">7</span>, <span class="hl-num">1</span>, <span class="hl-num">3</span>]))</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">출력:</div>
+      [1, 2, 3, 4, 5, 7]
+    </div>
+  </div>
+
+  <div class="caution-box">
+    <div class="box-header">⚠️ 힙 정렬의 두 가지 단점</div>
+    <ol>
+      <li>
+        <strong>불안정(unstable)</strong> — 힙 구조가 원래 순서를 기억하지 못함. 같은 키의 원소 순서 보장 없음.
+      </li>
+      <li>
+        <strong>캐시 불친화</strong> — left(i) = 2i+1, right(i) = 2i+2 접근은 메모리를 크게 건너뜀.
+        n = 10⁶일 때 자식 노드는 수 MB 떨어진 메모리를 읽음 → 캐시 미스 폭증.
+        실측에서 퀵소트보다 2~3배 느린 주요 원인.
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ==================== 05. 힙 정렬 복잡도 ==================== -->
+<section id="heap-analysis">
+  <h2>05 — 힙 정렬의 복잡도: Build-Heap이 왜 Θ(n)인가</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">순진한 분석 — "Θ(n log n)"은 왜 틀렸는가</h3>
+    </div>
+    <p>
+      BUILD-MAX-HEAP은 n/2개의 내부 노드에 대해 MAX-HEAPIFY를 호출. 각 호출은 O(log n).
+      그러니 (n/2) × O(log n) = <strong>O(n log n)</strong>? — 맞지만 <strong>너무 느슨한</strong> 상한.
+    </p>
+    <p>
+      진짜 놀라운 사실: <strong>BUILD-MAX-HEAP은 Θ(n)</strong>입니다. log 인자가 없습니다.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Tight 분석 (CLRS §6.3)</h3>
+    </div>
+    <p>
+      핵심 관찰: 노드의 높이가 낮을수록 MAX-HEAPIFY가 빠르고, 낮은 높이의 노드가 훨씬 많다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>높이 h</th><th>해당 높이 노드 수 (상한)</th><th>각 노드의 MAX-HEAPIFY 비용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0 (리프)</td><td>⌈n/2⌉</td><td>O(1) — heapify 안 함</td></tr>
+        <tr><td>1</td><td>⌈n/4⌉</td><td>O(1)</td></tr>
+        <tr><td>2</td><td>⌈n/8⌉</td><td>O(2)</td></tr>
+        <tr><td>…</td><td>…</td><td>…</td></tr>
+        <tr><td>h</td><td>⌈n / 2<sup>h+1</sup>⌉</td><td>O(h)</td></tr>
+        <tr><td>log n</td><td>1 (루트)</td><td>O(log n)</td></tr>
+      </tbody>
+    </table>
+    <div class="formula-box" style="text-align:left;">
+      총 비용 = Σ<sub>h=0</sub><sup>log n</sup> (n / 2<sup>h+1</sup>) · O(h)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp; = O(n) · Σ<sub>h=0</sub><sup>∞</sup> h / 2<sup>h</sup><br>
+      &nbsp;&nbsp;&nbsp;&nbsp; = O(n) · 2 &nbsp; <em>// 미적분: Σ h/2^h = 2</em><br>
+      &nbsp;&nbsp;&nbsp;&nbsp; = <strong>O(n)</strong>
+    </div>
+    <p>
+      <strong>Σ<sub>h=0</sub><sup>∞</sup> h/2<sup>h</sup> = 2</strong>는 유명한 수렴 급수. 미적분으로 증명 가능 (등비급수 Σ x<sup>h</sup> = 1/(1-x)를 미분).
+    </p>
+
+    <div class="reading-box">
+      <div class="box-header">📖 원서 인용 — CLRS 4판, §6.3 "Building a heap"</div>
+      <p>
+        <em>"Although the procedure runs in O(n lg n) time, which is correct but not tight, we can derive a tighter bound by observing that the time for MAX-HEAPIFY to run at a node varies with the height of the node in the tree, and the heights of most nodes are small. Our tighter analysis relies on the properties... We can build a max-heap from an unordered array in linear time."</em>
+      </p>
+    </div>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">HEAPSORT 전체 — Θ(n log n)</h3>
+    </div>
+    <p>
+      BUILD-MAX-HEAP = Θ(n), 그 뒤 n-1번의 MAX-HEAPIFY(루트에서) = (n−1) × Θ(log n) = Θ(n log n).
+      총합: Θ(n) + Θ(n log n) = <strong>Θ(n log n)</strong>.
+    </p>
+    <p>
+      <em>하지만 BUILD-MAX-HEAP의 Θ(n)은 의미 있는 사실</em> — 힙의 다른 용도(우선순위 큐 초기화, Algo 12 heapq)에서는 이게 주된 비용이 됩니다.
+    </p>
+
+    <div class="why-box">
+      <div class="box-header">WHY — 왜 힙 정렬이 실무에서 밀리는가 심층 분석</div>
+      <p>
+        점근 복잡도는 병합·힙·퀵 모두 Θ(n log n)이지만, <strong>상수와 하드웨어 친화도</strong>가 다릅니다.
+      </p>
+      <table>
+        <thead>
+          <tr><th>항목</th><th>병합</th><th>힙</th><th>퀵</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>메모리 접근 패턴</td><td>순차 ✓</td><td>랜덤(부모-자식 점프) ⚠️</td><td>대부분 순차 ✓</td></tr>
+          <tr><td>CPU 분기 예측</td><td>잘 맞음</td><td>잘 안 맞음</td><td>잘 맞음 (파티션)</td></tr>
+          <tr><td>비교 수 (상수)</td><td>~n log₂ n</td><td>~2n log₂ n ⚠️</td><td>~1.39 n log₂ n ✓</td></tr>
+          <tr><td>SIMD/병렬화</td><td>쉬움</td><td>어려움</td><td>중간</td></tr>
+        </tbody>
+      </table>
+      <p>
+        힙 정렬은 <strong>비교 수 자체가 2배 많음</strong>(상수 인자). 거기에 캐시 미스 × 2~3. 결론: 같은 Θ(n log n)이라도 실측 속도는 퀵소트의 3~5배 느림.
+      </p>
+      <p>
+        그래서 힙 정렬은 직접 쓰기보단 <strong>"최악을 보장해야 할 때의 안전장치"</strong> — introsort에서 퀵소트가 깊어지면 힙 정렬로 전환하는 데 사용.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 06. 퀵소트 재방문 ==================== -->
+<section id="quicksort-review">
+  <h2>06 — 퀵소트 재방문 (CLRS §7)</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">Algo 04에서 본 것 + 정확성 관점 추가</h3>
+    </div>
+    <p>
+      <a href="algo04.html#quicksort">Algo 04 §06</a>에서 randomized quicksort의 기댓값 분석을 자세히 다뤘습니다. 여기선:
+    </p>
+    <ul>
+      <li>정확성 증명 (루프 불변식 — Algo 02 도구)</li>
+      <li>Hoare vs Lomuto partition의 비교 (§07)</li>
+      <li>중복 키 처리의 3-way partition (§07)</li>
+      <li>최악 Θ(n²)을 어떻게 막는가 (§08 introsort)</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">퀵소트의 핵심 구조 (CLRS §7.1)</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">quicksort_classic.py (CLRS §7.1 Lomuto)</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">quicksort</span>(A, p, r):
+    <span class="hl-kw">if</span> p &lt; r:
+        q = partition(A, p, r)     <span class="hl-cmt"># pivot 위치</span>
+        quicksort(A, p, q - <span class="hl-num">1</span>)     <span class="hl-cmt"># 왼쪽: pivot보다 작은 부분</span>
+        quicksort(A, q + <span class="hl-num">1</span>, r)     <span class="hl-cmt"># 오른쪽: pivot보다 큰 부분</span>
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">partition</span>(A, p, r):
+    pivot = A[r]                <span class="hl-cmt"># 마지막 원소를 pivot으로</span>
+    i = p - <span class="hl-num">1</span>                 <span class="hl-cmt"># "pivot 이하" 경계</span>
+    <span class="hl-kw">for</span> j <span class="hl-kw">in</span> <span class="hl-bi">range</span>(p, r):
+        <span class="hl-kw">if</span> A[j] &lt;= pivot:
+            i += <span class="hl-num">1</span>
+            A[i], A[j] = A[j], A[i]
+    A[i + <span class="hl-num">1</span>], A[r] = A[r], A[i + <span class="hl-num">1</span>]
+    <span class="hl-kw">return</span> i + <span class="hl-num">1</span></code></pre>
+    </div>
+    <p>
+      병합 정렬과 구조는 비슷합니다 — 쪼개고 재귀로 풀고. 차이:
+    </p>
+    <ul>
+      <li><strong>병합</strong>: Divide가 O(1)(인덱스 계산), Combine이 O(n)(실제 병합)</li>
+      <li><strong>퀵</strong>: Divide가 O(n)(partition), Combine이 O(1)(제자리 완성)</li>
+    </ul>
+    <p>
+      퀵소트의 Combine이 O(1)이라는 게 <strong>in-place</strong>가 되는 근본 이유 — 보조 배열이 필요 없습니다.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">partition의 루프 불변식</h3>
+    </div>
+    <div class="formula-box" style="text-align:left;">
+      <strong>I(j)</strong>: 매 for 반복 직전,<br>
+      (a) <code>A[p..i]</code>의 모든 원소 ≤ pivot, &nbsp;<br>
+      (b) <code>A[i+1..j-1]</code>의 모든 원소 &gt; pivot, &nbsp;<br>
+      (c) <code>A[r] = pivot</code> (고정).
+    </div>
+    <ul>
+      <li><strong>초기</strong> (j = p): i = p−1이므로 A[p..p−1]과 A[p..p−1] 모두 빈 배열, 자명히 성립.</li>
+      <li><strong>유지</strong>: A[j] ≤ pivot이면 i++, swap — A[i](새 위치)가 이전 A[j]로 바뀌고 (a)에 들어감. A[j] &gt; pivot이면 그대로 (b)에 남음. 둘 다 불변식 유지.</li>
+      <li><strong>종료</strong> (j = r): A[p..i]은 ≤ pivot, A[i+1..r−1]은 &gt; pivot, A[r] = pivot. swap(A[i+1], A[r])하면 A[p..i]≤pivot ≤ A[i+1] &lt; A[i+2..r]이라 pivot이 제자리. ∎</li>
+    </ul>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원서 인용 — CLRS 4판, §7.1 "Description of quicksort"</div>
+    <p>
+      <em>"Quicksort, like merge sort, applies the divide-and-conquer method. ... The PARTITION procedure always selects an element x = A[r] as a pivot element around which to partition the subarray A[p:r]. As the procedure runs, it partitions the array into (possibly empty) subarrays A[p:i], A[i+1:j-1], and A[j:r-1] such that each element of A[p:i] is less than or equal to x, each element of A[i+1:j-1] is greater than x, and x resides at A[r]."</em>
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 07. Partition 변종 ==================== -->
+<section id="quicksort-variants">
+  <h2>07 — Partition 변종: Hoare · Lomuto · 3-way</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Hoare partition (원조, 1961)</h3>
+    </div>
+    <p>
+      Tony Hoare가 <em>1961 Communications of the ACM</em>에 처음 발표한 원조. 양 끝에서 가운데로 진행하는 두 포인터.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">hoare_partition.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">hoare_partition</span>(A, p, r):
+    pivot = A[p]
+    i, j = p - <span class="hl-num">1</span>, r + <span class="hl-num">1</span>
+    <span class="hl-kw">while</span> <span class="hl-kw">True</span>:
+        i += <span class="hl-num">1</span>
+        <span class="hl-kw">while</span> A[i] &lt; pivot:
+            i += <span class="hl-num">1</span>
+        j -= <span class="hl-num">1</span>
+        <span class="hl-kw">while</span> A[j] &gt; pivot:
+            j -= <span class="hl-num">1</span>
+        <span class="hl-kw">if</span> i &gt;= j:
+            <span class="hl-kw">return</span> j
+        A[i], A[j] = A[j], A[i]</code></pre>
+    </div>
+    <p>
+      특징: Hoare는 <em>pivot을 원래 자리에 고정하지 않음</em>. 반환값 j는 "왼쪽 부분배열의 끝" 인덱스. 재귀 호출은 <code>qs(A, p, j), qs(A, j+1, r)</code>로 호출.
+    </p>
+    <ul>
+      <li><strong>장점</strong>: Lomuto 대비 <strong>스왑 3배 적음</strong>. 실측 상수가 작음 — 실전 표준.</li>
+      <li><strong>단점</strong>: 이해 난이도 ↑. 경계 조건(pivot이 극단값일 때) 주의.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Lomuto partition — CLRS 교과서 버전</h3>
+    </div>
+    <p>
+      Nico Lomuto가 1980년대에 제안. §06의 코드가 이것. Hoare보다 이해가 쉬워 교육용으로 자주 등장 (CLRS 본문도 이것).
+    </p>
+    <ul>
+      <li><strong>장점</strong>: 단일 포인터, 루프 불변식 증명 쉬움.</li>
+      <li><strong>단점</strong>: 스왑 더 많음. <strong>중복 원소에 취약</strong> — 모든 원소가 같으면 partition이 극단 분할(0 vs n−1)을 만들어 최악 Θ(n²).</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">3-way partition (Dijkstra의 Dutch National Flag)</h3>
+    </div>
+    <p>
+      중복이 많은 입력(예: 0/1/2만 있는 배열)에서 Lomuto도 Hoare도 Θ(n²)으로 망가집니다.
+      <strong>Edsger Dijkstra</strong>의 해결책: <em>세 영역</em>으로 쪼개기. &lt; pivot, = pivot, &gt; pivot.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">three_way_partition.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">quicksort_3way</span>(A, lo, hi):
+    <span class="hl-kw">if</span> lo &gt;= hi: <span class="hl-kw">return</span>
+    pivot = A[lo]
+    lt, i, gt = lo, lo + <span class="hl-num">1</span>, hi
+    <span class="hl-cmt"># 불변식: A[lo..lt-1] &lt; pivot, A[lt..i-1] == pivot, A[gt+1..hi] &gt; pivot</span>
+    <span class="hl-kw">while</span> i &lt;= gt:
+        <span class="hl-kw">if</span> A[i] &lt; pivot:
+            A[lt], A[i] = A[i], A[lt]
+            lt += <span class="hl-num">1</span>; i += <span class="hl-num">1</span>
+        <span class="hl-kw">elif</span> A[i] &gt; pivot:
+            A[i], A[gt] = A[gt], A[i]
+            gt -= <span class="hl-num">1</span>
+        <span class="hl-kw">else</span>:
+            i += <span class="hl-num">1</span>
+    quicksort_3way(A, lo, lt - <span class="hl-num">1</span>)
+    quicksort_3way(A, gt + <span class="hl-num">1</span>, hi)</code></pre>
+    </div>
+    <p>
+      <strong>결과</strong>: 같은 값 여러 개는 <code>A[lt..gt]</code>에 모이고 재귀 X. 중복이 많은 입력에서 극도로 빨라짐 — 모두 같은 값이면 <strong>Θ(n)</strong>.
+      Java의 <code>Arrays.sort</code>가 쓰는 Dual-Pivot Quicksort가 이 아이디어의 변형입니다.
+    </p>
+    <p>
+      Sedgewick과 Bentley(1997)의 "Fast Three-Way Partition": 추가 최적화로 실전에서 거의 모든 입력에 안정적.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — "어느 partition을 쓸 것인가"의 실무 기준</div>
+    <ul>
+      <li><strong>입력 분포 미상 + 단순성 우선</strong>: CLRS Lomuto로 시작 (이해·증명 쉬움).</li>
+      <li><strong>성능 추구</strong>: Hoare. 스왑 수 1/3. 실측에서 30~50% 빠름.</li>
+      <li><strong>중복 많을 가능성</strong>: 3-way. 예: 범주형 데이터, 이미지 픽셀, 정수 ID.</li>
+      <li><strong>일반 라이브러리</strong>: Dual-pivot (Java) 또는 pattern-defeating quicksort (Go, Rust) — 여러 변종 결합.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 08. Introsort ==================== -->
+<section id="introsort">
+  <h2>08 — Introsort: C++ std::sort의 심장</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Musser 1997 — 퀵소트의 최악 케이스를 봉인하는 법</h3>
+    </div>
+    <p>
+      David Musser가 1997년 <em>"Introspective Sorting and Selection Algorithms"</em> 논문에서 제안.
+      아이디어가 단순하면서 강력:
+    </p>
+    <ol>
+      <li>퀵소트를 시작한다. 재귀 깊이를 카운트한다.</li>
+      <li>깊이가 <strong>2 × log₂ n</strong>을 넘어가면 → 퀵소트가 나빠지고 있다는 신호.</li>
+      <li>그 시점에서 <strong>힙 정렬로 전환</strong>. 나머지는 힙 정렬이 Θ(n log n)으로 완료 보장.</li>
+      <li>부분배열이 충분히 작으면(보통 < 16) → <strong>삽입 정렬</strong>.</li>
+    </ol>
+    <div class="formula-box" style="text-align:left;">
+      Introsort(A) = Quicksort까지 깊이 2⌊log₂ n⌋ → 깊이 초과 시 Heapsort → 작은 구간 Insertion sort<br>
+      <br>
+      <strong>복잡도 보장</strong>: 최악·평균·최선 모두 <strong>Θ(n log n)</strong>. 동시에 평균 속도는 퀵소트 수준.
+    </div>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">introsort.py (개념 구현)</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">import</span> math
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">introsort</span>(A):
+    depth_limit = <span class="hl-num">2</span> * math.floor(math.log2(<span class="hl-bi">len</span>(A))) <span class="hl-kw">if</span> <span class="hl-bi">len</span>(A) &gt; <span class="hl-num">1</span> <span class="hl-kw">else</span> <span class="hl-num">0</span>
+    _introsort(A, <span class="hl-num">0</span>, <span class="hl-bi">len</span>(A) - <span class="hl-num">1</span>, depth_limit)
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">_introsort</span>(A, lo, hi, depth):
+    <span class="hl-kw">if</span> hi - lo + <span class="hl-num">1</span> &lt; <span class="hl-num">16</span>:
+        _insertion_sort(A, lo, hi)
+        <span class="hl-kw">return</span>
+    <span class="hl-kw">if</span> depth == <span class="hl-num">0</span>:
+        _heapsort_range(A, lo, hi)   <span class="hl-cmt"># fallback</span>
+        <span class="hl-kw">return</span>
+    p = _partition(A, lo, hi)
+    _introsort(A, lo, p - <span class="hl-num">1</span>, depth - <span class="hl-num">1</span>)
+    _introsort(A, p + <span class="hl-num">1</span>, hi, depth - <span class="hl-num">1</span>)</code></pre>
+    </div>
+
+    <div class="reading-box">
+      <div class="box-header">📖 원서 인용 — Musser, "Introspective Sorting" (1997)</div>
+      <p>
+        <em>"Introsort behaves like quicksort in the average case but switches to heapsort to avoid quicksort's worst case. The overall effect is to guarantee O(n log n) running time in all cases while maintaining quicksort's performance on typical inputs."</em>
+      </p>
+    </div>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Part B — 왜 <em>2 × log₂ n</em>인가?</h3>
+    </div>
+    <p>
+      재귀 깊이가 log₂ n 근처면 quicksort가 균형 있게 진행 중. 2 × log₂ n까지는 "피벗이 평균 1/4 이상을 차지하는" 꽤 균형 잡힌 분할.
+      그 이상 깊어지면 연속 불균형 분할 (최악 시나리오)에 가까워짐.
+    </p>
+    <p>
+      수학적으로: 한쪽이 항상 1/α 이상을 차지하면 깊이 ≤ log<sub>α/(α-1)</sub> n. α=4/3이면 log<sub>4</sub> n ≈ log₂ n / 2. 2 log₂ n 제한은 α ≤ √2/(√2−1) = 2+√2 ≈ <strong>3.41</strong>까지 허용 — 즉 "한쪽이 약 30% 이상만 차지하면 2 log₂ n 안에 들어감", 실전에서 충분히 넉넉.
+    </p>
+
+    <div class="why-box">
+      <div class="box-header">WHY — Introsort가 "세 거인 모두 이기는" 이유</div>
+      <p>
+        Introsort는 <strong>트레이드오프를 합친 알고리즘</strong>입니다.
+      </p>
+      <ul>
+        <li>평균 속도: <strong>퀵소트</strong>에서 상속 (가장 빠름).</li>
+        <li>최악 보장: <strong>힙 정렬</strong>에서 상속 (Θ(n log n)).</li>
+        <li>작은 n 최적화: <strong>삽입 정렬</strong>에서 상속 (Algo 05).</li>
+      </ul>
+      <p>
+        세 알고리즘 모두 각자의 장점이 있기에 — 하나로 합친 introsort가 <strong>C++ std::sort의 기본 구현</strong>이 됐습니다 (GCC libstdc++, Microsoft STL 등).
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 09. 비비교 정렬 ==================== -->
+<section id="non-comparison">
+  <h2>09 — 비비교 정렬: Ω(n log n) 우회 (CLRS §8.2~§8.4)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">하한을 "깨는" 것이 아니라 "벗어나는" 것</h3>
+    </div>
+    <p>
+      Algo 05 §07의 Ω(n log n) 하한은 <em>비교 기반 정렬</em>에만 해당. 원소의 <strong>다른 성질</strong>을 쓸 수 있다면:
+    </p>
+    <ul>
+      <li><strong>원소가 작은 정수</strong> → Counting sort (§8.2). O(n + k).</li>
+      <li><strong>원소가 d자리 수</strong> → Radix sort (§8.3). O(d(n + k)).</li>
+      <li><strong>원소가 [0, 1) 균등분포</strong> → Bucket sort (§8.4). 기대 O(n).</li>
+    </ul>
+    <p>
+      이들의 공통점: <strong>원소를 직접 배열의 인덱스로 사용</strong>. 비교가 없음.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Counting Sort (CLRS §8.2)</h3>
+    </div>
+    <p>
+      "원소 값마다 카운터를 하나씩 두고, 카운터를 누적합으로 바꿔 각 원소의 최종 위치를 계산."
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">counting_sort.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">counting_sort</span>(A, k):
+    <span class="hl-cmt">"""A의 원소는 0 이상 k 이하의 정수."""</span>
+    n = <span class="hl-bi">len</span>(A)
+    C = [<span class="hl-num">0</span>] * (k + <span class="hl-num">1</span>)       <span class="hl-cmt"># 카운터</span>
+    B = [<span class="hl-num">0</span>] * n             <span class="hl-cmt"># 출력</span>
+    <span class="hl-kw">for</span> x <span class="hl-kw">in</span> A:
+        C[x] += <span class="hl-num">1</span>           <span class="hl-cmt"># 각 값의 빈도</span>
+    <span class="hl-kw">for</span> v <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, k + <span class="hl-num">1</span>):
+        C[v] += C[v - <span class="hl-num">1</span>]     <span class="hl-cmt"># 누적합 → "C[v] = v 이하 원소의 수"</span>
+    <span class="hl-kw">for</span> j <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n - <span class="hl-num">1</span>, -<span class="hl-num">1</span>, -<span class="hl-num">1</span>):
+        B[C[A[j]] - <span class="hl-num">1</span>] = A[j]  <span class="hl-cmt"># A[j]의 최종 위치</span>
+        C[A[j]] -= <span class="hl-num">1</span>        <span class="hl-cmt"># 같은 값 다음 원소는 한 칸 앞으로</span>
+    <span class="hl-kw">return</span> B
+
+
+<span class="hl-bi">print</span>(counting_sort([<span class="hl-num">2</span>, <span class="hl-num">5</span>, <span class="hl-num">3</span>, <span class="hl-num">0</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>, <span class="hl-num">0</span>, <span class="hl-num">3</span>], <span class="hl-num">5</span>))</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">출력:</div>
+      [0, 0, 2, 2, 3, 3, 3, 5]
+    </div>
+    <ul>
+      <li><strong>시간</strong>: O(n + k).</li>
+      <li><strong>공간</strong>: O(n + k).</li>
+      <li><strong>안정성</strong>: ✓ (뒤에서 앞으로 훑는 루프가 핵심).</li>
+      <li><strong>제약</strong>: 원소가 정수 + 값 범위 k가 n과 비슷하거나 작아야 유용.</li>
+    </ul>
+    <p>
+      k = n이면 Θ(n). k = n²이면 Θ(n²) — 하한은 못 넘음. "k가 작다"는 정보가 있어야 이득.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Radix Sort (CLRS §8.3)</h3>
+    </div>
+    <p>
+      "d자리 숫자들을 1의 자리부터 d의 자리까지 차례로 안정 정렬." 각 자리는 counting sort로.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">radix_sort.py (LSD, 10진법 가정)</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">radix_sort</span>(A):
+    <span class="hl-kw">if</span> <span class="hl-kw">not</span> A: <span class="hl-kw">return</span> A
+    max_val = <span class="hl-bi">max</span>(A)
+    exp = <span class="hl-num">1</span>
+    <span class="hl-kw">while</span> max_val // exp &gt; <span class="hl-num">0</span>:
+        A = _counting_sort_by_digit(A, exp)
+        exp *= <span class="hl-num">10</span>
+    <span class="hl-kw">return</span> A
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">_counting_sort_by_digit</span>(A, exp):
+    n = <span class="hl-bi">len</span>(A)
+    output = [<span class="hl-num">0</span>] * n
+    count = [<span class="hl-num">0</span>] * <span class="hl-num">10</span>
+    <span class="hl-kw">for</span> x <span class="hl-kw">in</span> A:
+        count[(x // exp) % <span class="hl-num">10</span>] += <span class="hl-num">1</span>
+    <span class="hl-kw">for</span> v <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, <span class="hl-num">10</span>):
+        count[v] += count[v - <span class="hl-num">1</span>]
+    <span class="hl-kw">for</span> j <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n - <span class="hl-num">1</span>, -<span class="hl-num">1</span>, -<span class="hl-num">1</span>):
+        d = (A[j] // exp) % <span class="hl-num">10</span>
+        output[count[d] - <span class="hl-num">1</span>] = A[j]
+        count[d] -= <span class="hl-num">1</span>
+    <span class="hl-kw">return</span> output</code></pre>
+    </div>
+    <ul>
+      <li><strong>시간</strong>: O(d(n + k)) — 자릿수 d, 각 자리당 O(n + k) counting.</li>
+      <li><strong>안정성</strong>: ✓ (counting sort가 안정이므로).</li>
+      <li><strong>주의</strong>: <em>LSD(least significant digit first)</em> 방향이 올바름 — 일 자리부터 정렬해야 최종 안정성 보장. MSD는 다른 알고리즘.</li>
+    </ul>
+    <p>
+      32비트 정수 n개 정렬이면 d=8, k=256 (바이트 단위) → O(8·(n + 256)) ≈ O(n). 실제로 정수 배열에서 퀵소트보다 빠를 수 있음 — NumPy의 <code>np.sort</code>가 정수면 radix 변종을 쓰기도 함.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Bucket Sort (CLRS §8.4)</h3>
+    </div>
+    <p>
+      "입력이 [0, 1) 균등분포라 가정. n개의 버킷에 원소를 분배, 각 버킷을 정렬 후 연결."
+    </p>
+    <div class="formula-box" style="text-align:left;">
+      1. n개의 빈 버킷 생성<br>
+      2. 각 원소 x를 버킷 ⌊n·x⌋에 배치<br>
+      3. 각 버킷을 삽입 정렬 (입력 균등이면 각 버킷 기대 원소 수 O(1))<br>
+      4. 버킷들을 순서대로 연결
+    </div>
+    <p>
+      <strong>기댓값 분석</strong>: 각 버킷의 기대 원소 수 = 1. 삽입 정렬 비용은 O(k²), k=버킷 원소 수. E[Σ k²] = O(n) (확률론 기댓값 선형성).
+      따라서 기댓값 <strong>O(n)</strong>.
+    </p>
+    <div class="caution-box">
+      <div class="box-header">⚠️ "균등분포" 가정이 깨지면 O(n²)</div>
+      <p>
+        한 버킷에 다 몰리면 (예: 모든 원소가 비슷한 값) 삽입 정렬 O(n²) → 전체도 O(n²).
+        bucket sort는 <em>입력 분포를 잘 아는 특수 상황</em>에서만 유용.
+      </p>
+    </div>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 하한 Ω(n log n)과 "선형 시간 정렬"의 공존</div>
+    <p>
+      모순 같아 보이지만 — <strong>둘 다 옳습니다</strong>.
+    </p>
+    <ul>
+      <li>Ω(n log n) 하한: "비교만으로" 정렬할 때. 결정 트리의 물리적 한계.</li>
+      <li>O(n) 선형 정렬: "원소가 작은 정수/균등분포" 등 <em>추가 정보</em>를 쓸 때. 비교 대신 인덱싱.</li>
+    </ul>
+    <p>
+      교훈: <em>"이 입력에 대해 내가 아는 추가 정보가 있는가?"</em>를 먼저 묻고, 있으면 비비교 정렬을 고려. 정보가 없으면 비교 정렬이 최선.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. 종합 비교 ==================== -->
+<section id="stability">
+  <h2>10 — 세 정렬 종합 비교: 언제 무엇을</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">결정 가이드</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>상황</th><th>권장 정렬</th><th>이유</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>범용 (모름·기본)</td>
+          <td><strong>퀵소트 또는 introsort</strong></td>
+          <td>평균 가장 빠름. 최악 보장 필요하면 introsort.</td>
+        </tr>
+        <tr>
+          <td>안정성 필요</td>
+          <td><strong>병합 정렬 (Timsort)</strong></td>
+          <td>Python·Java가 이미 Timsort. 직접 쓸 일 드뭄.</td>
+        </tr>
+        <tr>
+          <td>최악 Θ(n log n) 보장</td>
+          <td><strong>힙 정렬 또는 introsort</strong></td>
+          <td>실시간 시스템, 보안 (worst case 공격 방어).</td>
+        </tr>
+        <tr>
+          <td>메모리 극단적 제약 (O(1) 보조)</td>
+          <td><strong>힙 정렬</strong></td>
+          <td>병합은 O(n) 필요. 퀵소트는 O(log n) 스택.</td>
+        </tr>
+        <tr>
+          <td>외부 정렬 (파일 > RAM)</td>
+          <td><strong>병합 정렬 (k-way)</strong></td>
+          <td>순차 I/O, 청크 병합 자연스러움.</td>
+        </tr>
+        <tr>
+          <td>정수, 값 범위 좁음</td>
+          <td><strong>Counting / Radix</strong></td>
+          <td>비교 정렬 하한 우회. O(n) 가능.</td>
+        </tr>
+        <tr>
+          <td>n이 작음 (< 20~64)</td>
+          <td><strong>삽입 정렬</strong></td>
+          <td>상수 작음. 캐시 좋음. Algo 05 참조.</td>
+        </tr>
+        <tr>
+          <td>거의 정렬된 입력</td>
+          <td><strong>삽입 정렬 또는 Timsort</strong></td>
+          <td>적응성. O(n + inv(A)).</td>
+        </tr>
+        <tr>
+          <td>중복이 매우 많음</td>
+          <td><strong>3-way quicksort</strong></td>
+          <td>같은 값은 재귀 없음. 최악 O(n).</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — "모르면 <code>sorted()</code>"라는 경험칙</div>
+    <p>
+      실무에서 Python의 <code>sorted()</code>·<code>list.sort()</code>는 Timsort입니다. Timsort는:
+    </p>
+    <ul>
+      <li>안정 정렬 ✓</li>
+      <li>적응성 있음 (거의 정렬된 입력에 O(n))</li>
+      <li>최악 O(n log n) 보장</li>
+      <li>작은 구간 binarysort로 자동 최적화</li>
+    </ul>
+    <p>
+      <strong>단 하나 약점</strong>: 추가 메모리 O(n) (병합 정렬 기반). 이게 문제가 아닌 한, <code>sorted()</code>가 거의 최선입니다.
+      직접 구현할 상황은 (1) 비교 함수가 비싸서 비교 수를 줄이고 싶음, (2) 외부 정렬, (3) 교육용 — 이 셋 외엔 드뭄.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 11. 실무 선택 ==================== -->
+<section id="real-world">
+  <h2>11 — 실무의 선택: Python / Java / C++ / Go / Rust</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">언어별 표준 정렬</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>언어</th><th>함수</th><th>알고리즘</th><th>안정?</th><th>작은 구간</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Python</td>
+          <td><code>list.sort</code>, <code>sorted</code></td>
+          <td>Timsort</td>
+          <td>✓</td>
+          <td>binarysort (Algo 05 §09)</td>
+        </tr>
+        <tr>
+          <td>Java</td>
+          <td><code>Arrays.sort(int[])</code></td>
+          <td>Dual-Pivot Quicksort</td>
+          <td>❌</td>
+          <td>insertion (n < 47)</td>
+        </tr>
+        <tr>
+          <td>Java</td>
+          <td><code>Arrays.sort(Object[])</code></td>
+          <td>Timsort</td>
+          <td>✓</td>
+          <td>binary insertion</td>
+        </tr>
+        <tr>
+          <td>C++</td>
+          <td><code>std::sort</code> (libstdc++)</td>
+          <td>Introsort</td>
+          <td>❌</td>
+          <td>insertion (n < 16)</td>
+        </tr>
+        <tr>
+          <td>C++</td>
+          <td><code>std::stable_sort</code></td>
+          <td>Merge sort (in-place 변종)</td>
+          <td>✓</td>
+          <td>insertion</td>
+        </tr>
+        <tr>
+          <td>Go</td>
+          <td><code>sort.Sort</code> (1.19+)</td>
+          <td>Pattern-Defeating Quicksort</td>
+          <td>❌</td>
+          <td>insertion (n < 12)</td>
+        </tr>
+        <tr>
+          <td>Rust</td>
+          <td><code>[T]::sort</code></td>
+          <td>Timsort 변종</td>
+          <td>✓</td>
+          <td>insertion</td>
+        </tr>
+        <tr>
+          <td>Rust</td>
+          <td><code>[T]::sort_unstable</code></td>
+          <td>Pattern-Defeating Quicksort</td>
+          <td>❌</td>
+          <td>insertion</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Pattern-Defeating Quicksort (PDQSort)</h3>
+    </div>
+    <p>
+      2016년 Orson Peters가 제안. Go 1.19(2022)와 Rust의 <code>sort_unstable</code>이 채택. 기능 요약:
+    </p>
+    <ul>
+      <li><strong>Introsort 기반</strong>: 깊이 초과 시 힙 정렬로 fallback.</li>
+      <li><strong>Adaptive</strong>: 이미 정렬된 구간 감지 → O(n).</li>
+      <li><strong>중복 탐지</strong>: 같은 피벗이 반복되면 3-way partition으로 전환.</li>
+      <li><strong>BlockQuicksort</strong>의 아이디어로 분기 예측 개선 — SIMD 없이도 기존 introsort 대비 30% 빠름.</li>
+    </ul>
+    <p>
+      2020년대 "현대 정렬"의 대표. 모든 입력 패턴에 안정적 성능 + 이론적 하한 도달.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 12. AI ==================== -->
+<section id="ai-sorts">
+  <h2>12 — AI와 O(n log n) 정렬</h2>
+
+  <div class="ai-box">
+    <div class="box-header">AI — "quicksort 구현해줘"는 함정</div>
+    <p>
+      "quicksort 구현해달라"고 하면 LLM은 Lomuto partition을 깔끔하게 씁니다. 거의 정확.
+      하지만 종종 다음을 <strong>누락</strong>:
+    </p>
+    <ul>
+      <li><strong>무작위 피벗</strong> 또는 <strong>median-of-three</strong> — 최악 Θ(n²) 방어 장치.</li>
+      <li><strong>작은 구간 삽입 정렬 fallback</strong> — 실전 속도의 핵심.</li>
+      <li><strong>깊이 제한 + 힙 정렬 fallback</strong> (introsort 스타일) — 최악 보장.</li>
+      <li><strong>3-way partition</strong> 중복 많은 입력 방어.</li>
+    </ul>
+    <p>
+      "교과서적 quicksort"는 이런 방어 없이 순진한 Lomuto. <strong>실전 코드로 쓰면 적대적 입력에 Θ(n²)으로 죽습니다</strong>.
+    </p>
+  </div>
+
+  <div class="caution-box">
+    <div class="box-header">⚠️ "Accidentally Quadratic" — 실제로 발생한 사건들</div>
+    <ul>
+      <li>
+        <strong>Java 6까지의 Arrays.sort</strong>: 특정 패턴의 입력에 최악 O(n²). 2007년 CVE-2007-2440으로 DoS 취약점 보고 → Java 7 (2011)에서 <code>Arrays.sort(Object[])</code>가 Timsort로 교체.
+      </li>
+      <li>
+        <strong>libc++ std::sort (2010년대 초)</strong>: 극단 입력에 Θ(n²). pattern-defeating 기법 도입으로 해결.
+      </li>
+      <li>
+        <strong>Python 2.x의 list.sort()</strong>: 초기 Timsort에 소수의 버그 (2015년 Stijn de Gouw가 발견). Merge stack invariant 오류로 일부 입력에 오동작. Python 3.4+ 수정.
+      </li>
+    </ul>
+    <p>
+      교훈: <em>"O(n log n)이 평균"</em>과 <em>"O(n log n)이 보장"</em>은 다릅니다. 적대적 환경(사용자 입력 받는 서버)에서는 <strong>보장</strong>이 필요합니다.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — AI에게 정렬 코드 받을 때 4가지 질문</div>
+    <ol>
+      <li>"이 코드의 최악 복잡도는? 최악 입력 예시를 보여봐."</li>
+      <li>"피벗 선택 전략은? 무작위인가 결정론적인가?"</li>
+      <li>"깊이 제한 또는 fallback 메커니즘이 있는가?"</li>
+      <li>"안정 정렬인가? 증명은?"</li>
+    </ol>
+    <p>
+      <strong>제일 안전한 답</strong>: "Python이면 <code>sorted()</code>. C++이면 <code>std::sort</code> 또는 <code>std::stable_sort</code>. 직접 구현할 이유가 진짜 있나요?"라고 물어보는 것.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 13. 실습 ==================== -->
+<section id="practice">
+  <h2>13 — 실습: 세 정렬 벤치마크 + 최악 입력 찾기</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">실습 1 — 무작위 vs 정렬된 vs 역순 입력에서의 비교</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">sort_bench_advanced.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">import</span> random, timeit, sys
+sys.setrecursionlimit(<span class="hl-num">10000</span>)
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">merge_sort</span>(A):
+    <span class="hl-kw">if</span> <span class="hl-bi">len</span>(A) &lt;= <span class="hl-num">1</span>: <span class="hl-kw">return</span> A[:]
+    mid = <span class="hl-bi">len</span>(A) // <span class="hl-num">2</span>
+    L, R = merge_sort(A[:mid]), merge_sort(A[mid:])
+    out, i, j = [], <span class="hl-num">0</span>, <span class="hl-num">0</span>
+    <span class="hl-kw">while</span> i &lt; <span class="hl-bi">len</span>(L) <span class="hl-kw">and</span> j &lt; <span class="hl-bi">len</span>(R):
+        <span class="hl-kw">if</span> L[i] &lt;= R[j]: out.append(L[i]); i += <span class="hl-num">1</span>
+        <span class="hl-kw">else</span>: out.append(R[j]); j += <span class="hl-num">1</span>
+    out.extend(L[i:]); out.extend(R[j:])
+    <span class="hl-kw">return</span> out
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">heapsort</span>(A):
+    A = A[:]
+    <span class="hl-kw">def</span> <span class="hl-bi">heapify</span>(n, i):
+        largest, l, r = i, <span class="hl-num">2</span>*i+<span class="hl-num">1</span>, <span class="hl-num">2</span>*i+<span class="hl-num">2</span>
+        <span class="hl-kw">if</span> l &lt; n <span class="hl-kw">and</span> A[l] &gt; A[largest]: largest = l
+        <span class="hl-kw">if</span> r &lt; n <span class="hl-kw">and</span> A[r] &gt; A[largest]: largest = r
+        <span class="hl-kw">if</span> largest != i:
+            A[i], A[largest] = A[largest], A[i]
+            heapify(n, largest)
+    n = <span class="hl-bi">len</span>(A)
+    <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n//<span class="hl-num">2</span>-<span class="hl-num">1</span>, -<span class="hl-num">1</span>, -<span class="hl-num">1</span>): heapify(n, i)
+    <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n-<span class="hl-num">1</span>, <span class="hl-num">0</span>, -<span class="hl-num">1</span>):
+        A[<span class="hl-num">0</span>], A[i] = A[i], A[<span class="hl-num">0</span>]
+        heapify(i, <span class="hl-num">0</span>)
+    <span class="hl-kw">return</span> A
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">quicksort_naive</span>(A):
+    <span class="hl-cmt">"""고정 피벗(마지막) — 정렬된 입력에 Θ(n²) 함정."""</span>
+    A = A[:]
+    <span class="hl-kw">def</span> <span class="hl-bi">qs</span>(lo, hi):
+        <span class="hl-kw">if</span> lo &gt;= hi: <span class="hl-kw">return</span>
+        pivot = A[hi]
+        i = lo - <span class="hl-num">1</span>
+        <span class="hl-kw">for</span> j <span class="hl-kw">in</span> <span class="hl-bi">range</span>(lo, hi):
+            <span class="hl-kw">if</span> A[j] &lt;= pivot:
+                i += <span class="hl-num">1</span>; A[i], A[j] = A[j], A[i]
+        A[i+<span class="hl-num">1</span>], A[hi] = A[hi], A[i+<span class="hl-num">1</span>]
+        qs(lo, i); qs(i+<span class="hl-num">2</span>, hi)
+    qs(<span class="hl-num">0</span>, <span class="hl-bi">len</span>(A)-<span class="hl-num">1</span>)
+    <span class="hl-kw">return</span> A
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">bench</span>(fn, data):
+    start = timeit.default_timer()
+    fn(data)
+    <span class="hl-kw">return</span> (timeit.default_timer() - start) * <span class="hl-num">1000</span>
+
+
+random.seed(<span class="hl-num">42</span>)
+n = <span class="hl-num">2000</span>
+random_data = [random.random() <span class="hl-kw">for</span> _ <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n)]
+sorted_data = <span class="hl-bi">sorted</span>(random_data)
+reverse_data = sorted_data[::-<span class="hl-num">1</span>]
+
+<span class="hl-bi">print</span>(<span class="hl-str">f"n={n}, 시간(ms)"</span>)
+<span class="hl-kw">for</span> name, data <span class="hl-kw">in</span> [(<span class="hl-str">"random"</span>, random_data),
+                    (<span class="hl-str">"sorted"</span>, sorted_data),
+                    (<span class="hl-str">"reverse"</span>, reverse_data)]:
+    <span class="hl-bi">print</span>(<span class="hl-str">f"\n  {name}:"</span>)
+    <span class="hl-bi">print</span>(<span class="hl-str">f"    merge : {bench(merge_sort, data):6.1f}"</span>)
+    <span class="hl-bi">print</span>(<span class="hl-str">f"    heap  : {bench(heapsort, data):6.1f}"</span>)
+    <span class="hl-bi">print</span>(<span class="hl-str">f"    qsort : {bench(quicksort_naive, data):6.1f}  (최악 Θ(n²)!)"</span>)
+    <span class="hl-bi">print</span>(<span class="hl-str">f"    sorted: {bench(<span class="hl-bi">sorted</span>, data):6.1f}"</span>)</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">예상 출력 (CPython 3.12, 값은 환경마다):</div>
+      n=2000, 시간(ms)<br>
+      <br>
+      &nbsp;&nbsp;random:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;merge : &nbsp;&nbsp;7.2<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;heap  : &nbsp;22.1<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;qsort : &nbsp;&nbsp;6.5  (최악 Θ(n²)!)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;sorted: &nbsp;&nbsp;0.3<br>
+      <br>
+      &nbsp;&nbsp;sorted:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;merge : &nbsp;&nbsp;5.8<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;heap  : &nbsp;20.5<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;qsort : <strong>800.0</strong>  <em>(Θ(n²) 터졌다!)</em><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;sorted: &nbsp;&nbsp;0.05
+    </div>
+    <p>
+      주요 관찰:
+    </p>
+    <ul>
+      <li><strong>순진한 quicksort (고정 피벗)은 이미 정렬된 입력에 Θ(n²)</strong> — 100배 느려짐.</li>
+      <li><strong>힙 정렬은 항상 Θ(n log n)이지만 상수가 큼</strong> — random에서 merge보다 3배 느림.</li>
+      <li><strong>내장 sorted()가 압도적</strong> — C 구현 + Timsort의 적응성.</li>
+    </ul>
+    <p>
+      이 실험이 "왜 무작위 피벗이 필수인가"를 가장 명확하게 보여줍니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">BUILD-MAX-HEAP이 O(n) 시간임을 증명하는 데 쓰는 핵심 급수 Σ<sub>h=0</sub><sup>∞</sup> h/2<sup>h</sup>의 값은?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>2</strong>. 등비급수 Σ x<sup>h</sup> = 1/(1-x)를 미분하면 Σ h·x<sup>h-1</sup> = 1/(1-x)². x=1/2 대입하고 x 곱하면 Σ h·(1/2)<sup>h</sup> = (1/2)/(1/2)² = 2.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">힙 정렬이 Θ(n log n) 보장인데도 실무에서 거의 안 쓰는 두 가지 이유를 서술하시오.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <ol>
+              <li><strong>캐시 친화도 낮음</strong>: 자식 노드 접근(2i+1, 2i+2)이 메모리를 크게 건너뛰어 캐시 미스 빈발. n이 커질수록 실측 속도가 퀵소트의 3~5배 느림.</li>
+              <li><strong>비교 수 상수가 큼</strong>: ~2n log₂ n 비교 (퀵소트는 ~1.39 n log₂ n). 같은 Θ(n log n)이라도 실측은 2배 차.</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-fix">FIX</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 MAX-HEAPIFY 구현의 버그를 찾으시오.</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">buggy_heapify.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">max_heapify</span>(A, i, size):
+    l = <span class="hl-num">2</span>*i + <span class="hl-num">1</span>; r = <span class="hl-num">2</span>*i + <span class="hl-num">2</span>
+    <span class="hl-kw">if</span> l &lt; size <span class="hl-kw">and</span> A[l] &gt; A[i]:
+        largest = l
+    <span class="hl-kw">elif</span> r &lt; size <span class="hl-kw">and</span> A[r] &gt; A[i]:
+        largest = r
+    <span class="hl-kw">else</span>:
+        largest = i
+    <span class="hl-kw">if</span> largest != i:
+        A[i], A[largest] = A[largest], A[i]
+        max_heapify(A, largest, size)</code></pre>
+      </div>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">버그</div>
+            <p><code>elif</code>가 잘못됐습니다. 왼쪽 자식이 부모보다 크면 오른쪽 자식은 검사도 안 하고 <code>largest = l</code> 확정. 오른쪽 자식이 더 클 수 있는데도 무시.</p>
+            <p>예: A = [5, 6, 10], i=0. l=1(값 6), r=2(값 10). 6&gt;5이니 largest=1. 실제론 largest=2여야 함. 결과: 힙 속성 깨짐.</p>
+            <p>고침: <code>largest = i</code>로 시작, 두 번의 <code>if</code>로 왼쪽·오른쪽 각각 largest와 비교.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">iterative(재귀 없는) MAX-HEAPIFY를 구현하시오.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="code-block"><div class="code-header"><span class="code-label">iterative_heapify.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">max_heapify_iter</span>(A, i, size):
+    <span class="hl-kw">while</span> <span class="hl-kw">True</span>:
+        l, r = <span class="hl-num">2</span>*i+<span class="hl-num">1</span>, <span class="hl-num">2</span>*i+<span class="hl-num">2</span>
+        largest = i
+        <span class="hl-kw">if</span> l &lt; size <span class="hl-kw">and</span> A[l] &gt; A[largest]: largest = l
+        <span class="hl-kw">if</span> r &lt; size <span class="hl-kw">and</span> A[r] &gt; A[largest]: largest = r
+        <span class="hl-kw">if</span> largest == i: <span class="hl-kw">break</span>
+        A[i], A[largest] = A[largest], A[i]
+        i = largest</code></pre>
+          </div>
+          <div class="answer-why">
+            <div class="answer-why-title">왜</div>
+            <p>재귀가 꼬리 위치(tail call)라 while로 직역 가능. Python은 tail-call optimization이 없어 iterative가 명시적 이득 — 스택 사용 O(1).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Hoare partition이 Lomuto 대비 스왑을 몇 배 적게 하는가? 이유는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>대략 <strong>3배 적음</strong>. Lomuto는 모든 "pivot 이하" 원소마다 스왑(평균 n/2번). Hoare는 "왼쪽에 pivot 초과 + 오른쪽에 pivot 이하"인 쌍만 스왑(평균 n/6번).</p>
+            <p>실측 차이는 입력에 따라 다르지만, Hoare가 꾸준히 Lomuto보다 20~50% 빠릅니다.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">3-way partition quicksort가 "모든 원소가 같은" 입력에서 Θ(n)인 이유를 설명하시오.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>모두 같은 값이면 partition 후 중앙 영역 <code>A[lt..gt]</code>에 전부 모이고 <code>A[lo..lt-1]</code>과 <code>A[gt+1..hi]</code>는 빈 구간. 재귀 호출이 빈 구간에만 일어나므로 O(1). 단일 패스 O(n)에 partition만 하고 끝.</p>
+            <p>Lomuto나 Hoare는 이 경우에도 불균형 분할(0 vs n-1)로 Θ(n²).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Counting sort가 n = 10⁶, k = 10¹²에서 비교 정렬 대비 유리한가 불리한가? 왜?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>불리</strong>. Counting sort는 O(n + k) = O(10⁶ + 10¹²) = O(10¹²). 비교 정렬은 O(n log n) = O(10⁶ × 20) = O(2×10⁷). Counting이 5만 배 더 느림.</p>
+            <p>교훈: k가 n보다 훨씬 크면 counting sort는 의미 없음. k = O(n)일 때만 선형 시간.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">32비트 부호 없는 정수 배열을 radix sort로 정렬하는 함수를 256진법(바이트 단위)으로 작성하시오.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="code-block"><div class="code-header"><span class="code-label">radix_byte.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">radix_sort_byte</span>(A):
+    <span class="hl-kw">for</span> shift <span class="hl-kw">in</span> (<span class="hl-num">0</span>, <span class="hl-num">8</span>, <span class="hl-num">16</span>, <span class="hl-num">24</span>):
+        <span class="hl-cmt"># 각 바이트별 counting sort (안정)</span>
+        count = [<span class="hl-num">0</span>] * <span class="hl-num">256</span>
+        <span class="hl-kw">for</span> x <span class="hl-kw">in</span> A:
+            count[(x &gt;&gt; shift) &amp; <span class="hl-num">0xFF</span>] += <span class="hl-num">1</span>
+        <span class="hl-kw">for</span> v <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, <span class="hl-num">256</span>): count[v] += count[v-<span class="hl-num">1</span>]
+        out = [<span class="hl-num">0</span>] * <span class="hl-bi">len</span>(A)
+        <span class="hl-kw">for</span> x <span class="hl-kw">in</span> <span class="hl-bi">reversed</span>(A):
+            d = (x &gt;&gt; shift) &amp; <span class="hl-num">0xFF</span>
+            count[d] -= <span class="hl-num">1</span>
+            out[count[d]] = x
+        A = out
+    <span class="hl-kw">return</span> A</code></pre>
+          </div>
+          <div class="answer-why">
+            <div class="answer-why-title">분석</div>
+            <p>4 패스 (d=4) × 각 O(n + 256) ≈ O(n). Pure Python 구현은 C로 작성된 <code>sorted()</code>보다 느리지만, NumPy <code>np.sort(kind='radix')</code>처럼 C 레벨 구현이면 n = 10⁶ 이상 정수 데이터에서 Timsort보다 빠릅니다.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Introsort가 깊이 한계를 <em>2 log₂ n</em>으로 잡는 이유를 피벗 분할 비율 관점에서 설명.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>한쪽 부분배열이 항상 1/α 이상을 차지하는 분할에서 재귀 깊이는 log<sub>α/(α-1)</sub> n. 2 log₂ n 한계는 α ≤ 2+√2 ≈ <strong>3.41</strong>까지 허용 — 즉 "한쪽이 약 30% 이상 차지"만 지켜지면 OK. 피벗이 아주 작은 극단 영역에 걸리는 경우가 log n번 연속 발생해야 한계 도달. 확률적으로 매우 드물지만, 그래도 발생하면 heapsort로 안전 착륙.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Python에서 <code>sorted()</code>가 "이미 정렬된 10⁶개" 입력을 처리하는 데 기대 복잡도는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>Θ(n) = Θ(10⁶)</strong>. Timsort는 natural run을 감지하므로 이미 정렬된 배열을 한 번 스캔하고 바로 종료. 10⁶ 원소 기준 약 0.05ms 예상.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">안정 정렬을 이용해 <strong>"학생 배열을 성적순으로, 성적이 같으면 이름순으로"</strong> 정렬하는 2-key 정렬 방법을 두 가지 작성하시오.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="code-block"><div class="code-header"><span class="code-label">two_key_sort.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-cmt"># 방법 1: tuple key (한 번의 sorted 호출)</span>
+students.sort(key=<span class="hl-kw">lambda</span> s: (-s.score, s.name))
+
+<span class="hl-cmt"># 방법 2: 안정 정렬을 2번 (2차 key 먼저, 1차 key 나중)</span>
+students.sort(key=<span class="hl-kw">lambda</span> s: s.name)        <span class="hl-cmt"># 2차 key</span>
+students.sort(key=<span class="hl-kw">lambda</span> s: -s.score)      <span class="hl-cmt"># 1차 key (안정성 덕에 이름순 유지)</span></code></pre>
+          </div>
+          <div class="answer-why">
+            <div class="answer-why-title">왜 방법 2가 안정성을 요구하는가</div>
+            <p>성적이 같은 두 학생 A, B가 1차 정렬 후 같은 위치 범위에 있을 때 이름순이 유지되려면 sort가 안정이어야. Python list.sort는 Timsort이므로 안정 ✓. C++ std::sort는 불안정 — 이 방법 안 됨.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">LLM이 C로 quicksort를 작성해줬는데 <strong>고정 피벗(첫 원소)</strong>을 썼다. 서버 코드에 배포하면 생길 수 있는 보안 문제는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>알고리즘 복잡도 공격(DoS)</strong>. 사용자가 악의적으로 "이미 정렬된" 또는 "역순" 입력을 보내면 quicksort가 Θ(n²)로 터져 CPU를 고갈. n = 10⁴만으로도 초 단위 지연 발생 가능.</p>
+            <p>실제 사례: 2003년 Crosby & Wallach의 "Denial of Service via Algorithmic Complexity Attacks" 논문. 이후 무작위 피벗이 보안 요구사항이 됨.</p>
+            <p>수정: <code>pivot = A[rand() % n]</code> 또는 introsort로 전환.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">📚</div>
+      <h3>병합 — 안정의 기둥</h3>
+      <p>Θ(n log n) 보장, 안정, 순차 접근. O(n) 보조 공간이 약점이자 외부 정렬의 강점.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">⛰️</div>
+      <h3>힙 — 보장의 기둥</h3>
+      <p>in-place, Θ(n log n) 보장. 하지만 캐시 불친화 + 비교 상수 2배로 실무에서 밀림.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">⚡</div>
+      <h3>퀵 — 속도의 기둥</h3>
+      <p>평균 가장 빠름, 최악 Θ(n²). 무작위 피벗 + introsort로 최악 봉인 → 범용 표준.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔀</div>
+      <h3>3-way Partition</h3>
+      <p>Dijkstra Dutch Flag. 중복 많은 입력에서 Θ(n). Java Dual-Pivot, Rust PDQ의 토대.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🛡️</div>
+      <h3>Introsort — 세 거인의 합체</h3>
+      <p>Quicksort 평균 속도 + Heapsort 최악 보장 + Insertion 작은 n. C++ std::sort.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔢</div>
+      <h3>비비교 정렬 — 하한 우회</h3>
+      <p>Counting O(n+k), Radix O(d(n+k)), Bucket 기대 O(n). 원소 특성 알 때 비교 우회.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Heapsort</div><div class="glossary-def">힙 정렬 — max-heap을 만들고 루트를 끝으로 반복 이동. Θ(n log n) 보장, in-place.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Max-Heap</div><div class="glossary-def">부모가 자식보다 크거나 같은 완전 이진 트리. 루트가 최댓값.</div></div>
+    <div class="glossary-item"><div class="glossary-term">MAX-HEAPIFY</div><div class="glossary-def">한 노드에서 내려가며 힙 속성 복구. O(log n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">BUILD-MAX-HEAP</div><div class="glossary-def">무정렬 배열을 힙으로. 타이트 분석으로 <strong>O(n)</strong>.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Complete Binary Tree</div><div class="glossary-def">완전 이진 트리 — 마지막 레벨 제외 모든 레벨이 꽉 차고 마지막은 왼쪽부터. 배열 저장에 적합.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Quicksort</div><div class="glossary-def">Hoare 1961. pivot으로 분할 + 재귀. 평균 Θ(n log n), 최악 Θ(n²).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Partition</div><div class="glossary-def">pivot 기준으로 배열을 두 부분으로 나눔. Hoare/Lomuto/3-way 등 변종.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Hoare Partition</div><div class="glossary-def">양 끝에서 가운데로 두 포인터. 원조 1961. 스왑 적음.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Lomuto Partition</div><div class="glossary-def">단일 포인터 스윕. CLRS 표준. 이해 쉽지만 스왑 많음, 중복 취약.</div></div>
+    <div class="glossary-item"><div class="glossary-term">3-way Partition</div><div class="glossary-def">Dijkstra Dutch Flag. 같은 값 영역을 별도로 둠. 중복 많은 입력에 O(n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Dual-Pivot Quicksort</div><div class="glossary-def">두 피벗으로 3구간 분할. Java Arrays.sort(int[])가 사용 (Yaroslavskiy 2009).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Introsort</div><div class="glossary-def">Musser 1997. Quicksort + Heapsort + Insertion 하이브리드. C++ std::sort.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Pattern-Defeating Quicksort (PDQSort)</div><div class="glossary-def">Peters 2016. Introsort + adaptive + 3-way + BlockQuicksort. Rust/Go 채택.</div></div>
+    <div class="glossary-item"><div class="glossary-term">External Sort</div><div class="glossary-def">외부 정렬 — 데이터가 RAM 못 들어갈 때. k-way merge 기반.</div></div>
+    <div class="glossary-item"><div class="glossary-term">k-way Merge</div><div class="glossary-def">정렬된 k개의 스트림을 하나로 병합. 힙을 쓰면 O(n log k).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Counting Sort</div><div class="glossary-def">정수 전용 O(n + k). 안정. 각 값의 빈도로 위치 계산.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Radix Sort</div><div class="glossary-def">자릿수별 counting. LSD 방향이 표준. O(d(n + k)).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Bucket Sort</div><div class="glossary-def">균등분포 가정. n개 버킷 분배 + 각 정렬. 기대 O(n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">LSD / MSD</div><div class="glossary-def">Least/Most Significant Digit first. LSD가 counting 기반 표준.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Algorithmic Complexity Attack</div><div class="glossary-def">알고리즘의 최악 케이스를 유발해 DoS. 무작위 피벗으로 방어.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Cache-Oblivious Algorithm</div><div class="glossary-def">캐시 크기를 몰라도 여러 크기에 동시 최적. Funnelsort 등.</div></div>
+    <div class="glossary-item"><div class="glossary-term">SIMD Sort</div><div class="glossary-def">벡터 명령으로 여러 원소 동시 처리. Intel AVX-512 기반 최근 연구 활발.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Musser</div><div class="glossary-def">David Musser — Introsort 창안자(1997), HP STL 저자.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Sedgewick</div><div class="glossary-def">Robert Sedgewick — Quicksort 최적화 연구, 3-way partition 대중화, 교과서 저자.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Yaroslavskiy</div><div class="glossary-def">Vladimir Yaroslavskiy — 2009 Dual-Pivot Quicksort. Java의 표준.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 07</div>
+    <h3>Timsort — Python의 정렬</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      지금까지 본 모든 도구의 정점. Tim Peters가 2002년 Python을 위해 만든 — 그리고 세계가 훔쳐간 — 알고리즘.
+    </p>
+    <ul>
+      <li><strong>Natural run 감지</strong> — 입력의 이미 정렬된 구간을 활용</li>
+      <li><strong>Merge stack invariant</strong> — 2015년에 버그 발견된 미묘한 조건</li>
+      <li><strong>Galloping mode</strong> — 한쪽이 계속 이길 때 이진 탐색 점프</li>
+      <li><strong>listsort.txt 탐독</strong> — CPython 원저자의 설계 노트</li>
+      <li><strong>왜 Java·Rust·V8이 Timsort를 훔쳐갔는가</strong></li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo05.html">&larr; Algo 05 — O(n²) 정렬들</a>
+  <a href="algo07.html">Algo 07 — Timsort &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">CLRS 4판 §6, §7, §8, Knuth TAOCP Vol. 3, Musser 1997, CPython listobject.c 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

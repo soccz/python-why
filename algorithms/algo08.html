@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 8주차: 동적 배열 (Python list) | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="Python list의 실체 — amortized O(1) append, 1.125× growth, list.insert(0)의 O(n) 함정. CLRS §17 amortized analysis.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 8주차: 동적 배열 (Python list) | PyWhy">
+  <meta property="og:description" content="PyListObject 구조체, list_resize 소스, 세 가지 amortized 분석 방법">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo08.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A8">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo07.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo09.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 08</div>
+  <h1 class="week-title">동적 배열 (Python list)<br>최악 O(n)인데 평균 O(1)인 이유</h1>
+  <p class="week-subtitle">
+    <code>my_list.append(x)</code> — 파이썬에서 가장 많이 쓰는 메서드. 이게 <em>어떤 때는 O(1), 어떤 때는 O(n)</em>인데도 전체적으로는 <strong>O(1)로 취급되는 이유</strong>가 이번 주의 주제입니다.
+    "가끔 비싼 작업을 평균에 녹여내는" 기법 — <strong>amortized analysis (CLRS §17)</strong>.<br>
+    이번 주의 핵심 질문: <em>"append가 가끔 배열 전체를 복사한다는 걸 알면서도 왜 마음 편하게 쓰는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 공책에서 1억 항목까지</a>
+    </div>
+    <div class="toc-section">
+      <a href="#static-vs-dynamic" class="toc-section-link"><span class="toc-num">02</span>정적 배열 vs 동적 배열</a>
+      <div class="toc-levels"><span class="toc-level-dot elem">초</span><span class="toc-level-dot inter">중</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#dynamic-basics" class="toc-section-link"><span class="toc-num">03</span>동적 배열의 구조 — append가 하는 일</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#amortized-intro" class="toc-section-link"><span class="toc-num">04</span>Amortized의 직관 — "평균 O(1)"의 의미</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#aggregate" class="toc-section-link"><span class="toc-num">05</span>Aggregate 분석 (CLRS §17.1)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#accounting" class="toc-section-link"><span class="toc-num">06</span>Accounting 분석 (CLRS §17.2)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#potential" class="toc-section-link"><span class="toc-num">07</span>Potential 분석 (CLRS §17.3)</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#growth-factor" class="toc-section-link"><span class="toc-num">08</span>성장 인자 — Python 1.125 vs Java 2 vs C++ 1.5</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#cpython-listobject" class="toc-section-link"><span class="toc-num">09</span>CPython 내부 — PyListObject와 list_resize</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#insertion-trap" class="toc-section-link"><span class="toc-num">10</span>list.insert(0)의 함정 — 그리고 deque</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#slicing" class="toc-section-link"><span class="toc-num">11</span>Slicing의 메모리 비밀</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#ai-list" class="toc-section-link"><span class="toc-num">12</span>AI가 흔히 놓치는 list 함정</a>
+    </div>
+    <div class="toc-section">
+      <a href="#practice" class="toc-section-link"><span class="toc-num">13</span>실습 — 성장 순간 감지 + 벤치마크</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 공책에서 1억 항목까지</h2>
+  <blockquote>
+    학생 A는 작은 공책을 씁니다. 단어를 한 페이지에 하나씩 적어가다, 공책이 꽉 차면 <em>더 큰 공책</em>으로 옮깁니다. <strong>어떻게 크기를 결정할까요?</strong>
+  </blockquote>
+
+  <div class="story-block">
+    <h3>전략 A — "한 페이지씩 늘리자"</h3>
+    <p>
+      공책이 꽉 차면 <strong>한 페이지만 더</strong> 큰 공책으로. 매번 복사해야 하는 페이지 수: 1, 2, 3, ..., n. 총 복사 = n(n+1)/2 = <strong>Θ(n²)</strong>.<br>
+      n=10,000이면 5천만 번 복사. 너무 느림.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>전략 B — "두 배로 늘리자"</h3>
+    <p>
+      꽉 차면 <strong>두 배 크기</strong>의 공책으로. 복사는 덜 자주, 하지만 일어나면 큰 복사. 복사량: 1, 2, 4, 8, ..., n/2. 총 = n − 1 ≈ <strong>Θ(n)</strong>.<br>
+      n=10,000이면 약 20,000번 복사. <strong>한 번의 append 평균 비용 O(1)</strong>.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>전략 C — "1/8만 더 늘리자" (Python의 선택)</h3>
+    <p>
+      꽉 차면 <strong>1.125배(= 1 + 1/8)</strong>만큼만. 복사 총량은 여전히 Θ(n) — <em>상수 배 차이일 뿐</em>. 메모리 낭비는 전략 B의 1/8 수준.<br>
+      Python 개발자들의 선택: <em>"CPU 몇 초 덜 쓰는 것보다 메모리 2배 아끼는 게 낫다."</em>
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — "가끔의 큰 비용"을 평균에 녹인다</div>
+    <p>
+      이 세 전략을 정확하게 분석하려면 — <strong>amortized analysis</strong>라는 도구가 필요합니다.
+    </p>
+    <ul>
+      <li>"최악은 O(n)이지만 평균은 O(1)"을 <em>수학적으로 증명</em>하는 방법.</li>
+      <li>"한 작업의 비용"이 아니라 "n개 작업의 총 비용"을 계산 → n으로 나눔.</li>
+      <li>Python의 <code>list.append</code>뿐 아니라, Java <code>ArrayList.add</code>, C++ <code>vector::push_back</code>, Go <code>append()</code> — 모두 같은 분석.</li>
+    </ul>
+    <p>
+      CLRS §17이 통째로 이 주제를 다룹니다. 세 가지 방법(aggregate / accounting / potential)을 알면 "amortized O(1)"을 자유자재로 증명할 수 있습니다.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="동적 배열의 size와 capacity 성장">
+      <text x="300" y="20" class="viz-label" text-anchor="middle">동적 배열: append 시 size↑, 꽉 차면 capacity ×1.125 + 패딩</text>
+      <!-- size=3, cap=4 -->
+      <text x="40" y="62" class="viz-label-small">size=3</text>
+      <text x="40" y="76" class="viz-label-small">cap=4</text>
+      <g transform="translate(110, 50)" font-family="JetBrains Mono, monospace" font-size="13">
+        <rect x="0" y="0" width="32" height="28" class="viz-node"/><text x="16" y="19" text-anchor="middle">A</text>
+        <rect x="32" y="0" width="32" height="28" class="viz-node"/><text x="48" y="19" text-anchor="middle">B</text>
+        <rect x="64" y="0" width="32" height="28" class="viz-node"/><text x="80" y="19" text-anchor="middle">C</text>
+        <rect x="96" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="4,3"/><text x="112" y="19" text-anchor="middle">·</text>
+      </g>
+      <text x="245" y="68" class="viz-label-small">→ append(D)</text>
+      <!-- size=4, cap=4 (꽉 참) -->
+      <g transform="translate(330, 50)" font-family="JetBrains Mono, monospace" font-size="13">
+        <rect x="0" y="0" width="32" height="28" class="viz-node"/><text x="16" y="19" text-anchor="middle">A</text>
+        <rect x="32" y="0" width="32" height="28" class="viz-node"/><text x="48" y="19" text-anchor="middle">B</text>
+        <rect x="64" y="0" width="32" height="28" class="viz-node"/><text x="80" y="19" text-anchor="middle">C</text>
+        <rect x="96" y="0" width="32" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/><text x="112" y="19" text-anchor="middle">D</text>
+      </g>
+      <text x="475" y="68" class="viz-label-small">cap 꽉 참</text>
+
+      <!-- 그 다음 append → realloc -->
+      <text x="40" y="120" class="viz-label-small">append(E)</text>
+      <text x="40" y="135" class="viz-label-small">→ resize</text>
+      <g transform="translate(110, 105)" font-family="JetBrains Mono, monospace" font-size="13">
+        <!-- 옛 배열 (회색) -->
+        <text x="64" y="-3" class="viz-label-small" text-anchor="middle">옛 배열 (free)</text>
+        <rect x="0" y="0" width="32" height="28" fill="var(--surface)" stroke="var(--text-muted)" stroke-dasharray="3,3"/><text x="16" y="19" text-anchor="middle" opacity="0.4">A</text>
+        <rect x="32" y="0" width="32" height="28" fill="var(--surface)" stroke="var(--text-muted)" stroke-dasharray="3,3"/><text x="48" y="19" text-anchor="middle" opacity="0.4">B</text>
+        <rect x="64" y="0" width="32" height="28" fill="var(--surface)" stroke="var(--text-muted)" stroke-dasharray="3,3"/><text x="80" y="19" text-anchor="middle" opacity="0.4">C</text>
+        <rect x="96" y="0" width="32" height="28" fill="var(--surface)" stroke="var(--text-muted)" stroke-dasharray="3,3"/><text x="112" y="19" text-anchor="middle" opacity="0.4">D</text>
+      </g>
+      <!-- 화살표 -->
+      <text x="260" y="125" class="viz-label-small" text-anchor="middle">copy O(n)</text>
+      <text x="260" y="140" class="viz-label-small" text-anchor="middle">↓</text>
+      <!-- 새 배열 -->
+      <text x="370" y="100" class="viz-label-small">size=5, cap=8</text>
+      <g transform="translate(330, 105)" font-family="JetBrains Mono, monospace" font-size="13">
+        <rect x="0" y="0" width="32" height="28" class="viz-node"/><text x="16" y="19" text-anchor="middle">A</text>
+        <rect x="32" y="0" width="32" height="28" class="viz-node"/><text x="48" y="19" text-anchor="middle">B</text>
+        <rect x="64" y="0" width="32" height="28" class="viz-node"/><text x="80" y="19" text-anchor="middle">C</text>
+        <rect x="96" y="0" width="32" height="28" class="viz-node"/><text x="112" y="19" text-anchor="middle">D</text>
+        <rect x="128" y="0" width="32" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/><text x="144" y="19" text-anchor="middle">E</text>
+        <rect x="160" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="4,3"/><text x="176" y="19" text-anchor="middle">·</text>
+        <rect x="192" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="4,3"/><text x="208" y="19" text-anchor="middle">·</text>
+        <rect x="224" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="4,3"/><text x="256" y="19" text-anchor="middle">·</text>
+      </g>
+
+      <!-- CPython growth 시퀀스 -->
+      <text x="300" y="190" class="viz-label" text-anchor="middle">CPython growth sequence: 0, 4, 8, 16, 24, 32, 40, 52, 64, 76, ...</text>
+      <text x="300" y="208" class="viz-label-small" text-anchor="middle">new_allocated = ((newsize + newsize&gt;&gt;3) + 6) &amp; ~3</text>
+      <!-- 비용 분석 -->
+      <g transform="translate(50, 230)">
+        <text x="0" y="0" class="viz-label-small"><tspan fill="var(--accent)" font-weight="700">Aggregate:</tspan> n번의 append 총 비용 ≈ 3n → amortized O(1) per op</text>
+        <text x="0" y="20" class="viz-label-small"><tspan fill="var(--accent)" font-weight="700">왜?</tspan> 1+2+4+...+n/2 ≈ n (기하 급수). resize 비용을 다음 append에 분산.</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>append는 대부분 O(1) (빈 슬롯), 가끔 O(n) (resize).</strong> 평균 비용이 O(1)인 이유는 비싼 resize가 기하급수적으로 드물게 발생하기 때문.</div>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a08-show { 0%,2%{opacity:0} 4%,11%{opacity:1} 13%,100%{opacity:0} }
+      .a08-S0{animation:a08-show 10s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a08-S1{animation:a08-show 10s linear infinite;animation-delay:1.25s;animation-fill-mode:backwards}
+      .a08-S2{animation:a08-show 10s linear infinite;animation-delay:2.5s;animation-fill-mode:backwards}
+      .a08-S3{animation:a08-show 10s linear infinite;animation-delay:3.75s;animation-fill-mode:backwards}
+      .a08-S4{animation:a08-show 10s linear infinite;animation-delay:5s;animation-fill-mode:backwards}
+      .a08-S5{animation:a08-show 10s linear infinite;animation-delay:6.25s;animation-fill-mode:backwards}
+      .a08-S6{animation:a08-show 10s linear infinite;animation-delay:7.5s;animation-fill-mode:backwards}
+      .a08-S7{animation:a08-show 10s linear infinite;animation-delay:8.75s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="append 시퀀스 애니메이션">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🪄 list.append 8번 — 비용은 어떻게 변할까?</text>
+
+      <g font-family="JetBrains Mono, monospace" font-size="13">
+        <!-- 8단계, 각 단계마다 size + cap + 비용 -->
+        <text class="a08-S0" x="40" y="55" font-weight="700">append #1 → size=1, cap=4 (여유) <tspan fill="#3b9b6e">비용 1 ⚡</tspan></text>
+        <g class="a08-S0" transform="translate(180, 65)">
+          <rect x="0" y="0" width="32" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/><text x="16" y="19" text-anchor="middle">A</text>
+          <rect x="32" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="48" y="19" text-anchor="middle" opacity="0.4">·</text>
+          <rect x="64" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="80" y="19" text-anchor="middle" opacity="0.4">·</text>
+          <rect x="96" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="112" y="19" text-anchor="middle" opacity="0.4">·</text>
+        </g>
+        <text class="a08-S1" x="40" y="55" font-weight="700">append #2 → size=2 <tspan fill="#3b9b6e">비용 1 ⚡</tspan></text>
+        <g class="a08-S1" transform="translate(180, 65)">
+          <rect x="0" y="0" width="32" height="28" class="viz-node"/><text x="16" y="19" text-anchor="middle">A</text>
+          <rect x="32" y="0" width="32" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/><text x="48" y="19" text-anchor="middle">B</text>
+          <rect x="64" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="80" y="19" text-anchor="middle" opacity="0.4">·</text>
+          <rect x="96" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="112" y="19" text-anchor="middle" opacity="0.4">·</text>
+        </g>
+        <text class="a08-S2" x="40" y="55" font-weight="700">append #3 <tspan fill="#3b9b6e">비용 1 ⚡</tspan></text>
+        <g class="a08-S2" transform="translate(180, 65)">
+          <rect x="0" y="0" width="32" height="28" class="viz-node"/><text x="16" y="19" text-anchor="middle">A</text>
+          <rect x="32" y="0" width="32" height="28" class="viz-node"/><text x="48" y="19" text-anchor="middle">B</text>
+          <rect x="64" y="0" width="32" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/><text x="80" y="19" text-anchor="middle">C</text>
+          <rect x="96" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="112" y="19" text-anchor="middle" opacity="0.4">·</text>
+        </g>
+        <text class="a08-S3" x="40" y="55" font-weight="700">append #4 → size=4=cap (꽉!) <tspan fill="#3b9b6e">비용 1 ⚡</tspan></text>
+        <g class="a08-S3" transform="translate(180, 65)">
+          <rect x="0" y="0" width="32" height="28" class="viz-node"/><text x="16" y="19" text-anchor="middle">A</text>
+          <rect x="32" y="0" width="32" height="28" class="viz-node"/><text x="48" y="19" text-anchor="middle">B</text>
+          <rect x="64" y="0" width="32" height="28" class="viz-node"/><text x="80" y="19" text-anchor="middle">C</text>
+          <rect x="96" y="0" width="32" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/><text x="112" y="19" text-anchor="middle">D</text>
+        </g>
+        <!-- #5: resize! -->
+        <text class="a08-S4" x="40" y="55" font-weight="700" fill="#d44058">append #5 → 🚨 resize! cap 4→8, 4개 복사 <tspan fill="#d44058">비용 5 🐢</tspan></text>
+        <g class="a08-S4" transform="translate(180, 65)">
+          <rect x="0" y="0" width="32" height="28" class="viz-node"/><text x="16" y="19" text-anchor="middle">A</text>
+          <rect x="32" y="0" width="32" height="28" class="viz-node"/><text x="48" y="19" text-anchor="middle">B</text>
+          <rect x="64" y="0" width="32" height="28" class="viz-node"/><text x="80" y="19" text-anchor="middle">C</text>
+          <rect x="96" y="0" width="32" height="28" class="viz-node"/><text x="112" y="19" text-anchor="middle">D</text>
+          <rect x="128" y="0" width="32" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/><text x="144" y="19" text-anchor="middle">E</text>
+          <rect x="160" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="176" y="19" text-anchor="middle" opacity="0.4">·</text>
+          <rect x="192" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="208" y="19" text-anchor="middle" opacity="0.4">·</text>
+          <rect x="224" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="240" y="19" text-anchor="middle" opacity="0.4">·</text>
+        </g>
+        <text class="a08-S5" x="40" y="55" font-weight="700">append #6 <tspan fill="#3b9b6e">비용 1 ⚡</tspan></text>
+        <g class="a08-S5" transform="translate(180, 65)">
+          <rect x="0" y="0" width="32" height="28" class="viz-node"/><text x="16" y="19" text-anchor="middle">A</text>
+          <rect x="32" y="0" width="32" height="28" class="viz-node"/><text x="48" y="19" text-anchor="middle">B</text>
+          <rect x="64" y="0" width="32" height="28" class="viz-node"/><text x="80" y="19" text-anchor="middle">C</text>
+          <rect x="96" y="0" width="32" height="28" class="viz-node"/><text x="112" y="19" text-anchor="middle">D</text>
+          <rect x="128" y="0" width="32" height="28" class="viz-node"/><text x="144" y="19" text-anchor="middle">E</text>
+          <rect x="160" y="0" width="32" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/><text x="176" y="19" text-anchor="middle">F</text>
+          <rect x="192" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="208" y="19" text-anchor="middle" opacity="0.4">·</text>
+          <rect x="224" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="240" y="19" text-anchor="middle" opacity="0.4">·</text>
+        </g>
+        <text class="a08-S6" x="40" y="55" font-weight="700">append #7 <tspan fill="#3b9b6e">비용 1 ⚡</tspan></text>
+        <g class="a08-S6" transform="translate(180, 65)">
+          <rect x="0" y="0" width="32" height="28" class="viz-node"/><text x="16" y="19" text-anchor="middle">A</text>
+          <rect x="32" y="0" width="32" height="28" class="viz-node"/><text x="48" y="19" text-anchor="middle">B</text>
+          <rect x="64" y="0" width="32" height="28" class="viz-node"/><text x="80" y="19" text-anchor="middle">C</text>
+          <rect x="96" y="0" width="32" height="28" class="viz-node"/><text x="112" y="19" text-anchor="middle">D</text>
+          <rect x="128" y="0" width="32" height="28" class="viz-node"/><text x="144" y="19" text-anchor="middle">E</text>
+          <rect x="160" y="0" width="32" height="28" class="viz-node"/><text x="176" y="19" text-anchor="middle">F</text>
+          <rect x="192" y="0" width="32" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/><text x="208" y="19" text-anchor="middle">G</text>
+          <rect x="224" y="0" width="32" height="28" class="viz-node-alt" stroke-dasharray="3,2"/><text x="240" y="19" text-anchor="middle" opacity="0.4">·</text>
+        </g>
+        <text class="a08-S7" x="40" y="55" font-weight="700">append #8 → size=8=cap <tspan fill="#3b9b6e">비용 1 ⚡</tspan></text>
+        <g class="a08-S7" transform="translate(180, 65)">
+          <rect x="0" y="0" width="32" height="28" class="viz-node"/><text x="16" y="19" text-anchor="middle">A</text>
+          <rect x="32" y="0" width="32" height="28" class="viz-node"/><text x="48" y="19" text-anchor="middle">B</text>
+          <rect x="64" y="0" width="32" height="28" class="viz-node"/><text x="80" y="19" text-anchor="middle">C</text>
+          <rect x="96" y="0" width="32" height="28" class="viz-node"/><text x="112" y="19" text-anchor="middle">D</text>
+          <rect x="128" y="0" width="32" height="28" class="viz-node"/><text x="144" y="19" text-anchor="middle">E</text>
+          <rect x="160" y="0" width="32" height="28" class="viz-node"/><text x="176" y="19" text-anchor="middle">F</text>
+          <rect x="192" y="0" width="32" height="28" class="viz-node"/><text x="208" y="19" text-anchor="middle">G</text>
+          <rect x="224" y="0" width="32" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/><text x="240" y="19" text-anchor="middle">H</text>
+        </g>
+      </g>
+
+      <!-- 메시지 -->
+      <g transform="translate(40, 165)">
+        <rect x="0" y="0" width="640" height="60" rx="6" fill="rgba(196,114,78,0.06)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="320" y="22" text-anchor="middle" class="viz-label" font-weight="700">⚖️ 8번 append 총 비용 = 4 + 5 + 3 = 12 → 평균 1.5</text>
+        <text x="320" y="42" text-anchor="middle" class="viz-label-small">resize는 가끔만 발생 → "amortized O(1)" — n번 append 평균 O(1) 시간</text>
+      </g>
+
+      <text x="360" y="260" class="viz-label-small" text-anchor="middle">애니메이션 10초 주기 — 빨강 ⚠️ resize, 초록 ⚡ 빠름</text>
+    </svg>
+    <div class="viz-caption"><strong>가끔의 큰 비용 (resize)을 평균에 녹인다.</strong> 8번 중 1번만 비싸고 나머지는 빠름 → 평균 O(1). 이게 "amortized" 분석의 직관.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. 정적 vs 동적 ==================== -->
+<section id="static-vs-dynamic">
+  <h2>02 — 정적 배열 vs 동적 배열</h2>
+
+  <div class="level-section elementary">
+    <div class="level-section-header">
+      <span class="level-badge level-elem">초급</span>
+      <h3 class="level-section-title">정적 배열 — C의 <code>int arr[100]</code></h3>
+    </div>
+    <p>
+      "처음에 크기를 정하고 영원히 고정." 크기를 바꾸려면 새로 만들어야 함. C, Fortran 같은 전통 언어의 기본.
+    </p>
+    <ul>
+      <li>인덱싱 O(1): 주소 계산만 (<code>base + i * sizeof</code>).</li>
+      <li>크기 변경 불가능.</li>
+      <li>append라는 개념 자체가 없음.</li>
+    </ul>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">동적 배열 — Python의 <code>list</code></h3>
+    </div>
+    <p>
+      "크기가 필요에 따라 자동으로 늘어남." 사용자 입장에선 "무한히 큰 배열". 내부적으로는:
+    </p>
+    <ul>
+      <li><strong>용량(capacity)</strong>: 실제 할당된 공간. 예: 64칸.</li>
+      <li><strong>크기(size)</strong>: 실제 쓰인 원소 수. 예: 50칸.</li>
+      <li>append 호출 시 size++. size == capacity면 → <strong>새 배열 할당 + 복사</strong>.</li>
+    </ul>
+    <p>
+      Python의 <code>list</code>는 본질적으로 <strong>동적 배열</strong>. C의 array + 자동 resize 로직.
+    </p>
+    <table>
+      <thead>
+        <tr><th>연산</th><th>정적 배열 (C)</th><th>동적 배열 (Python list)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>인덱싱 <code>A[i]</code></td><td>O(1)</td><td>O(1)</td></tr>
+        <tr><td>수정 <code>A[i] = x</code></td><td>O(1)</td><td>O(1)</td></tr>
+        <tr><td>끝에 추가 <code>append</code></td><td>❌ 불가</td><td>amortized O(1)</td></tr>
+        <tr><td>앞에 추가 <code>insert(0)</code></td><td>❌ 불가</td><td>O(n) ⚠️</td></tr>
+        <tr><td>중간 삭제 <code>del A[i]</code></td><td>❌ 불가</td><td>O(n)</td></tr>
+        <tr><td>크기 확장</td><td>❌ 불가 (새 배열)</td><td>자동</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — Python list는 "배열"일까 "연결 리스트"일까?</div>
+    <p>
+      초보자 질문: "Python list는 C의 array 같은 건가요, 아니면 linked list인가요?"
+    </p>
+    <p>
+      <strong>답: 동적 배열</strong>. 인덱싱은 O(1) (linked list였다면 O(n)). 이름은 "list"지만 내부는 array. Java의 <code>ArrayList</code>, C++의 <code>std::vector</code>와 본질적으로 같음.
+    </p>
+    <p>
+      C의 <code>int a[100]</code> 같은 고정 배열과의 차이는 "자동 resize 로직" 하나뿐. 이 로직을 이해하는 것이 이번 주의 핵심.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. 동적 배열의 구조 ==================== -->
+<section id="dynamic-basics">
+  <h2>03 — 동적 배열의 구조: append가 하는 일</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">append의 2가지 시나리오</h3>
+    </div>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      <strong>Case 1: size &lt; capacity (여유 있음)</strong><br>
+      &nbsp;&nbsp; A[size] = new_value<br>
+      &nbsp;&nbsp; size += 1<br>
+      &nbsp;&nbsp; <em>→ O(1)</em><br>
+      <br>
+      <strong>Case 2: size == capacity (꽉 참)</strong><br>
+      &nbsp;&nbsp; new_cap = capacity * growth_factor&nbsp;&nbsp;<em>// Python: 1.125×</em><br>
+      &nbsp;&nbsp; new_array = allocate(new_cap)<br>
+      &nbsp;&nbsp; copy A[0..size-1] to new_array<br>
+      &nbsp;&nbsp; free old array<br>
+      &nbsp;&nbsp; A = new_array; capacity = new_cap<br>
+      &nbsp;&nbsp; A[size] = new_value; size += 1<br>
+      &nbsp;&nbsp; <em>→ O(size) = O(n)</em>
+    </div>
+    <p>
+      Case 1이 대부분(여유가 있을 때), Case 2는 드물게(꽉 찼을 때). 이 두 경우의 <strong>평균적 비용</strong>이 우리의 질문.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">구조체 레벨 — 실제 메모리 레이아웃</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">동적 배열 의사구조 (C로)</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">typedef struct</span> {
+    <span class="hl-bi">void</span> **items;     <span class="hl-cmt">// 실제 데이터 포인터 배열</span>
+    <span class="hl-bi">size_t</span> size;       <span class="hl-cmt">// 현재 원소 개수</span>
+    <span class="hl-bi">size_t</span> capacity;   <span class="hl-cmt">// 할당된 공간</span>
+} DynamicArray;
+
+
+<span class="hl-bi">void</span> append(DynamicArray *a, <span class="hl-bi">void</span> *x) {
+    <span class="hl-kw">if</span> (a-&gt;size == a-&gt;capacity) {
+        a-&gt;capacity = a-&gt;capacity * <span class="hl-num">9</span> / <span class="hl-num">8</span> + <span class="hl-num">6</span>;  <span class="hl-cmt">// 1.125× + 6 (Python 스타일)</span>
+        a-&gt;items = realloc(a-&gt;items, a-&gt;capacity * <span class="hl-bi">sizeof</span>(<span class="hl-bi">void</span>*));
+    }
+    a-&gt;items[a-&gt;size++] = x;
+}</code></pre>
+    </div>
+    <p>
+      Python의 <code>list</code>는 이것과 거의 동일. 다만 <code>items</code>가 <code>PyObject*</code>의 배열이라 <em>각 원소가 포인터</em> — 실제 데이터는 힙에 따로 존재.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 04. Amortized 직관 ==================== -->
+<section id="amortized-intro">
+  <h2>04 — Amortized의 직관: "평균 O(1)"의 의미</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">"평균"의 두 가지 의미 — 혼동 금지</h3>
+    </div>
+    <p>
+      컴퓨터 과학에서 "평균"은 두 가지 맥락이 있습니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>구분</th><th>평균 대상</th><th>예</th><th>보장</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Average-case</strong></td>
+          <td>입력 분포의 평균</td>
+          <td>Quicksort Θ(n log n) 평균</td>
+          <td>확률적 (적대적 입력에는 X)</td>
+        </tr>
+        <tr>
+          <td><strong>Amortized</strong></td>
+          <td>연산 수열의 평균</td>
+          <td>append Θ(1) amortized</td>
+          <td><strong>결정적</strong> — 입력 무관, 최악 수열에서도 성립</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Amortized는 <em>더 강한 보장</em>. "어떤 입력이든, n번의 append에 드는 총 시간은 Θ(n)"이 결정론적으로 참.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">실제 비용 시계열 — 2× growth에서</h3>
+    </div>
+    <p>
+      초기 용량 1에서 2배씩 늘리며 n번 append:
+    </p>
+    <table>
+      <thead>
+        <tr><th>연산 i</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>size 직전</td>
+          <td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td>
+        </tr>
+        <tr>
+          <td>용량 꽉?</td>
+          <td>✓</td><td>✓</td><td></td><td>✓</td><td></td><td></td><td></td><td>✓</td><td></td>
+        </tr>
+        <tr>
+          <td>실제 비용</td>
+          <td>1</td><td>2</td><td>1</td><td>3</td><td>1</td><td>1</td><td>1</td><td>5</td><td>1</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      첫 4번까지 총 비용 = 1+2+1+3 = 7. 평균 1.75. 첫 9번까지 = 16, 평균 1.78. n이 커져도 <strong>평균은 3 이하로 수렴</strong>.
+    </p>
+    <div class="formula-box">
+      n번 append 총 비용 = n + (1 + 2 + 4 + ... + n/2) ≈ n + n = 2n &nbsp;⟹&nbsp; <strong>평균 ≤ 2 = O(1)</strong>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 05. Aggregate 분석 ==================== -->
+<section id="aggregate">
+  <h2>05 — Aggregate 분석 (CLRS §17.1)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">가장 단순한 방법 — "다 더하고 n으로 나누기"</h3>
+    </div>
+    <p>
+      정의: <strong>n번의 연산 전체 최악 비용</strong>을 <strong>n으로 나눈 것</strong>을 <em>amortized 비용</em>으로 정의.
+    </p>
+    <div class="formula-box">
+      amortized_cost = total_cost(n operations) / n
+    </div>
+    <p>
+      적용이 쉽다는 장점, 모든 연산의 amortized 비용이 같게 나온다는 단점(실제로는 연산별로 다를 수 있음).
+    </p>
+
+    <h4>Python list append의 aggregate 분석 (2× growth 가정)</h4>
+    <p>
+      n번의 append. 매 append는 비용 1의 "기본 삽입" + 가끔의 "전체 복사". 전체 복사는 용량이 1, 2, 4, 8, ..., 2^k까지 확장될 때 각각 1, 2, 4, 8, ..., 2^k 비용.
+    </p>
+    <div class="formula-box" style="text-align:left;">
+      기본 삽입: n<br>
+      전체 복사: 1 + 2 + 4 + ... + 2^⌊log₂ n⌋ ≤ 2n − 1<br>
+      총 비용: n + 2n − 1 = <strong>3n − 1 = O(n)</strong><br>
+      <br>
+      amortized_cost = (3n − 1) / n ≈ <strong>3 = O(1)</strong>
+    </div>
+    <p>
+      각 append에 대해 "실제로는 1 또는 n의 비용이 들지만, <em>평균적으로 3의 비용</em>을 지불하는 것과 같다"고 말할 수 있습니다.
+    </p>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원서 인용 — CLRS 4판, §17.1 "Aggregate analysis"</div>
+    <p>
+      <em>"In aggregate analysis, we show that for all n, a sequence of n operations takes worst-case time T(n) in total. In the worst case, the average cost, or amortized cost, per operation is therefore T(n)/n. Note that this amortized cost applies to each operation, even when there are several types of operations in the sequence."</em>
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 06. Accounting 분석 ==================== -->
+<section id="accounting">
+  <h2>06 — Accounting 분석 (CLRS §17.2)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">비유 — "저금통에 동전 쌓기"</h3>
+    </div>
+    <p>
+      아이디어: 각 연산에 <strong>실제 비용 ≥ 지불하는 amortized 비용</strong>이면 문제 없음. 반대로 <strong>실제 비용 &lt; 지불</strong>이면 <em>남는 금액을 "저금통"에 저장</em>해뒀다가 나중에 비싼 연산 때 꺼내 씀.
+    </p>
+    <p>
+      조건: 저금통이 <strong>절대 음수가 되면 안 됨</strong> (미리 지불 원칙).
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Python list append의 accounting (2× growth)</h3>
+    </div>
+    <p>
+      <strong>전략</strong>: 모든 append에 amortized 비용 $3을 "지불".
+    </p>
+    <ul>
+      <li>$1: 이번 append의 실제 비용.</li>
+      <li>$2: 저금통에 저장. 이 $2는 "나중에 이 원소가 복사될 때" 쓸 비용.</li>
+    </ul>
+    <p>
+      <strong>증명</strong>: 용량이 k에서 2k로 확장되는 순간, 배열에는 k개의 원소. 이 k개를 복사하는 비용은 k.<br>
+      이 확장 <em>직전</em>에 저금통에 얼마가 있나? 지난 k/2번의 append(= 용량이 k/2 → k로 확장된 이후)에서 각 $2씩 저금. 총 $k.<br>
+      저금 $k로 실제 복사 비용 $k를 정확히 지불. 저금통 다시 0.
+    </p>
+    <div class="formula-box">
+      각 연산 amortized = $3, &nbsp; 총 n번의 비용 ≤ $3n = <strong>O(n)</strong>
+    </div>
+    <p>
+      Aggregate 분석과 같은 결론. 접근 방식이 다를 뿐.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 왜 $3인가? (2× growth 기준)</div>
+    <ul>
+      <li>$1: 이번 삽입 자체.</li>
+      <li>$1: <em>자기 자신이 나중에 복사될 때</em>의 비용.</li>
+      <li>$1: <em>이전 사본의 복사될 때의 비용</em>을 분담 (기하급수라서 유한 상수 안에서 해결).</li>
+    </ul>
+    <p>
+      1.125× growth면 amortized는 $10 (더 큼 — 공식 1 + g/(g−1)로 g=1.125 대입). g가 커질수록 amortized 비용은 단조감소하므로 "2×가 가장 싸다"는 건 아니고, <strong>메모리 여유(공간 낭비) vs 시간(amortized)의 균형점</strong>으로 2× 전후를 흔히 씁니다.<br>
+      그럼 왜 Python은 2×가 아닌 1.125×를 쓸까? → 다음 §08에서.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 07. Potential 분석 ==================== -->
+<section id="potential">
+  <h2>07 — Potential 분석 (CLRS §17.3)</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">가장 형식적인 방법 — Potential Function</h3>
+    </div>
+    <p>
+      자료구조의 상태에 <strong>포텐셜 함수 Φ</strong>를 정의. 실제 비용이 아닌 "포텐셜 변화"를 고려한 amortized 비용:
+    </p>
+    <div class="formula-box">
+      amortized<sub>i</sub> = actual<sub>i</sub> + Φ(D<sub>i</sub>) − Φ(D<sub>i-1</sub>)
+    </div>
+    <p>
+      - D<sub>i</sub>: i번째 연산 후 자료구조 상태.<br>
+      - Φ는 항상 Φ(D<sub>0</sub>) = 0이고 Φ(D<sub>i</sub>) ≥ 0이도록 설계.
+    </p>
+    <p>
+      총합을 취하면 텔레스코핑:
+    </p>
+    <div class="formula-box" style="text-align:left;">
+      Σ amortized<sub>i</sub> = Σ actual<sub>i</sub> + Φ(D<sub>n</sub>) − Φ(D<sub>0</sub>)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = total_actual + Φ(D<sub>n</sub>)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ≥ total_actual
+    </div>
+    <p>
+      따라서 <strong>총 amortized 비용 ≥ 총 실제 비용</strong>. 각 연산에 amortized 상수를 지정하면 전체 최악 상한을 얻을 수 있음.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Python list append의 potential 분석</h3>
+    </div>
+    <p>
+      포텐셜 정의(2× growth의 경우):
+    </p>
+    <div class="formula-box">
+      Φ(D) = 2 · size − capacity
+    </div>
+    <p>
+      - 배열이 가득 차면 capacity = size → Φ = size.<br>
+      - 확장 직후 capacity = 2·size → Φ = 0.<br>
+      - Φ ≥ 0 조건: size &gt; capacity/2일 때만 양수. 일반적으로 성립.
+    </p>
+
+    <h4>경우 1: 확장 없는 append (size &lt; capacity)</h4>
+    <ul>
+      <li>actual = 1</li>
+      <li>ΔΦ = 2·(size+1) − capacity − (2·size − capacity) = 2</li>
+      <li>amortized = 1 + 2 = <strong>3</strong></li>
+    </ul>
+
+    <h4>경우 2: 확장 있는 append (size = capacity)</h4>
+    <ul>
+      <li>actual = size + 1 (복사 size + 삽입 1)</li>
+      <li>Φ 이전 = 2·size − capacity = size (꽉 찬 상태)</li>
+      <li>Φ 이후 = 2·(size+1) − 2·capacity = 2 (새 용량 2·old)</li>
+      <li>ΔΦ = 2 − size</li>
+      <li>amortized = (size + 1) + (2 − size) = <strong>3</strong></li>
+    </ul>
+    <p>
+      두 경우 모두 amortized = 3 = O(1). 지불 금액이 실제 비용을 항상 덮음.
+    </p>
+
+    <div class="reading-box">
+      <div class="box-header">📖 원서 인용 — CLRS 4판, §17.3 "The potential method"</div>
+      <p>
+        <em>"The potential method represents the prepaid work as 'potential energy' that can be released to pay for future operations. We associate the potential with the data structure as a whole rather than with specific objects within the data structure."</em>
+      </p>
+    </div>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 세 방법 중 어느 것을 쓸까?</div>
+    <table>
+      <thead>
+        <tr><th>방법</th><th>장점</th><th>단점</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Aggregate</td>
+          <td>가장 단순, 계산 쉬움</td>
+          <td>모든 연산에 같은 amortized 부여 — 섬세한 분석 불가</td>
+        </tr>
+        <tr>
+          <td>Accounting</td>
+          <td>직관적 (저금통), 연산별 다른 비용 가능</td>
+          <td>"저금통 음수 금지"가 어디서나 성립하는지 증명 필요</td>
+        </tr>
+        <tr>
+          <td>Potential</td>
+          <td>가장 형식적, 복잡한 자료구조에도 적용</td>
+          <td>Φ 찾기가 creative — 전문가 수준 기법</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>실무에서는 accounting이 가장 많이 쓰입니다</strong> — 직관적이면서도 대부분의 자료구조에 적용 가능. Potential은 splay tree, Fibonacci heap 등 고급 자료구조에 필수.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 08. 성장 인자 ==================== -->
+<section id="growth-factor">
+  <h2>08 — 성장 인자: Python 1.125 vs Java 2 vs C++ 1.5</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">각 언어의 선택</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>언어 / 컨테이너</th><th>성장 인자</th><th>amortized 비용</th><th>메모리 낭비 최대</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Python <code>list</code></td><td>~1.125 (+ 6)</td><td>~10</td><td>12.5%</td></tr>
+        <tr><td>Go slice (n &gt; 1024)</td><td>1.25</td><td>6</td><td>25%</td></tr>
+        <tr><td>C++ <code>std::vector</code> (GCC libstdc++)</td><td>2</td><td>3</td><td>100%</td></tr>
+        <tr><td>C++ <code>std::vector</code> (Clang libc++)</td><td>2</td><td>3</td><td>100%</td></tr>
+        <tr><td>C++ <code>std::vector</code> (MSVC)</td><td>1.5</td><td>4</td><td>50%</td></tr>
+        <tr><td>Java <code>ArrayList</code></td><td>1.5</td><td>4</td><td>50%</td></tr>
+        <tr><td>Go slice (n ≤ 1024)</td><td>2</td><td>3</td><td>100%</td></tr>
+      </tbody>
+    </table>
+    <p>
+      amortized 비용 공식: growth_factor가 g일 때, amortized = 1 + g/(g−1). 예: g=2면 3, g=1.5면 4, g=1.125면 10.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">왜 Python은 1.125인가 — 메모리 우선 철학</h3>
+    </div>
+    <p>
+      Python list는 <em>일반 용도 컨테이너</em>이고 Python 프로그램에선 list가 매우 흔함. 모든 list가 2× 성장하면 메모리 사용이 2배로 부풀 수 있음.
+    </p>
+    <ul>
+      <li>1.125배: 최대 12.5% 낭비. 극단적으론 8 단위 배열이 9로.</li>
+      <li>CPU 시간은 1.125 (~10 amortized) vs 2.0 (~3 amortized) — 약 3배 차이.</li>
+      <li>결론: <strong>CPU는 싸고 메모리는 비싸다</strong>는 Python의 입장. 메모리 효율 우선.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">왜 C++/Clang libc++는 2인가 — 재활용 가능성 포기</h3>
+    </div>
+    <p>
+      <strong>"Geometric mean" 논증</strong>: g &gt; 2면 old와 new를 합쳐도 메모리가 다시 쓰일 수 없음 (옆에 끼어들 수 있는 크기가 아니니까).
+    </p>
+    <div class="formula-box">
+      old_total = 1 + g + g² + ... + g^k = (g^(k+1) − 1) / (g − 1)<br>
+      새 할당 g^(k+1) &lt; old_total ⟺ g &lt; φ = (1+√5)/2 ≈ 1.618 (황금비)
+    </div>
+    <p>
+      이론적으로 <strong>g &lt; φ ≈ 1.618</strong>이면 과거 해제된 메모리를 재사용 가능. 1.5도 이 경계 안 (φ 미만), 1.125도 안.<br>
+      2.0은 경계 밖이라 메모리 재사용 불가. 그러나 C++ 표준 라이브러리는 <em>이 이론적 효율보다 amortized 비용을 우선</em>.
+    </p>
+    <p>
+      Stack Overflow에 아주 유명한 글이 있습니다: "Why do vectors grow by a factor of 1.5?" — Facebook의 Folly 프로젝트(Alexandrescu)도 1.5를 택.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — "올바른" 성장 인자는 없다</div>
+    <p>
+      성장 인자는 <strong>철학적 선택</strong>:
+    </p>
+    <ul>
+      <li><strong>CPU 우선</strong>: 2.0 (GCC libstdc++, MSVC vector는 1.5 절충).</li>
+      <li><strong>메모리 우선</strong>: 1.125 (Python), 1.25 (Go 큰 크기).</li>
+      <li><strong>재사용 가능</strong>: &lt; 1.618 (황금비).</li>
+    </ul>
+    <p>
+      어떤 선택도 "최적"이 아닙니다. 용도와 환경에 따라 다른 트레이드오프.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 09. CPython listobject ==================== -->
+<section id="cpython-listobject">
+  <h2>09 — CPython 내부: PyListObject와 list_resize</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Part A — PyListObject 구조체</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">Include/cpython/listobject.h</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">typedef struct</span> {
+    PyObject_VAR_HEAD          <span class="hl-cmt">// ob_refcnt, ob_type, ob_size</span>
+    <span class="hl-cmt">/* Vector of pointers to list elements. list[0] is ob_item[0], etc. */</span>
+    PyObject **ob_item;
+
+    <span class="hl-cmt">/* ob_item 배열의 할당된 크기. ob_size &lt;= allocated.</span>
+<span class="hl-cmt">       할당되지 않았다면 NULL이 아니라 포인터를 NULL로 둠. */</span>
+    Py_ssize_t allocated;
+} PyListObject;</code></pre>
+    </div>
+    <ul>
+      <li><strong>ob_refcnt</strong>: reference count (GC).</li>
+      <li><strong>ob_type</strong>: 타입 포인터 (모든 PyObject 공통).</li>
+      <li><strong>ob_size</strong>: 현재 원소 수 (= <code>len(list)</code>).</li>
+      <li><strong>ob_item</strong>: PyObject 포인터 배열의 포인터. 원소가 8바이트 포인터 × allocated개.</li>
+      <li><strong>allocated</strong>: 실제 할당된 슬롯 수. ob_size ≤ allocated.</li>
+    </ul>
+    <p>
+      <code>sys.getsizeof([])</code> ≈ 56바이트 (Python 3.12, 64-bit): PyListObject 헤더 자체. 원소가 추가되면 ob_item에 할당된 만큼 추가 바이트 필요 — <code>sys.getsizeof([1,2,3])</code> ≈ 88바이트.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Part B — list_resize 소스 (Objects/listobject.c)</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">list_resize — 발췌 (Python 3.12)</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">static</span> <span class="hl-bi">int</span>
+list_resize(PyListObject *self, Py_ssize_t newsize)
+{
+    PyObject **items;
+    size_t new_allocated, num_allocated_bytes;
+    Py_ssize_t allocated = self-&gt;allocated;
+
+    <span class="hl-cmt">/* Bypass realloc() when a previous overallocation is large enough
+       to accommodate the newsize.  If the newsize falls lower than half
+       the allocated size, then proceed with the realloc() to shrink the list. */</span>
+    <span class="hl-kw">if</span> (allocated &gt;= newsize &amp;&amp; newsize &gt;= (allocated &gt;&gt; <span class="hl-num">1</span>)) {
+        Py_SET_SIZE(self, newsize);
+        <span class="hl-kw">return</span> <span class="hl-num">0</span>;
+    }
+
+    <span class="hl-cmt">/* This over-allocates proportional to the list size, making room
+       for additional growth.  The over-allocation is mild, but is
+       enough to give linear-time amortized behavior over a long
+       sequence of appends() in the presence of a poorly-performing
+       system realloc().
+       Add padding to make the allocated size a multiple of 4.
+       The growth pattern is:  0, 4, 8, 16, 24, 32, 40, 52, 64, 76, ... */</span>
+    new_allocated = ((size_t)newsize + (newsize &gt;&gt; <span class="hl-num">3</span>) + <span class="hl-num">6</span>) &amp; ~(size_t)<span class="hl-num">3</span>;
+    <span class="hl-cmt">/* Do not overallocate if the new size is closer to overallocated size
+       than to the old size. */</span>
+    <span class="hl-kw">if</span> (newsize - Py_SIZE(self) &gt; (Py_ssize_t)(new_allocated - newsize))
+        new_allocated = ((size_t)newsize + <span class="hl-num">3</span>) &amp; ~(size_t)<span class="hl-num">3</span>;
+
+    ...
+    items = (PyObject **)PyMem_Realloc(self-&gt;ob_item, num_allocated_bytes);
+    ...
+    self-&gt;ob_item = items;
+    Py_SET_SIZE(self, newsize);
+    self-&gt;allocated = new_allocated;
+    <span class="hl-kw">return</span> <span class="hl-num">0</span>;
+}</code></pre>
+    </div>
+    <p>
+      <strong>핵심 공식</strong>:
+    </p>
+    <div class="formula-box">
+      new_allocated = ((newsize + (newsize &gt;&gt; 3) + 6) & ~3)<br>
+      = ((newsize · 9/8) + 6) 을 4의 배수로 내림
+    </div>
+    <p>
+      성장 시퀀스: <strong>0, 4, 8, 16, 24, 32, 40, 52, 64, 76, 92, 108, 128, ...</strong>
+    </p>
+    <p>
+      검증: newsize=17일 때 new_allocated = (17 + 2 + 6) & ~3 = 25 & ~3 = 24. 17보다 큰 4의 배수 중 적절.
+    </p>
+
+    <h4>Shrinking — 메모리 반환</h4>
+    <p>
+      <code>pop()</code>이나 <code>del</code>로 크기가 줄면, <em>allocated의 절반 미만이 되면 realloc</em>으로 축소. 메모리 낭비 방지. 이 "크기 반환" 로직이 다른 언어 대비 Python list의 특징.
+    </p>
+
+    <div class="reading-box">
+      <div class="box-header">📖 원서 인용 — listobject.c 주석, CPython 소스</div>
+      <p>
+        <em>"This over-allocates proportional to the list size, making room for additional growth. The over-allocation is mild, but is enough to give linear-time amortized behavior over a long sequence of appends()."</em>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 10. list.insert(0)의 함정 ==================== -->
+<section id="insertion-trap">
+  <h2>10 — list.insert(0)의 함정, 그리고 deque</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">왜 O(n)인가</h3>
+    </div>
+    <p>
+      <code>list.insert(0, x)</code>를 호출하면 <strong>기존 모든 원소가 한 칸씩 뒤로 밀립니다</strong>. n개 원소라면 n번의 메모리 이동.
+    </p>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      A = [1, 2, 3, 4, 5]<br>
+      A.insert(0, 99):<br>
+      &nbsp;&nbsp; A = [_, 1, 2, 3, 4, 5]   &nbsp;<em>// 한 칸씩 shift</em><br>
+      &nbsp;&nbsp; A = [99, 1, 2, 3, 4, 5]
+    </div>
+    <p>
+      <code>list.pop(0)</code>도 같은 이유로 O(n). 그리고 이게 Python 초보자들이 자주 빠지는 함정:
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">accidentally_quadratic.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-cmt"># 큐를 구현한다고 리스트를 쓰면...</span>
+queue = []
+<span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">100000</span>):
+    queue.append(i)        <span class="hl-cmt"># O(1)</span>
+<span class="hl-kw">while</span> queue:
+    x = queue.pop(<span class="hl-num">0</span>)       <span class="hl-cmt"># O(n)! 100000 × 50000 = 5×10⁹ 연산</span>
+    process(x)</code></pre>
+    </div>
+    <p>
+      n=100,000이면 총 연산 수 약 5×10⁹. Python 1초에 약 10⁷ 순수 연산이니 <strong>수 분</strong> 걸림. 실무에서 실제로 마주치는 "왜 이렇게 느리지?" 버그.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">해결 — <code>collections.deque</code></h3>
+    </div>
+    <p>
+      Python 표준 라이브러리의 <code>deque</code>(doubly-ended queue)는 <strong>양 끝 모두 O(1)</strong>.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">use_deque.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> collections <span class="hl-kw">import</span> deque
+
+queue = deque()
+<span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">100000</span>):
+    queue.append(i)        <span class="hl-cmt"># O(1)</span>
+<span class="hl-kw">while</span> queue:
+    x = queue.popleft()    <span class="hl-cmt"># O(1) — 양 끝 모두 빠름</span>
+    process(x)</code></pre>
+    </div>
+    <p>
+      n=100,000이면 2×10⁵ 연산 → 수십 ms. <strong>25,000배 빠름</strong>.
+    </p>
+    <p>
+      <code>deque</code>의 내부 구조는 다음 주(Algo 09)에서 — 사실 linked list of blocks라는 하이브리드 구조.
+    </p>
+  </div>
+
+  <div class="caution-box">
+    <div class="box-header">⚠️ "리스트를 스택/큐로 쓸 때" 결정 기준</div>
+    <ul>
+      <li><strong>스택</strong> (push/pop 끝에서만) → <code>list</code> OK. append/pop(-1) 둘 다 O(1).</li>
+      <li><strong>큐</strong> (push 끝, pop 앞) → <code>deque</code> 필수. list는 O(n²) 지옥.</li>
+      <li><strong>양방향</strong> → <code>deque</code>.</li>
+      <li><strong>임의 위치 삽입</strong> → 어느 쪽이든 O(n). 진짜 필요하면 자료구조 재설계 (segment tree, balanced BST 등).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 11. Slicing 메모리 비밀 ==================== -->
+<section id="slicing">
+  <h2>11 — Slicing의 메모리 비밀</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">A[i:j]는 <strong>새 리스트를 만든다</strong></h3>
+    </div>
+    <p>
+      이 사실이 <code>list.insert(0)</code>만큼 놓치기 쉬운 함정.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">slice_copies.py</span><button class="copy-btn">복사</button></div>
+<pre><code>A = [<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>, <span class="hl-num">4</span>, <span class="hl-num">5</span>]
+B = A[<span class="hl-num">1</span>:<span class="hl-num">4</span>]           <span class="hl-cmt"># [2, 3, 4] — 새 리스트 객체, O(k)</span>
+<span class="hl-bi">print</span>(B <span class="hl-kw">is</span> A)          <span class="hl-cmt"># False (독립 객체)</span>
+B[<span class="hl-num">0</span>] = <span class="hl-num">99</span>
+<span class="hl-bi">print</span>(A)              <span class="hl-cmt"># [1, 2, 3, 4, 5] — A는 변화 없음</span></code></pre>
+    </div>
+    <ul>
+      <li>A[i:j]는 원소 <strong>포인터를 복사</strong> (PyObject 자체는 아님). 복사 비용 O(j − i).</li>
+      <li>A가 100만 원소인데 A[:100]을 쓰면 100개만 복사 — 빠름.</li>
+      <li>A[:-1]은 n-1개 복사 — O(n).</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">A[i:j] = [...] 는 <strong>in-place 수정</strong></h3>
+    </div>
+    <p>
+      할당문의 왼쪽에 오면 A 자체가 수정됩니다. 새 리스트가 만들어지지 않음.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">slice_assignment.py</span><button class="copy-btn">복사</button></div>
+<pre><code>A = [<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>, <span class="hl-num">4</span>, <span class="hl-num">5</span>]
+A[<span class="hl-num">1</span>:<span class="hl-num">4</span>] = [<span class="hl-num">99</span>, <span class="hl-num">88</span>]   <span class="hl-cmt"># A[1], A[2], A[3] 대체</span>
+<span class="hl-bi">print</span>(A)                <span class="hl-cmt"># [1, 99, 88, 5]</span>
+
+<span class="hl-cmt"># 크기도 바꿀 수 있음 (자동으로 shrink/grow)</span>
+A[<span class="hl-num">0</span>:<span class="hl-num">2</span>] = [<span class="hl-num">100</span>, <span class="hl-num">200</span>, <span class="hl-num">300</span>]
+<span class="hl-bi">print</span>(A)                <span class="hl-cmt"># [100, 200, 300, 88, 5]</span></code></pre>
+    </div>
+    <p>
+      right-hand side가 길면 list가 자동으로 커짐 (memmove로 나머지 밀기). 짧으면 줄어듦.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — "[::] = new_data" 관용구</div>
+    <p>
+      <code>A[:] = B</code>는 "A의 내용을 B로 교체" (같은 객체 유지). 이게 왜 중요한가?
+    </p>
+    <ul>
+      <li><code>A = B</code>: A가 <em>새 이름</em>이 됨. 다른 곳에서 A를 참조하고 있다면 그 참조는 old A를 가리킴.</li>
+      <li><code>A[:] = B</code>: A 객체 자체 내용이 바뀜. 다른 참조들도 새 데이터를 봄.</li>
+    </ul>
+    <p>
+      이 구분이 <em>shared state</em> 디버깅의 핵심. 다음 코드:
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">shared_state.py</span><button class="copy-btn">복사</button></div>
+<pre><code>original = [<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>]
+backup = original
+
+<span class="hl-cmt"># 방법 A</span>
+original = [<span class="hl-num">4</span>, <span class="hl-num">5</span>, <span class="hl-num">6</span>]
+<span class="hl-bi">print</span>(backup)       <span class="hl-cmt"># [1, 2, 3] — 옛 값</span>
+
+<span class="hl-cmt"># 방법 B</span>
+original[:] = [<span class="hl-num">4</span>, <span class="hl-num">5</span>, <span class="hl-num">6</span>]
+<span class="hl-bi">print</span>(backup)       <span class="hl-cmt"># [4, 5, 6] — 같이 바뀜!</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 12. AI와 list 함정 ==================== -->
+<section id="ai-list">
+  <h2>12 — AI가 흔히 놓치는 list 함정</h2>
+
+  <div class="ai-box">
+    <div class="box-header">AI — 3대 누락 패턴</div>
+    <p>
+      LLM에게 Python 코드를 작성시킬 때 list 관련 가장 흔한 실수들:
+    </p>
+    <ol>
+      <li>
+        <strong>큐 구현에 list + pop(0)</strong>: 초보자 수준 답. 모던 LLM은 보통 deque로 간다. 하지만 "간단한 예제"라고 하면 list로 쓰기도.
+      </li>
+      <li>
+        <strong>BFS에서 list.pop(0)</strong>: 그래프 알고리즘(Algo 14)의 고전 실수. deque 써야 함.
+      </li>
+      <li>
+        <strong>list comprehension의 과도한 중첩</strong>: <code>[[x for x in row] for row in matrix]</code>로 깊은 복사 흉내내기. 하지만 <code>copy.deepcopy</code>가 올바름 (중첩 객체 참조 이슈).
+      </li>
+    </ol>
+  </div>
+
+  <div class="ai-comparison">
+    <div class="ai-col human">
+      <div class="ai-col-header">경험 있는 Python 개발자</div>
+<pre><code><span class="hl-kw">from</span> collections <span class="hl-kw">import</span> deque
+
+<span class="hl-cmt"># 큐 → deque</span>
+q = deque([<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>])
+q.popleft()          <span class="hl-cmt"># O(1)</span>
+
+<span class="hl-cmt"># 스택 → list OK</span>
+s = [<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>]
+s.pop()              <span class="hl-cmt"># O(1)</span>
+
+<span class="hl-cmt"># 깊은 복사 → copy.deepcopy</span>
+<span class="hl-kw">import</span> copy
+new = copy.deepcopy(old)</code></pre>
+    </div>
+    <div class="ai-col ai">
+      <div class="ai-col-header">LLM의 흔한 답</div>
+<pre><code><span class="hl-cmt"># 큐?</span>
+q = [<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>]
+q.pop(<span class="hl-num">0</span>)             <span class="hl-cmt"># O(n), 대규모에서 느림</span>
+
+<span class="hl-cmt"># 스택 — OK</span>
+s = [<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>]
+s.pop()
+
+<span class="hl-cmt"># 깊은 복사?</span>
+new = [row[:] <span class="hl-kw">for</span> row <span class="hl-kw">in</span> old]  <span class="hl-cmt"># 2D만 됨, 3D+는 망가짐</span></code></pre>
+    </div>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — AI에게 Python list 요청 시 물어볼 3가지</div>
+    <ol>
+      <li>"이 자료구조는 어느 방향에서 추가/제거되는가? 큐? 스택? 양방향?"</li>
+      <li>"insert(0)이나 pop(0)이 루프 안에 있는가? 있다면 deque로 바꿔달라."</li>
+      <li>"중첩 구조 복사라면 copy.deepcopy를 쓰는지 확인."</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ==================== 13. 실습 ==================== -->
+<section id="practice">
+  <h2>13 — 실습: 성장 순간 감지 + 벤치마크</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">실습 1 — list의 실제 성장 순간 관찰</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">observe_growth.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">import</span> sys
+
+lst = []
+prev_size = sys.getsizeof(lst)
+<span class="hl-bi">print</span>(<span class="hl-str">f"빈 list: {prev_size} 바이트"</span>)
+
+<span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, <span class="hl-num">130</span>):
+    lst.append(i)
+    cur = sys.getsizeof(lst)
+    <span class="hl-kw">if</span> cur != prev_size:
+        <span class="hl-bi">print</span>(<span class="hl-str">f"len={i}: {prev_size} → {cur} bytes  (차이 {cur - prev_size})"</span>)
+        prev_size = cur</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">예상 출력 (CPython 3.12, 64-bit):</div>
+      빈 list: 56 바이트<br>
+      len=1: 56 → 88 bytes  (차이 32)     &nbsp;<em># 4 slots × 8 bytes</em><br>
+      len=5: 88 → 120 bytes (차이 32)     &nbsp;<em># 4 → 8 slots</em><br>
+      len=9: 120 → 184 bytes (차이 64)    &nbsp;<em># 8 → 16 slots</em><br>
+      len=17: 184 → 248 bytes (차이 64)   &nbsp;<em># 16 → 24 slots</em><br>
+      len=25: 248 → 312 bytes (차이 64)   &nbsp;<em># 24 → 32 slots</em><br>
+      len=33: 312 → 376 bytes (차이 64)   &nbsp;<em># 32 → 40 slots</em><br>
+      len=41: 376 → 472 bytes (차이 96)   &nbsp;<em># 40 → 52 slots</em><br>
+      ...
+    </div>
+    <p>
+      관찰: allocated 시퀀스가 <strong>0, 4, 8, 16, 24, 32, 40, 52, ...</strong> — listobject.c 주석의 성장 패턴과 정확히 일치.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">실습 2 — list vs deque 벤치마크</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">list_vs_deque.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> collections <span class="hl-kw">import</span> deque
+<span class="hl-kw">import</span> timeit
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">queue_with_list</span>(n):
+    q = []
+    <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n): q.append(i)
+    <span class="hl-kw">while</span> q: q.pop(<span class="hl-num">0</span>)
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">queue_with_deque</span>(n):
+    q = deque()
+    <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n): q.append(i)
+    <span class="hl-kw">while</span> q: q.popleft()
+
+
+<span class="hl-kw">for</span> n <span class="hl-kw">in</span> [<span class="hl-num">1000</span>, <span class="hl-num">10_000</span>, <span class="hl-num">100_000</span>]:
+    t1 = timeit.timeit(<span class="hl-kw">lambda</span>: queue_with_list(n), number=<span class="hl-num">1</span>)
+    t2 = timeit.timeit(<span class="hl-kw">lambda</span>: queue_with_deque(n), number=<span class="hl-num">1</span>)
+    <span class="hl-bi">print</span>(<span class="hl-str">f"n={n}: list {t1*1000:6.1f}ms, deque {t2*1000:6.1f}ms, ratio {t1/t2:.0f}×"</span>)</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">예상 출력:</div>
+      n=1000: list &nbsp;&nbsp;&nbsp;2.5ms, deque &nbsp;&nbsp;0.3ms, ratio &nbsp;&nbsp;8×<br>
+      n=10000: list &nbsp;200ms, deque &nbsp;&nbsp;&nbsp;3ms, ratio &nbsp;67×<br>
+      n=100000: list &nbsp;&nbsp;20s, deque &nbsp;&nbsp;30ms, ratio 666×
+    </div>
+    <p>
+      n이 10배 커지면 list는 100배 느려짐 (Θ(n²)), deque는 10배 (Θ(n)). 차이가 정확히 O(n)배로 벌어짐.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Python list의 성장 인자가 g라면, amortized 비용 공식은? g = 1.125 대입 값은?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">풀이</div>
+            <p>amortized = 1 + g/(g−1). g=1.125일 때 1 + 1.125/0.125 = 1 + 9 = <strong>10</strong>.</p>
+            <p>(정확히는 Python은 + 6 상수 padding도 있어 실제로는 약간 다름. 상수 항은 점근적으로 무시.)</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"append가 amortized O(1)이다"와 "append가 average O(1)이다"의 차이를 설명하시오.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>Amortized</strong>는 <em>입력 무관</em>한 결정적 보장. 어떤 n번의 append든 총 O(n). 적대적 입력에도 보장.<br><strong>Average</strong>는 <em>확률 분포 가정</em>. 특정 입력에서는 더 느릴 수 있음.</p>
+            <p>append는 amortized (강한 보장). Quicksort는 average (약한 보장).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-fix">FIX</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 코드의 복잡도 버그를 고치시오.</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">bfs_buggy.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">bfs</span>(start, graph):
+    visited = <span class="hl-bi">set</span>()
+    queue = [start]
+    <span class="hl-kw">while</span> queue:
+        node = queue.pop(<span class="hl-num">0</span>)
+        <span class="hl-kw">if</span> node <span class="hl-kw">in</span> visited: <span class="hl-kw">continue</span>
+        visited.add(node)
+        queue.extend(graph[node])
+    <span class="hl-kw">return</span> visited</code></pre>
+      </div>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">고침</div>
+            <p><code>queue.pop(0)</code>이 O(n). n노드 그래프에서 전체 BFS가 O(n²) 됨. deque 사용:</p>
+            <div class="code-block"><div class="code-header"><span class="code-label">bfs_fixed.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> collections <span class="hl-kw">import</span> deque
+<span class="hl-kw">def</span> <span class="hl-bi">bfs</span>(start, graph):
+    visited = <span class="hl-bi">set</span>()
+    queue = deque([start])
+    <span class="hl-kw">while</span> queue:
+        node = queue.popleft()   <span class="hl-cmt"># O(1)</span>
+        ...</code></pre>
+            </div>
+            <p>전체 복잡도 O(V + E)로 올바르게 됨.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Potential method로 2× growth list append 분석 시 Φ = 2·size − capacity. size=5, capacity=8 상태에서 append 시 ΔΦ는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">풀이</div>
+            <p>Φ_before = 2·5 − 8 = 2.<br>append 후 size=6, capacity는 여전히 8 (아직 안 꽉 참).<br>Φ_after = 2·6 − 8 = 4.<br>ΔΦ = 4 − 2 = <strong>+2</strong>. actual = 1. amortized = 1 + 2 = 3. ✓</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">1.5× growth를 쓰는 간단한 동적 배열을 Python으로 구현. list처럼 동작하는 최소 기능(append, __getitem__, __len__).</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="code-block"><div class="code-header"><span class="code-label">dynamic_array.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">DynamicArray</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self):
+        self._capacity = <span class="hl-num">4</span>
+        self._size = <span class="hl-num">0</span>
+        self._buf = [<span class="hl-kw">None</span>] * self._capacity
+
+    <span class="hl-kw">def</span> <span class="hl-bi">append</span>(self, x):
+        <span class="hl-kw">if</span> self._size == self._capacity:
+            new_cap = <span class="hl-bi">max</span>(self._capacity * <span class="hl-num">3</span> // <span class="hl-num">2</span>, self._capacity + <span class="hl-num">1</span>)
+            new_buf = [<span class="hl-kw">None</span>] * new_cap
+            <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(self._size):
+                new_buf[i] = self._buf[i]
+            self._buf = new_buf
+            self._capacity = new_cap
+        self._buf[self._size] = x
+        self._size += <span class="hl-num">1</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">__getitem__</span>(self, i): <span class="hl-kw">return</span> self._buf[i]
+    <span class="hl-kw">def</span> <span class="hl-bi">__len__</span>(self): <span class="hl-kw">return</span> self._size</code></pre>
+          </div>
+          <div class="answer-why">
+            <div class="answer-why-title">분석</div>
+            <p>amortized = 1 + 1.5/0.5 = 4. 각 append 평균 4 연산. Java ArrayList와 같은 성장 전략.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">성장 인자 g가 황금비 φ = 1.618 미만일 때 해제된 메모리를 재사용 가능한 이유를 수식으로.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">증명</div>
+            <p>과거에 해제된 블록 합: 1 + g + g² + ... + g^(k−1) = (g^k − 1)/(g − 1).<br>다음 확장에 필요한 크기: g^(k+1).<br>재사용 조건: g^(k+1) ≤ (g^k − 1)/(g − 1). 양변에 (g−1)를 곱하면 g^(k+1)(g−1) ≤ g^k − 1 ⟺ g^(k+2) − g^(k+1) ≤ g^k − 1. 양변을 g^k로 나누고 k → ∞ 극한을 취하면 g² − g ≤ 1, 즉 <strong>g² − g − 1 ≤ 0</strong>.<br>이차부등식 풀면 g ≤ (1 + √5)/2 = φ ≈ 1.618.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt"><code>sys.getsizeof([])</code>와 <code>sys.getsizeof([1,2,3])</code>의 대략 차이를 64-bit Python 기준으로.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>빈 list: PyListObject 헤더 56바이트.<br>[1,2,3]: 헤더 56 + ob_item 할당 분. len=3이면 allocated=4 (list_resize 공식). 4 × 8바이트 = 32 → 총 88바이트.<br>차이 약 <strong>32바이트</strong>.</p>
+            <p>주의: sys.getsizeof는 내부 원소 크기는 포함하지 않음. 실제 메모리는 int 객체들의 메모리 + 포인터 배열.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt"><code>A += [x]</code>와 <code>A.append(x)</code>와 <code>A = A + [x]</code>의 차이는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">분석</div>
+            <ul>
+              <li><code>A.append(x)</code>: A를 in-place 수정. amortized O(1).</li>
+              <li><code>A += [x]</code>: <code>A.__iadd__([x])</code> 호출 → list의 경우 extend와 같음 → in-place 수정. O(1). <strong>append와 동등</strong>.</li>
+              <li><code>A = A + [x]</code>: <em>새 리스트</em>를 만들어 A에 재할당. O(n)! 기존 A 전체 복사.</li>
+            </ul>
+            <p>루프에서 <code>A = A + [x]</code>를 쓰면 O(n²). 실제로 자주 보이는 실수.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Accounting 방법으로 "n번의 push + n번의 pop(끝에서)"이 총 O(n)임을 증명하시오.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">증명</div>
+            <ul>
+              <li>push: amortized $3 (2× growth 가정). 실제 비용 1 또는 size+1. 평균적으로 $3으로 충분 (§06 분석).</li>
+              <li>pop(끝): 실제 O(1). amortized도 $1로 충분 (저금 필요 없음).</li>
+            </ul>
+            <p>총 $3n + $n = <strong>$4n = O(n)</strong>. 저금통은 항상 비음수 (push가 예치, pop은 인출 없음).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Python에서 <code>list([1, 2, 3, 4, 5])</code>와 <code>list(range(5))</code>의 생성 시간 복잡도는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>둘 다 O(n). <code>list(iterable)</code>은 iterable의 길이를 알 수 있으면(<code>__len__</code>) 그 크기로 미리 할당하고 복사 (한 번의 resize). range는 __len__이 있으니 최적화됨.</p>
+            <p>일반 generator는 크기를 모르니 append를 반복 — 이때 amortized O(1) per element = 총 O(n).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">LLM이 "큐를 구현해줘"에 <code>pop(0)</code>을 쓴 코드를 줬다. 이 질문으로 개선 유도:</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">개선 질문</div>
+            <ol>
+              <li>"이 큐의 n원소 처리 총 시간 복잡도는?" (답: O(n²))</li>
+              <li>"그 복잡도를 O(n)으로 개선하려면?"</li>
+              <li>"collections.deque로 다시 작성해달라."</li>
+              <li>"list와 deque의 내부 구조 차이는?"</li>
+            </ol>
+            <p>AI가 "pop(0) O(n)이라서 전체 O(n²)"을 스스로 인정하게 만드는 것이 핵심 학습 이벤트.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">CPython이 2×가 아닌 1.125× 성장 인자를 선택한 이유. 현재 하드웨어(메모리 풍부)에서도 여전히 적절한가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>역사적 이유 — 2002년대 메모리가 상대적으로 비쌌음. 또한 Python 프로그램은 list를 매우 많이 만들어서 총 메모리 사용이 2× growth 시 실제로 문제.</p>
+            <p>현재 하드웨어에서도 적절: list는 여전히 흔함, 그리고 1.125× vs 2×의 CPU 차이(~3배 amortized)는 대부분 user code에서 감지 불가. 메모리 효율이 여전히 이득. 게다가 Python 코드가 C로 처리되므로 amortized 10 vs 3 차이가 실제 시간에는 미미.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">📊</div>
+      <h3>Amortized ≠ Average</h3>
+      <p>Amortized는 결정적 (적대 입력에도), Average는 확률적 (분포 가정). list.append는 amortized.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🎯</div>
+      <h3>3가지 분석 방법</h3>
+      <p>Aggregate (단순) / Accounting (직관 저금통) / Potential (형식 Φ). 모두 같은 결론.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">📈</div>
+      <h3>Growth factor 트레이드오프</h3>
+      <p>큰 g → CPU 이득, 메모리 낭비. 작은 g → 메모리 절약, CPU 느려짐. Python은 1.125 (메모리 우선).</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🐍</div>
+      <h3>PyListObject</h3>
+      <p>C 구조체로 ob_item(포인터 배열) + size + allocated. list_resize가 amortized 핵심.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">⚠️</div>
+      <h3>insert(0) / pop(0) 함정</h3>
+      <p>O(n). 큐 구현에 list 쓰면 O(n²) 지옥. deque로 해결 (다음 주).</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">✂️</div>
+      <h3>Slicing 메모리 비밀</h3>
+      <p>A[i:j]는 새 객체. A[i:j]=...는 in-place. A[:] = B와 A = B는 다름.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Dynamic Array</div><div class="glossary-def">크기가 필요 시 자동 확장되는 배열. Python list, Java ArrayList, C++ vector.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Static Array</div><div class="glossary-def">고정 크기 배열. C의 int a[100].</div></div>
+    <div class="glossary-item"><div class="glossary-term">Capacity</div><div class="glossary-def">할당된 공간 크기 (allocated).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Size</div><div class="glossary-def">실제 사용 중인 원소 수 (len). size ≤ capacity.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Growth Factor</div><div class="glossary-def">확장 시 새 용량/옛 용량 비율. Python 1.125, Java 1.5, C++ 2.0.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Amortized Analysis</div><div class="glossary-def">n번 연산의 평균 비용. 입력 무관 결정적 보장. (CLRS §17)</div></div>
+    <div class="glossary-item"><div class="glossary-term">Aggregate Method</div><div class="glossary-def">n번 연산 총 비용 / n. 가장 단순. (§17.1)</div></div>
+    <div class="glossary-item"><div class="glossary-term">Accounting Method</div><div class="glossary-def">각 연산에 amortized 부여 + 저금통. 직관적. (§17.2)</div></div>
+    <div class="glossary-item"><div class="glossary-term">Potential Method</div><div class="glossary-def">상태의 포텐셜 Φ 정의. amortized = actual + ΔΦ. (§17.3)</div></div>
+    <div class="glossary-item"><div class="glossary-term">Potential Function Φ</div><div class="glossary-def">자료구조 상태를 수치로. Φ(D₀) = 0, Φ(D_i) ≥ 0.</div></div>
+    <div class="glossary-item"><div class="glossary-term">PyListObject</div><div class="glossary-def">CPython list 구조체. ob_item (포인터 배열), allocated, ob_size.</div></div>
+    <div class="glossary-item"><div class="glossary-term">list_resize</div><div class="glossary-def">listobject.c 함수. 새 용량 계산 + realloc.</div></div>
+    <div class="glossary-item"><div class="glossary-term">ob_item</div><div class="glossary-def">PyObject 포인터의 배열. Python list의 "본체".</div></div>
+    <div class="glossary-item"><div class="glossary-term">allocated</div><div class="glossary-def">ob_item에 할당된 슬롯 수 (capacity).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Overallocation</div><div class="glossary-def">필요 이상 할당해 미래 append 대비. amortized O(1)의 비밀.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Golden Ratio φ</div><div class="glossary-def">(1+√5)/2 ≈ 1.618. growth factor &lt; φ이면 해제 메모리 재사용 가능.</div></div>
+    <div class="glossary-item"><div class="glossary-term">insert(0) / pop(0)</div><div class="glossary-def">list의 앞 원소 조작. O(n) (모든 원소 shift).</div></div>
+    <div class="glossary-item"><div class="glossary-term">deque</div><div class="glossary-def">collections.deque. 양 끝 O(1). linked list of blocks 구조.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Slicing Copy</div><div class="glossary-def">A[i:j]는 새 list. 원소 포인터만 복사 (얕은 복사).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Slice Assignment</div><div class="glossary-def">A[i:j] = [...] in-place 수정. 크기도 자동 조정.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Shallow Copy</div><div class="glossary-def">얕은 복사. 최상위 레벨만 복사 (하위 객체는 공유). list.copy(), A[:].</div></div>
+    <div class="glossary-item"><div class="glossary-term">Deep Copy</div><div class="glossary-def">copy.deepcopy. 재귀적으로 모든 중첩 객체 복사.</div></div>
+    <div class="glossary-item"><div class="glossary-term">realloc</div><div class="glossary-def">C 라이브러리 함수. 기존 메모리 블록 크기 조정. 가능하면 in-place, 아니면 새 위치에 복사.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Telescoping</div><div class="glossary-def">Σ (a_i − a_{i-1}) = a_n − a_0. Potential 분석의 수학적 트릭.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Accidentally Quadratic</div><div class="glossary-def">실수로 O(n²)이 된 코드. list + pop(0)의 흔한 결과.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 09</div>
+    <h3>연결 리스트 / 스택 / 큐 — 그리고 deque의 비밀</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      이번 주 우리는 list의 함정을 봤습니다. 다음 주는 그 함정을 해결하는 자료구조들 — 그리고 왜 Python은 단일 연결 리스트를 표준 제공 안 하는지 봅니다.
+    </p>
+    <ul>
+      <li><strong>단일 연결 리스트</strong> — 포인터 기반, 실제로는 왜 안 쓰는가 (캐시)</li>
+      <li><strong>이중 연결 리스트</strong> — 양방향, <code>deque</code>의 기원</li>
+      <li><strong>CPython deque 소스</strong> — 단순 linked list가 아닌 <em>block linked list</em></li>
+      <li><strong>스택과 큐 ADT</strong> — list vs deque 선택 기준</li>
+      <li><strong>LRU 캐시</strong> — 이중 연결 리스트 + dict의 조합 (Algo 10 선행)</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo07.html">&larr; Algo 07 — Timsort</a>
+  <a href="algo09.html">Algo 09 — 연결 리스트 · 스택 · 큐 &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">CLRS 4판 §17, CPython listobject.c, CPython listobject.h 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

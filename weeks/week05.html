@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
     <div class="header-nav">
       <a href="week04.html" class="nav-btn">&larr; 이전</a>
       <a href="week06.html" class="nav-btn">다음 &rarr;</a>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -527,7 +528,7 @@ dis.dis(classify)</code></pre>
     </div>
     <p>바이트코드 해독:</p>
     <ul>
-      <li><code>COMPARE_OP 68 (&gt;)</code>: oparg 68 = <code>(4&lt;&lt;4|8)</code> — 상위 4비트가 비교 종류(4=GT), 하위 4비트가 캐시 힌트. n과 0을 비교, True/False를 스택에 push</li>
+      <li><code>COMPARE_OP 68 (&gt;)</code>: oparg 68 = <code>(4&lt;&lt;4)|4</code> = 64+4 — Python 3.12 인코딩(상위 4비트=비교 종류 4='>', 하위 4비트=인라인 캐시 힌트). <em>Python 3.13+에서는 인코딩이 바뀌어 비교 종류는 <code>opname &gt;&gt; 5</code>로, <code>opname &amp; 16</code>은 bool 강제 플래그로 사용됩니다(원서 <a href="https://docs.python.org/3/library/dis.html#opcode-COMPARE_OP" target="_blank">library/dis.html COMPARE_OP</a>).</em> n과 0을 비교해 True/False를 스택에 push</li>
       <li><code>POP_JUMP_IF_FALSE 1 (to 14)</code>: 스택 top이 False이면 offset 14로 점프 (elif 시작) → 스택 pop</li>
       <li>True이면 점프하지 않고 <code>RETURN_CONST '양수'</code> 실행</li>
       <li>offset 14(<code>&gt;&gt;</code> 표시 = 점프 목적지)부터 elif 절 시작</li>
@@ -1676,7 +1677,7 @@ class TestGrade(unittest.TestCase):
 # 경계값(boundary): 조건의 경계에서 테스트 (89/90, 79/80, 69/70...)</code></pre>
     <p>
       <strong>Branch Coverage</strong>: 모든 분기의 참/거짓 경로를 테스트했는가?<br>
-      <strong>MC/DC (Modified Condition/Decision Coverage)</strong>: 항공/의료 소프트웨어 수준 — 각 조건이 독립적으로 결과에 영향을 주는지 확인.
+      <strong>MC/DC (Modified Condition/Decision Coverage)</strong>: 항공 소프트웨어 인증 표준 <a href="https://en.wikipedia.org/wiki/DO-178C" target="_blank">DO-178B/C</a> Level A에서 요구되는 커버리지 기준 — 각 조건이 독립적으로 결과에 영향을 주는지 확인 (NASA/FAA 공식 정의: <a href="https://ntrs.nasa.gov/citations/20040086014" target="_blank">NASA Technical Report on MC/DC</a>).
       <code>score &lt; 0 or score &gt; 100</code>에서 MC/DC를 만족하려면, 각 조건이 독립적으로 결과를 바꾸는 테스트 쌍이 필요합니다
       (예: <code>score=-1 vs score=50</code>은 좌측 조건만 변경, <code>score=50 vs score=101</code>은 우측 조건만 변경).
     </p>

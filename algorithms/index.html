@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PyWhy 알고리즘 — 30주 커리큘럼</title>
+  <meta name="description" content="CLRS와 Python 표준 라이브러리에 기반한 30주 알고리즘 강의. 비유 → 시각화 → 증명 → CPython → CLRS 6단 구성.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PyWhy 알고리즘 — 30주 커리큘럼">
+  <meta property="og:description" content="CLRS와 Python 표준 라이브러리에 기반한 30주 알고리즘 강의. 비유 → 증명 → CPython 6단 구성.">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://soccz.github.io/python-why/algorithms/">
+  <link rel="stylesheet" href="../css/style.min.css">
+  <style>
+    /* Algorithms 인덱스 — 메인 인덱스 스타일 일부 재활용 */
+    .hero { padding: 64px 0 48px; text-align: center; }
+    .hero-eyebrow {
+      display: inline-block; font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--accent-text); background: var(--accent-soft);
+      border: 1px solid var(--border-accent); border-radius: var(--radius-full);
+      padding: 5px 16px; margin-bottom: 24px;
+    }
+    .hero-title {
+      font-family: 'Noto Serif KR', serif;
+      font-size: clamp(2rem, 5vw, 3rem); font-weight: 900;
+      line-height: 1.2; letter-spacing: -0.03em; color: var(--text); margin-bottom: 8px;
+    }
+    .hero-title .accent {
+      background: var(--accent-gradient); -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-subtitle-main {
+      font-size: clamp(0.95rem, 2vw, 1.1rem);
+      color: var(--text-secondary); line-height: 1.8;
+      max-width: 580px; margin: 20px auto 0;
+    }
+    .hero-cta-group {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 32px;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent-hover); color: #fff; border: none;
+      border-radius: var(--radius-sm); padding: 13px 28px;
+      font-size: 0.95rem; font-weight: 700; font-family: 'Noto Sans KR', sans-serif;
+      text-decoration: none; transition: all 0.25s var(--ease-out); box-shadow: var(--shadow-sm);
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover); color: #fff; transform: translateY(-2px);
+      box-shadow: var(--shadow-md), 0 0 0 4px var(--accent-soft);
+    }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--bg-elevated); color: var(--text-secondary);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 13px 28px; font-size: 0.95rem; font-weight: 600;
+      font-family: 'Noto Sans KR', sans-serif; text-decoration: none;
+      transition: all 0.25s var(--ease-out);
+    }
+    .btn-secondary:hover {
+      background: var(--surface); color: var(--text);
+      border-color: var(--border-accent); transform: translateY(-2px); box-shadow: var(--shadow-sm);
+    }
+
+    .stats-row {
+      display: flex; gap: 0; justify-content: center;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-elevated); overflow: hidden;
+      margin: 44px 0 0; box-shadow: var(--shadow-sm);
+    }
+    .stat-item { flex: 1; text-align: center; padding: 18px 12px; border-right: 1px solid var(--border); }
+    .stat-item:last-child { border-right: none; }
+    .stat-num { font-family: 'Noto Serif KR', serif; font-size: 1.7rem; font-weight: 900; color: var(--accent-text); line-height: 1; display: block; }
+    .stat-label { font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; display: block; }
+
+    .section-divider { border: none; height: 1px; background: var(--border); margin: 56px 0; }
+
+    /* Part header */
+    .part-header {
+      display: flex; align-items: baseline; gap: 12px; margin: 48px 0 20px;
+      padding-bottom: 10px; border-bottom: 2px solid var(--border-accent);
+    }
+    .part-label {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--accent-text);
+    }
+    .part-title {
+      font-size: 1.3rem; font-weight: 900; color: var(--text); margin: 0;
+    }
+    .part-range {
+      margin-left: auto; font-size: 0.78rem; color: var(--text-muted);
+    }
+
+    /* Week grid (algorithm cards) */
+    .algo-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px; margin-bottom: 12px;
+    }
+    .algo-card {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 18px;
+      text-decoration: none; color: inherit;
+      transition: all 0.25s var(--ease-out); box-shadow: var(--shadow-xs);
+      display: block; border-left: 3px solid transparent;
+    }
+    .algo-card:hover {
+      transform: translateY(-3px); box-shadow: var(--shadow-md);
+      border-color: var(--border-accent); border-left-color: var(--accent); color: inherit;
+    }
+    .algo-card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .algo-card-num {
+      font-size: 0.7rem; font-weight: 700; color: var(--accent-text);
+      text-transform: uppercase; letter-spacing: 1.4px;
+    }
+    .algo-card-status {
+      font-size: 0.62rem; font-weight: 600; padding: 2px 7px;
+      border-radius: var(--radius-full); border: 1px solid;
+    }
+    .status-ready { color: #267547; background: #f0f9f4; border-color: rgba(59, 155, 110, 0.25); }
+    .algo-card-title {
+      font-size: 0.97rem; font-weight: 700; margin-bottom: 5px;
+      line-height: 1.35; color: var(--text);
+    }
+    .algo-card-desc {
+      font-size: 0.79rem; color: var(--text-secondary); line-height: 1.6;
+    }
+    .algo-card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .algo-tag {
+      font-size: 0.62rem; padding: 2px 7px; border-radius: var(--radius-full);
+      background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border);
+    }
+
+    /* 6단 구성 설명 */
+    .six-step-section { margin: 48px 0; }
+    .six-step-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px; margin-top: 20px;
+    }
+    .six-step-item {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 16px;
+      transition: all 0.2s var(--ease-out);
+    }
+    .six-step-item:hover { border-color: var(--border-accent); box-shadow: var(--shadow-sm); }
+    .six-step-num {
+      display: inline-block; font-family: 'Noto Serif KR', serif;
+      font-size: 1.5rem; font-weight: 900; color: var(--accent-text);
+      line-height: 1; margin-bottom: 6px;
+    }
+    .six-step-item h4 { font-size: 0.86rem; font-weight: 700; margin: 4px 0 6px; color: var(--text); }
+    .six-step-item p { font-size: 0.78rem; color: var(--text-secondary); margin: 0; line-height: 1.55; }
+    .six-step-level {
+      display: inline-block; font-size: 0.62rem; font-weight: 700;
+      padding: 2px 7px; border-radius: var(--radius-full); margin-left: 6px;
+    }
+    .level-elem { background: #f0f9f4; color: #267547; border: 1px solid rgba(59,155,110,0.2); }
+    .level-inter { background: #fdf8ef; color: #8a5f0e; border: 1px solid rgba(196,139,44,0.2); }
+    .level-adv { background: #fdf2f2; color: #963434; border: 1px solid rgba(196,88,88,0.2); }
+    .level-expert { background: #f2f0fc; color: #4835a0; border: 1px solid rgba(90,72,192,0.2); }
+
+    /* Section header */
+    .section-header { text-align: center; margin-bottom: 24px; }
+    .section-header h2 { font-size: 1.5rem; font-weight: 900; margin-bottom: 8px; }
+    .section-header p { color: var(--text-secondary); font-size: 0.88rem; }
+
+    .source-box {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px 24px; margin: 32px 0;
+      box-shadow: var(--shadow-xs);
+    }
+    .source-box h3 { font-size: 0.95rem; font-weight: 700; margin: 0 0 10px; color: var(--accent-text); }
+    .source-box ul { margin: 0; padding-left: 20px; }
+    .source-box li { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.7; }
+    .source-box code {
+      background: var(--surface); padding: 1px 5px;
+      border-radius: 3px; font-size: 0.83rem;
+    }
+  </style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="../index.html" class="nav-btn">← 메인 강의</a>
+      <a href="algo01.html" class="nav-btn">Algo 01부터 시작 →</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<!-- ===== HERO ===== -->
+<div class="hero">
+  <span class="hero-eyebrow">CLRS 4판 + Python 3.14 기반</span>
+  <h1 class="hero-title">
+    알고리즘은<br><span class="accent">왜?</span>
+  </h1>
+  <p class="hero-subtitle-main">
+    "어떻게 푸는가"가 아니라 <strong>"왜 이렇게 풀어야만 하는가"</strong>를 배우는 알고리즘 강의.<br>
+    비유 → 시각화 → 증명 → CPython 구현 → 원서 정리. <strong>30주 커리큘럼.</strong>
+  </p>
+  <div class="hero-cta-group">
+    <a href="algo01.html" class="btn-primary">Algo 01: 빅오와 점근 분석 →</a>
+    <a href="#curriculum" class="btn-secondary">전체 커리큘럼</a>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <span class="stat-num">30</span>
+      <span class="stat-label">주차 커리큘럼</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">6</span>
+      <span class="stat-label">단계 구성</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">4</span>
+      <span class="stat-label">난이도 레벨</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">CLRS</span>
+      <span class="stat-label">원서 기반</span>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ===== 6단 구성 설명 ===== -->
+<div class="six-step-section">
+  <div class="section-header">
+    <h2>각 알고리즘은 6단으로 분해됩니다</h2>
+    <p>같은 알고리즘을 4개 레벨, 6단계 깊이로 — 누구든 자기 단계에서 시작할 수 있습니다</p>
+  </div>
+  <div class="six-step-grid">
+    <div class="six-step-item">
+      <span class="six-step-num">1</span><span class="six-step-level level-elem">초급</span>
+      <h4>비유</h4>
+      <p>도서관, 줄서기, 책장 정리 — 일상의 직관으로 알고리즘의 본질을 잡습니다.</p>
+    </div>
+    <div class="six-step-item">
+      <span class="six-step-num">2</span><span class="six-step-level level-inter">중급</span>
+      <h4>동작 시각화</h4>
+      <p>한 단계씩 그림과 표로 추적. "지금 무슨 일이 일어나고 있는가"를 봅니다.</p>
+    </div>
+    <div class="six-step-item">
+      <span class="six-step-num">3</span><span class="six-step-level level-adv">고급</span>
+      <h4>루프 불변식</h4>
+      <p>"왜 이 알고리즘이 정말로 맞는 답을 내는가"를 수학적으로 증명합니다.</p>
+    </div>
+    <div class="six-step-item">
+      <span class="six-step-num">4</span><span class="six-step-level level-adv">고급</span>
+      <h4>점화식 + 빅오</h4>
+      <p>시간/공간 복잡도를 점화식으로 세우고, 마스터 정리/직접 풀이로 증명합니다.</p>
+    </div>
+    <div class="six-step-item">
+      <span class="six-step-num">5</span><span class="six-step-level level-expert">전공자</span>
+      <h4>CPython / 표준라이브러리</h4>
+      <p>Python의 <code>list.sort</code>, <code>heapq</code> 등이 어떻게 이 알고리즘을 구현하는지 봅니다.</p>
+    </div>
+    <div class="six-step-item">
+      <span class="six-step-num">6</span><span class="six-step-level level-expert">전공자</span>
+      <h4>CLRS 정리 인용</h4>
+      <p>원서의 정리(theorem)와 보조정리(lemma)를 직접 인용해 학술적 맥락에 연결합니다.</p>
+    </div>
+  </div>
+</div>
+
+<div class="source-box">
+  <h3>📚 기반 원서</h3>
+  <ul>
+    <li>Cormen, Leiserson, Rivest, Stein. <em>Introduction to Algorithms</em>, 4th ed. MIT Press, 2022. (CLRS)</li>
+    <li>Knuth. <em>The Art of Computer Programming</em>, Vol. 1–4A. Addison-Wesley.</li>
+    <li>Sedgewick & Wayne. <em>Algorithms</em>, 4th ed. Addison-Wesley, 2011.</li>
+    <li>Python 3.14 공식 문서 — <code>library/heapq</code>, <code>library/bisect</code>, <code>library/collections</code>, <code>library/functools</code> 외</li>
+    <li>CPython 소스 — <code>Objects/listobject.c</code>, <code>Objects/dictobject.c</code>, <code>Modules/_heapqmodule.c</code> 외</li>
+  </ul>
+</div>
+
+<hr class="section-divider" id="curriculum">
+
+<!-- ===== CURRICULUM ===== -->
+<div class="section-header">
+  <h2>30주 커리큘럼</h2>
+  <p>6개 파트, 30주 — 기초부터 NP까지</p>
+</div>
+
+<!-- ===== PART I — 기초와 분석 ===== -->
+<div class="part-header">
+  <span class="part-label">Part I</span>
+  <h3 class="part-title">기초와 분석</h3>
+  <span class="part-range">Week 01 ~ 04</span>
+</div>
+<div class="algo-grid">
+  <a href="algo01.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 01</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">빅오 표기법과 점근 분석</div>
+    <div class="algo-card-desc">시계 대신 자라남으로 비교한다. O / Θ / Ω, 마스터 정리.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Big-O</span>
+      <span class="algo-tag">Master Theorem</span>
+      <span class="algo-tag">CLRS §3, §4.5</span>
+    </div>
+  </a>
+  <a href="algo02.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 02</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">정확성 증명과 루프 불변식</div>
+    <div class="algo-card-desc">Hoare triple, 불변식 3속성, 변형 함수 — 테스트로는 못 잡는 것을 증명한다.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Loop Invariant</span>
+      <span class="algo-tag">Hoare Logic</span>
+      <span class="algo-tag">CLRS §2.1</span>
+    </div>
+  </a>
+  <a href="algo03.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 03</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">분할 정복 패러다임</div>
+    <div class="algo-card-desc">큰 문제를 절반으로 쪼개 풀고 합친다. 병합 정렬, Karatsuba, Strassen.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Divide & Conquer</span>
+      <span class="algo-tag">Merge Sort</span>
+      <span class="algo-tag">CLRS §4</span>
+    </div>
+  </a>
+  <a href="algo04.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 04</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">확률과 randomized 분석</div>
+    <div class="algo-card-desc">지표 확률 변수, randomized quicksort, reservoir sampling, Las Vegas vs Monte Carlo.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Expected Time</span>
+      <span class="algo-tag">Randomized</span>
+      <span class="algo-tag">CLRS §5, §7</span>
+    </div>
+  </a>
+</div>
+
+<!-- ===== PART II — 정렬 ===== -->
+<div class="part-header">
+  <span class="part-label">Part II</span>
+  <h3 class="part-title">정렬 알고리즘</h3>
+  <span class="part-range">Week 05 ~ 07</span>
+</div>
+<div class="algo-grid">
+  <a href="algo05.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 05</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">O(n²) 정렬들</div>
+    <div class="algo-card-desc">삽입·선택·버블 — 왜 여전히 쓰는가. 결정 트리로 증명하는 Ω(n log n) 하한.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Insertion</span>
+      <span class="algo-tag">Decision Tree</span>
+      <span class="algo-tag">CLRS §2.1, §8.1</span>
+    </div>
+  </a>
+  <a href="algo06.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 06</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">O(n log n) 정렬들</div>
+    <div class="algo-card-desc">병합·힙·퀵 + introsort + 비비교 정렬(counting/radix/bucket).</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Heap Sort</span>
+      <span class="algo-tag">Quicksort</span>
+      <span class="algo-tag">CLRS §6, §7, §8</span>
+    </div>
+  </a>
+  <a href="algo07.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 07</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">Timsort — Python의 정렬</div>
+    <div class="algo-card-desc">Tim Peters 2002. Natural run, stack invariants, galloping, 그리고 2015년 de Gouw의 버그.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Timsort</span>
+      <span class="algo-tag">listsort.txt</span>
+      <span class="algo-tag">de Gouw 2015</span>
+    </div>
+  </a>
+</div>
+
+<!-- ===== PART III — 자료구조 ===== -->
+<div class="part-header">
+  <span class="part-label">Part III</span>
+  <h3 class="part-title">자료구조</h3>
+  <span class="part-range">Week 08 ~ 12</span>
+</div>
+<div class="algo-grid">
+  <a href="algo08.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 08</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">동적 배열 (Python list)</div>
+    <div class="algo-card-desc">amortized O(1) append — Aggregate/Accounting/Potential 세 분석. 1.125× growth, list_resize 소스.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Amortized</span>
+      <span class="algo-tag">PyListObject</span>
+      <span class="algo-tag">CLRS §17</span>
+    </div>
+  </a>
+  <a href="algo09.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 09</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">연결 리스트 / 스택 / 큐</div>
+    <div class="algo-card-desc">왜 Python은 단일 linked list 없는가. CPython deque의 block-linked list + LRU cache.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">deque</span>
+      <span class="algo-tag">Block-linked</span>
+      <span class="algo-tag">CLRS §10</span>
+    </div>
+  </a>
+  <a href="algo10.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 10</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">해시 테이블 (Python dict)</div>
+    <div class="algo-card-desc">Open addressing + perturbation, SipHash-1-3, Hettinger의 compact dict 혁신.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">dict</span>
+      <span class="algo-tag">Compact Dict</span>
+      <span class="algo-tag">CLRS §11</span>
+    </div>
+  </a>
+  <a href="algo11.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 11</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">BST · AVL · Red-Black</div>
+    <div class="algo-card-desc">순진한 BST의 O(n) 함정, AVL 엄격 균형, RB 실무 표준, 그리고 sortedcontainers의 영리한 대안.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">BST</span>
+      <span class="algo-tag">AVL / RB</span>
+      <span class="algo-tag">CLRS §12, §13</span>
+    </div>
+  </a>
+  <a href="algo12.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 12</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">힙과 우선순위 큐</div>
+    <div class="algo-card-desc">heapq API, _siftdown/_siftup의 함정, max-heap 3가지 방법, k-way merge + running median.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">heapq</span>
+      <span class="algo-tag">Priority Queue</span>
+      <span class="algo-tag">CLRS §6</span>
+    </div>
+  </a>
+</div>
+
+<!-- ===== PART IV — 그래프 ===== -->
+<div class="part-header">
+  <span class="part-label">Part IV</span>
+  <h3 class="part-title">그래프 알고리즘</h3>
+  <span class="part-range">Week 13 ~ 18</span>
+</div>
+<div class="algo-grid">
+  <a href="algo13.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 13</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">트리 순회</div>
+    <div class="algo-card-desc">DFS(pre/in/post) + BFS + Morris O(1) + LCA + Tree DP. Python recursion limit 회피.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">DFS / BFS</span>
+      <span class="algo-tag">Morris 1979</span>
+      <span class="algo-tag">LCA</span>
+    </div>
+  </a>
+  <a href="algo14.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 14</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">그래프 표현과 BFS/DFS</div>
+    <div class="algo-card-desc">인접 리스트/행렬, BFS/DFS, 위상 정렬(Kahn), SCC(Tarjan/Kosaraju).</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">BFS / DFS</span>
+      <span class="algo-tag">SCC</span>
+      <span class="algo-tag">CLRS §20</span>
+    </div>
+  </a>
+  <a href="algo15.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 15</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">최단 경로 I — 다익스트라</div>
+    <div class="algo-card-desc">1959년 20분의 머릿속 산책, 음수 간선 불가 증명, heapq lazy deletion, A*까지.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Dijkstra</span>
+      <span class="algo-tag">heapq</span>
+      <span class="algo-tag">CLRS §22.3 (4판)</span>
+    </div>
+  </a>
+  <a href="algo16.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 16</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">최단 경로 II — Bellman-Ford, Floyd-Warshall</div>
+    <div class="algo-card-desc">V-1번 relax의 DP 원리, 음수 사이클 감지(환율 차익), FW 5줄, SPFA, Johnson.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Bellman-Ford</span>
+      <span class="algo-tag">Floyd-Warshall</span>
+      <span class="algo-tag">CLRS §22.1·§23.2 (4판)</span>
+    </div>
+  </a>
+  <a href="algo17.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 17</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">최소 신장 트리 (MST)</div>
+    <div class="algo-card-desc">Borůvka 1926부터 네 번의 독립 발견, Cut Property 증명, Kruskal·Prim·Borůvka 3인방, 클러스터링 응용까지.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Kruskal</span>
+      <span class="algo-tag">Prim</span>
+      <span class="algo-tag">Borůvka</span>
+      <span class="algo-tag">CLRS §21 (4판)</span>
+    </div>
+  </a>
+  <a href="algo18.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 18</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">네트워크 플로우</div>
+    <div class="algo-card-desc">1956년 RAND 냉전 철도망 문제, Ford-Fulkerson/EK/Dinitz/Push-Relabel, Max-Flow Min-Cut 쌍대성, 이분 매칭 환원.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Max-Flow</span>
+      <span class="algo-tag">Min-Cut</span>
+      <span class="algo-tag">Bipartite</span>
+      <span class="algo-tag">CLRS §24 (4판)</span>
+    </div>
+  </a>
+</div>
+
+<!-- ===== PART V — 알고리즘 패러다임 ===== -->
+<div class="part-header">
+  <span class="part-label">Part V</span>
+  <h3 class="part-title">알고리즘 패러다임</h3>
+  <span class="part-range">Week 19 ~ 23</span>
+</div>
+<div class="algo-grid">
+  <a href="algo19.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 19</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">그리디 알고리즘 총정리</div>
+    <div class="algo-card-desc">Huffman 1952 MIT 기말과제 일화, Greedy-Choice/Exchange Argument 증명, Matroid 이론, 0/1 배낭 왜 실패, 근사 알고리즘.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Greedy</span>
+      <span class="algo-tag">Huffman</span>
+      <span class="algo-tag">Matroid</span>
+      <span class="algo-tag">CLRS §15 (4판)</span>
+    </div>
+  </a>
+  <a href="algo20.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 20</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">동적 계획법 I — 기초</div>
+    <div class="algo-card-desc">Bellman 1957 "DP" 책 일화, Fibonacci O(2ⁿ)→O(n), @cache, 막대 자르기, 동전 교환, 집 털기까지.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Memoization</span>
+      <span class="algo-tag">@cache</span>
+      <span class="algo-tag">Rod Cutting</span>
+      <span class="algo-tag">CLRS §14 (4판)</span>
+    </div>
+  </a>
+  <a href="algo21.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 21</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">동적 계획법 II — 고전 문제</div>
+    <div class="algo-card-desc">Levenshtein 1965, Wagner-Fischer 1974, Hirschberg 1975 — 0/1 배낭, LCS, 편집거리, LIS Patience, 행렬 체인.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">LCS</span>
+      <span class="algo-tag">Edit Distance</span>
+      <span class="algo-tag">LIS</span>
+      <span class="algo-tag">CLRS §14 (4판)</span>
+    </div>
+  </a>
+  <a href="algo22.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 22</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">백트래킹 — N-Queens, 스도쿠</div>
+    <div class="algo-card-desc">Bezzel 1848부터 Walker-Golomb 정식화까지. Choose/Unchoose 프레임워크, 비트마스크 최적화, 제약 전파, SAT solver.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Backtracking</span>
+      <span class="algo-tag">N-Queens</span>
+      <span class="algo-tag">Sudoku</span>
+      <span class="algo-tag">DPLL</span>
+    </div>
+  </a>
+  <a href="algo23.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 23</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">분기 한정 (Branch &amp; Bound)</div>
+    <div class="algo-card-desc">Land-Doig 1960, Little 1963 — TSP/0-1 배낭 B&amp;B, LP relaxation, CPLEX·Gurobi·HiGHS MIP solver.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">B&amp;B</span>
+      <span class="algo-tag">TSP</span>
+      <span class="algo-tag">MIP</span>
+      <span class="algo-tag">LP Relaxation</span>
+    </div>
+  </a>
+</div>
+
+<!-- ===== PART VI — 고급 ===== -->
+<div class="part-header">
+  <span class="part-label">Part VI</span>
+  <h3 class="part-title">고급 주제</h3>
+  <span class="part-range">Week 24 ~ 30</span>
+</div>
+<div class="algo-grid">
+  <a href="algo24.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 24</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">문자열 알고리즘 — KMP/BM/RK</div>
+    <div class="algo-card-desc">1977년 KMP & Boyer-Moore 동시 출현, 1987 Rabin-Karp rolling hash, Z-algorithm, suffix 구조 소개. grep/BLAST/표절검사의 기반.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">KMP</span>
+      <span class="algo-tag">Boyer-Moore</span>
+      <span class="algo-tag">Rabin-Karp</span>
+      <span class="algo-tag">CLRS §32 (4판)</span>
+    </div>
+  </a>
+  <a href="algo25.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 25</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">해시와 해시 테이블 심화</div>
+    <div class="algo-card-desc">Bloom 1970, Carter-Wegman 1979, Karger 1997 Consistent, Pagh-Rodler 2001 Cuckoo — Akamai·Redis·블록체인의 기반.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Bloom Filter</span>
+      <span class="algo-tag">Consistent Hash</span>
+      <span class="algo-tag">Cuckoo</span>
+      <span class="algo-tag">SipHash</span>
+    </div>
+  </a>
+  <a href="algo26.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 26</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">구간 자료구조</div>
+    <div class="algo-card-desc">Bentley 1977 Segment Tree, Ryabko 1989/Fenwick 1994 BIT. 구간 질의·업데이트 O(log n), lazy propagation, 경쟁 프로그래밍 필수.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Segment Tree</span>
+      <span class="algo-tag">Fenwick (BIT)</span>
+      <span class="algo-tag">Lazy</span>
+    </div>
+  </a>
+  <a href="algo27.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 27</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">고급 자료구조 — Trie, Skip List, B-Tree, LSM</div>
+    <div class="algo-card-desc">Fredkin 1960 Trie, Bayer-McCreight 1972 B-Tree, Pugh 1990 Skip List, O'Neil 1996 LSM — PostgreSQL·Redis·Cassandra 인덱스의 실체.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Trie</span>
+      <span class="algo-tag">Skip List</span>
+      <span class="algo-tag">B+ Tree</span>
+      <span class="algo-tag">LSM</span>
+    </div>
+  </a>
+  <a href="algo28.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 28</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">계산 기하 — Convex Hull, Sweep Line</div>
+    <div class="algo-card-desc">Graham 1972, Andrew 1979, Bentley-Ottmann 1979, Fortune 1987 — CCW primitive부터 Voronoi·GIS·CAD·게임 충돌까지.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Convex Hull</span>
+      <span class="algo-tag">Sweep Line</span>
+      <span class="algo-tag">Voronoi</span>
+      <span class="algo-tag">Shapely</span>
+    </div>
+  </a>
+  <a href="algo29.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 29</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">NP와 근사 알고리즘</div>
+    <div class="algo-card-desc">Cook 1971, Karp 1972, Levin 독립 발견, Christofides 1.5, PCP theorem 1992 — 이론 CS의 정점.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">NP-complete</span>
+      <span class="algo-tag">Reduction</span>
+      <span class="algo-tag">PCP</span>
+      <span class="algo-tag">CLRS §34, §35</span>
+    </div>
+  </a>
+  <a href="algo30.html" class="algo-card">
+    <div class="algo-card-meta">
+      <span class="algo-card-num">Algo 30</span>
+      <span class="algo-card-status status-ready">완성</span>
+    </div>
+    <div class="algo-card-title">종합 — 알고리즘 설계 전략</div>
+    <div class="algo-card-desc">새 문제를 만났을 때의 사고 흐름. 30주 전체 복습 · 6단계 사고 프레임 · 패러다임 선택 가이드.</div>
+    <div class="algo-card-tags">
+      <span class="algo-tag">Synthesis</span>
+      <span class="algo-tag">Design</span>
+      <span class="algo-tag">30주 완주</span>
+    </div>
+  </a>
+</div>
+
+<hr class="section-divider">
+
+<!-- ===== FINAL CTA ===== -->
+<div class="final-cta" style="text-align:center;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);padding:44px 28px;margin-bottom:56px;box-shadow:var(--shadow-sm);">
+  <h2 style="font-size:1.4rem;margin-bottom:12px;">Algo 01부터 시작하기</h2>
+  <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:22px;max-width:480px;margin-left:auto;margin-right:auto;">
+    "도서관에서 책 한 권 찾기" 비유로 시작해서 마스터 정리까지 — 빅오 표기법의 모든 것.
+  </p>
+  <a href="algo01.html" class="btn-primary">Algo 01: 빅오와 점근 분석 →</a>
+</div>
+
+</main>
+</div>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+</footer>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

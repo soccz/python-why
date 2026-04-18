@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 15주차: 최단 경로 I — Dijkstra | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="Dijkstra 알고리즘 — 1959년 Edsger Dijkstra의 명작. 가중 그래프 단일 출발 최단 경로. heapq로 O((V+E) log V) 구현.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 15주차: Dijkstra | PyWhy">
+  <meta property="og:description" content="그리디 최단 경로 + 음수 간선 문제 + A* + 구글 지도가 어떻게 쓰는가">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo15.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A15">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo14.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo16.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 15</div>
+  <h1 class="week-title">최단 경로 I — Dijkstra<br>1956년 커피 브레이크에서 태어나 1959년에 발표된 알고리즘</h1>
+  <p class="week-subtitle">
+    1956년 암스테르담, 26세의 Edsger W. Dijkstra(1930년생)는 약혼녀와 커피를 마시며 "로테르담에서 흐로닝언까지 최단 경로는?"을 생각하다 알고리즘을 떠올립니다. <em>종이와 연필 없이, 20분 만에.</em><br>
+    구글 지도, GPS 내비, 인터넷 라우팅, 게임 AI — 60년이 넘도록 <strong>가장 많이 쓰이는 알고리즘</strong> 중 하나.<br>
+    핵심 질문: <em>"왜 그리디(매 순간 최선 선택)가 통하는가? 왜 음수 간선엔 실패하는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 커피 브레이크의 선물</a>
+    </div>
+    <div class="toc-section">
+      <a href="#why-not-bfs" class="toc-section-link"><span class="toc-num">02</span>BFS가 가중 그래프에 실패하는 이유</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#idea" class="toc-section-link"><span class="toc-num">03</span>Dijkstra의 아이디어 — 그리디</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#algorithm" class="toc-section-link"><span class="toc-num">04</span>알고리즘 의사코드 (CLRS §22.3)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#python-impl" class="toc-section-link"><span class="toc-num">05</span>Python 구현 — heapq + lazy deletion</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#correctness" class="toc-section-link"><span class="toc-num">06</span>정확성 증명 — 왜 그리디가 통하는가</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#complexity" class="toc-section-link"><span class="toc-num">07</span>복잡도 — O((V+E) log V)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#negative-edges" class="toc-section-link"><span class="toc-num">08</span>음수 간선의 함정</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#variants" class="toc-section-link"><span class="toc-num">09</span>변종 — Bidirectional, K-shortest</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#a-star" class="toc-section-link"><span class="toc-num">10</span>A* — Dijkstra + 휴리스틱</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#real-world" class="toc-section-link"><span class="toc-num">11</span>실무 — 구글 지도는 어떻게 쓰는가</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#ai-dijkstra" class="toc-section-link"><span class="toc-num">12</span>AI와 Dijkstra</a>
+    </div>
+    <div class="toc-section">
+      <a href="#practice" class="toc-section-link"><span class="toc-num">13</span>실습 — Network Delay Time</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 커피 브레이크의 선물</h2>
+
+  <blockquote>
+    <em>"The shortest path algorithm was invented in about 1956... I designed it in about 20 minutes. One morning I was shopping in Amsterdam with my young fiancée, and tired, we sat down on the café terrace to drink a cup of coffee and I was just thinking about whether I could do this, and I then designed the algorithm for the shortest path."</em>
+    <br>— Edsger W. Dijkstra, Interview 2001
+  </blockquote>
+
+  <div class="story-block">
+    <h3>배경 — 네덜란드의 신생 컴퓨터 ARMAC</h3>
+    <p>
+      1956년, 네덜란드 수학센터(CWI)가 새 컴퓨터 ARMAC을 공개 시연. Dijkstra에게 "대중이 이해할 수 있는 문제"를 풀어달라 부탁. 그가 선택한 건 — <em>"네덜란드 64개 도시 간 최단 경로"</em>.
+    </p>
+    <p>
+      커피 브레이크 20분 동안 떠올린 알고리즘. 3년 뒤인 <strong>1959년 <em>"A Note on Two Problems in Connexion with Graphs"</em> (Numerische Mathematik 1:269-271)</strong>에 겨우 3페이지로 발표.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>60년 후의 오늘</h3>
+    <p>
+      Dijkstra 알고리즘이 지금 처리하는 일들:
+    </p>
+    <ul>
+      <li><strong>구글 지도 / 카카오맵</strong>: 길 안내. 도로망이 가중 그래프, 도시가 정점.</li>
+      <li><strong>GPS 내비게이션</strong>: 실시간 교통 반영한 경로 재계산.</li>
+      <li><strong>인터넷 라우팅 (OSPF)</strong>: 라우터 간 패킷 경로. 2022년 현재도 운영 중.</li>
+      <li><strong>게임 AI</strong>: NPC 경로 찾기 (보통 A*로 확장).</li>
+      <li><strong>3D 렌더링</strong>: 빛이 장면을 통과하는 최단 경로.</li>
+      <li><strong>의료 영상 (segmentation)</strong>: 가중 그래프로 경로 트레이싱.</li>
+    </ul>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — BFS로는 왜 안 되는가</div>
+    <p>
+      Algo 14의 BFS는 <em>"모든 간선이 같은 비용(1)"</em> 가정. 가중 그래프에선 깨집니다:
+    </p>
+    <ul>
+      <li>A → B 직통 길(비용 10)</li>
+      <li>A → C → D → B (비용 1+1+1 = 3)</li>
+    </ul>
+    <p>
+      BFS는 "간선 수 적은 순"이라 A→B (1 간선)를 먼저 발견해 dist[B]=10으로 확정. 하지만 실제 최단은 3. <strong>BFS가 거짓말</strong>.
+    </p>
+    <p>
+      Dijkstra의 해결책: <em>"간선 수" 대신 "누적 비용" 순서로 처리</em>. 큐 대신 <strong>우선순위 큐 (heap)</strong>.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 02. BFS 실패 ==================== -->
+<section id="why-not-bfs">
+  <h2>02 — BFS가 가중 그래프에 실패하는 이유</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">구체적 반례</h3>
+    </div>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      그래프:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp; A ─[10]─ B<br>
+      &nbsp;&nbsp;&nbsp;&nbsp; │<br>
+      &nbsp;&nbsp;&nbsp; [1]<br>
+      &nbsp;&nbsp;&nbsp;&nbsp; │<br>
+      &nbsp;&nbsp;&nbsp;&nbsp; C ─[1]─ D ─[1]─ B<br>
+      <br>
+      BFS(A) 순서: A (dist=0) → B (dist=10, 1간선) → C (dist=1) → D (dist=2)<br>
+      BFS는 B를 <strong>한 번</strong>만 발견하니 dist[B] = 10으로 고정. <em>잘못된 답.</em><br>
+      <br>
+      실제 최단: A → C → D → B = 3.
+    </div>
+    <p>
+      BFS의 핵심 가정 — "큐가 거리 순서 보장" — 은 <em>모든 간선 비용이 같을 때</em>만 성립.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Dijkstra의 수정</h3>
+    </div>
+    <p>
+      두 가지 수정이 필요:
+    </p>
+    <ol>
+      <li>
+        <strong>큐 대신 heap</strong> — "현재 알려진 거리 최소" 노드를 꺼내기. FIFO → 최솟값 우선.
+      </li>
+      <li>
+        <strong>dist 업데이트 허용</strong> — 더 짧은 경로가 발견되면 갱신. BFS는 "한 번 방문=끝"이지만 Dijkstra는 "더 좋은 경로 찾으면 갱신".
+      </li>
+    </ol>
+    <p>
+      결과: "현재 거리 최소 노드부터 처리"를 반복 → 비가중 BFS의 일반화.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. 아이디어 ==================== -->
+<section id="idea">
+  <h2>03 — Dijkstra의 아이디어: 그리디</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">"매 순간 현재까지 가장 가까운 미방문 노드 방문"</h3>
+    </div>
+    <p>
+      <strong>그리디 전략</strong>:
+    </p>
+    <ol>
+      <li>모든 노드의 거리를 ∞로 초기화. <code>dist[start] = 0</code>.</li>
+      <li>미방문 노드 중 <strong>dist가 최소</strong>인 u 선택.</li>
+      <li>u의 모든 이웃 v에 대해: <code>new_dist = dist[u] + weight(u,v)</code>. 기존보다 작으면 갱신.</li>
+      <li>u를 "방문 완료"로 표시.</li>
+      <li>모든 노드가 방문될 때까지 2-4 반복.</li>
+    </ol>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dijkstra 그리디 원리">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🗺️ 그리디: 현재 "가장 짧은 거리" 노드부터 확정</text>
+
+      <!-- 예제 그래프 -->
+      <g transform="translate(100, 55)" font-family="JetBrains Mono, monospace" font-size="13">
+        <!-- 정점 -->
+        <circle cx="0" cy="60" r="22" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/>
+        <text x="0" y="65" text-anchor="middle" class="viz-label" font-weight="700">A</text>
+        <text x="0" y="95" text-anchor="middle" class="viz-label-small">0</text>
+
+        <circle cx="120" cy="10" r="22" fill="#fdf3de" stroke="#d4930c" stroke-width="2"/>
+        <text x="120" y="15" text-anchor="middle" class="viz-label" font-weight="700">B</text>
+        <text x="120" y="-8" text-anchor="middle" class="viz-label-small">10</text>
+
+        <circle cx="120" cy="110" r="22" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="120" y="115" text-anchor="middle" class="viz-label" font-weight="700">C</text>
+        <text x="120" y="145" text-anchor="middle" class="viz-label-small">1</text>
+
+        <circle cx="240" cy="110" r="22" class="viz-node"/>
+        <text x="240" y="115" text-anchor="middle" class="viz-label" font-weight="700">D</text>
+        <text x="240" y="145" text-anchor="middle" class="viz-label-small">2</text>
+
+        <!-- 간선 -->
+        <line x1="20" y1="50" x2="100" y2="20" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="55" y="30" class="viz-label-small" fill="var(--text-muted)">10</text>
+
+        <line x1="15" y1="80" x2="100" y2="105" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="50" y="100" class="viz-label-small" fill="#3b9b6e" font-weight="700">1</text>
+
+        <line x1="142" y1="110" x2="218" y2="110" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="180" y="105" class="viz-label-small" fill="#3b9b6e" font-weight="700">1</text>
+
+        <line x1="242" y1="92" x2="138" y2="22" stroke="#3b9b6e" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="210" y="60" class="viz-label-small" fill="#3b9b6e" font-weight="700">1</text>
+      </g>
+
+      <!-- 결과 -->
+      <g transform="translate(420, 75)">
+        <text x="0" y="0" class="viz-label" font-weight="700">시작: A</text>
+        <text x="0" y="24" class="viz-label-small">dist[A] = 0</text>
+        <text x="0" y="40" class="viz-label-small">dist[B] = 10 (직행) vs <tspan fill="#3b9b6e" font-weight="700">3 (A→C→D→B)</tspan></text>
+        <text x="0" y="56" class="viz-label-small">dist[C] = 1, dist[D] = 2</text>
+
+        <rect x="0" y="70" width="260" height="60" rx="6" fill="rgba(59,155,110,0.08)" stroke="#3b9b6e" stroke-width="1.5"/>
+        <text x="130" y="92" text-anchor="middle" class="viz-label" fill="#3b9b6e" font-weight="700">✓ 최단: A → C → D → B = 3</text>
+        <text x="130" y="112" text-anchor="middle" class="viz-label-small">(BFS는 10으로 오답!)</text>
+      </g>
+
+      <!-- 핵심 -->
+      <g transform="translate(40, 210)">
+        <rect x="0" y="0" width="640" height="50" rx="6" fill="rgba(196,114,78,0.06)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="320" y="20" text-anchor="middle" class="viz-label" font-weight="700">💡 핵심: "지금까지 알려진 최단 거리" 노드부터 확정</text>
+        <text x="320" y="38" text-anchor="middle" class="viz-label-small">→ 더 좋은 경로 발견 시 dist 갱신. heap으로 최소 dist 노드 O(log V)에 선택.</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>Dijkstra = 그리디.</strong> BFS처럼 "한 번 방문=끝"이 아니라, 거리가 업데이트되며 점진적으로 확정. heap이 "현재 최소 거리 노드"를 빠르게 제공.</div>
+  </div>
+</section>
+
+<!-- ==================== 04. 알고리즘 ==================== -->
+<section id="algorithm">
+  <h2>04 — 알고리즘 의사코드 (CLRS §22.3)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">CLRS 표준 의사코드</h3>
+    </div>
+    <div class="formula-box" style="text-align:left;font-size:0.9rem;">
+      <strong>DIJKSTRA(G, w, s)</strong><br>
+      1. INITIALIZE-SINGLE-SOURCE(G, s)<br>
+      2. S ← ∅                          <em>// 확정된 노드 집합</em><br>
+      3. Q ← G.V                        <em>// 우선순위 큐 (min-heap)</em><br>
+      4. while Q ≠ ∅<br>
+      5. &nbsp;&nbsp;&nbsp; u ← EXTRACT-MIN(Q)<br>
+      6. &nbsp;&nbsp;&nbsp; S ← S ∪ {u}<br>
+      7. &nbsp;&nbsp;&nbsp; for each vertex v ∈ G.Adj[u]<br>
+      8. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; RELAX(u, v, w)
+    </div>
+    <p>
+      <strong>RELAX(u, v, w)</strong>:
+    </p>
+    <div class="formula-box" style="text-align:left;">
+      if v.d &gt; u.d + w(u,v):<br>
+      &nbsp;&nbsp; v.d ← u.d + w(u,v)<br>
+      &nbsp;&nbsp; v.π ← u
+    </div>
+    <p>
+      "완화(relaxation)" — 새 경로가 기존보다 짧으면 업데이트.
+    </p>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원서 인용 — CLRS 4판, §22.3 "Dijkstra's algorithm"</div>
+    <p>
+      <em>"Dijkstra's algorithm solves the single-source shortest-paths problem on a directed or undirected weighted graph G = (V, E) for the case in which all edge weights are nonnegative. ... Dijkstra's algorithm is a greedy algorithm: it grows a set S of vertices for which the final shortest-path weight from s to each vertex has already been determined."</em>
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 05. Python 구현 ==================== -->
+<section id="python-impl">
+  <h2>05 — Python 구현: heapq + lazy deletion</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">실무 패턴 — decrease-key 대신 lazy deletion</h3>
+    </div>
+    <p>
+      교과서의 DIJKSTRA는 heap의 <code>DECREASE-KEY</code> 연산을 가정. Python <code>heapq</code>엔 이 연산이 없음 (Algo 12 §10). 해결: 같은 노드의 여러 entry를 heap에 두고, pop 시 "stale"이면 무시.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">dijkstra.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">import</span> heapq
+
+<span class="hl-kw">def</span> <span class="hl-bi">dijkstra</span>(graph, src):
+    <span class="hl-cmt">"""graph: {node: [(neighbor, weight), ...]}"""</span>
+    dist = {src: <span class="hl-num">0</span>}
+    parent = {src: <span class="hl-kw">None</span>}
+    pq = [(<span class="hl-num">0</span>, src)]    <span class="hl-cmt"># (누적거리, 노드)</span>
+
+    <span class="hl-kw">while</span> pq:
+        d, u = heapq.heappop(pq)
+        <span class="hl-kw">if</span> d &gt; dist.get(u, <span class="hl-bi">float</span>(<span class="hl-str">'inf'</span>)):
+            <span class="hl-kw">continue</span>    <span class="hl-cmt"># stale entry (이미 더 짧은 경로로 처리됨)</span>
+        <span class="hl-kw">for</span> v, w <span class="hl-kw">in</span> graph[u]:
+            nd = d + w
+            <span class="hl-kw">if</span> nd &lt; dist.get(v, <span class="hl-bi">float</span>(<span class="hl-str">'inf'</span>)):
+                dist[v] = nd
+                parent[v] = u
+                heapq.heappush(pq, (nd, v))   <span class="hl-cmt"># 새 entry (옛 entry는 heap에 남아있지만 무시됨)</span>
+
+    <span class="hl-kw">return</span> dist, parent
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">reconstruct_path</span>(parent, target):
+    <span class="hl-kw">if</span> target <span class="hl-kw">not</span> <span class="hl-kw">in</span> parent: <span class="hl-kw">return</span> <span class="hl-kw">None</span>
+    path = []
+    cur = target
+    <span class="hl-kw">while</span> cur <span class="hl-kw">is</span> <span class="hl-kw">not</span> <span class="hl-kw">None</span>:
+        path.append(cur)
+        cur = parent[cur]
+    <span class="hl-kw">return</span> path[::-<span class="hl-num">1</span>]
+
+
+<span class="hl-cmt"># 테스트</span>
+graph = {
+    <span class="hl-str">'A'</span>: [(<span class="hl-str">'B'</span>, <span class="hl-num">10</span>), (<span class="hl-str">'C'</span>, <span class="hl-num">1</span>)],
+    <span class="hl-str">'B'</span>: [],
+    <span class="hl-str">'C'</span>: [(<span class="hl-str">'D'</span>, <span class="hl-num">1</span>)],
+    <span class="hl-str">'D'</span>: [(<span class="hl-str">'B'</span>, <span class="hl-num">1</span>)],
+}
+dist, parent = dijkstra(graph, <span class="hl-str">'A'</span>)
+<span class="hl-bi">print</span>(dist)    <span class="hl-cmt"># {'A': 0, 'B': 3, 'C': 1, 'D': 2}</span>
+<span class="hl-bi">print</span>(reconstruct_path(parent, <span class="hl-str">'B'</span>))    <span class="hl-cmt"># ['A', 'C', 'D', 'B']</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>stale 체크</strong>: pop된 (d, u)에서 d가 현재 dist[u]보다 크면 skip. 이미 더 짧은 경로로 처리된 entry.</li>
+      <li><strong>공간</strong>: heap에 중복 entry가 있지만 최대 O(E) 크기. 각 간선당 최대 1번 push.</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a15-show { 0%,2%{opacity:0} 4%,13%{opacity:1} 15%,100%{opacity:0} }
+      .a15-S0{animation:a15-show 12s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a15-S1{animation:a15-show 12s linear infinite;animation-delay:1.5s;animation-fill-mode:backwards}
+      .a15-S2{animation:a15-show 12s linear infinite;animation-delay:3s;animation-fill-mode:backwards}
+      .a15-S3{animation:a15-show 12s linear infinite;animation-delay:4.5s;animation-fill-mode:backwards}
+      .a15-S4{animation:a15-show 12s linear infinite;animation-delay:6s;animation-fill-mode:backwards}
+      .a15-S5{animation:a15-show 12s linear infinite;animation-delay:7.5s;animation-fill-mode:backwards}
+      .a15-S6{animation:a15-show 12s linear infinite;animation-delay:9s;animation-fill-mode:backwards}
+      .a15-S7{animation:a15-show 12s linear infinite;animation-delay:10.5s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dijkstra 단계별 실행">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🗺️ Dijkstra 실행: A에서 B까지 찾기</text>
+
+      <g font-family="JetBrains Mono, monospace" font-size="13">
+        <!-- Step 0: 초기화 -->
+        <text x="40" y="60" class="a15-S0 viz-label" font-weight="700">①  초기화: dist = {A:0, 나머지:∞}, heap = [(0,A)]</text>
+        <!-- Step 1: A pop -->
+        <text x="40" y="60" class="a15-S1 viz-label" font-weight="700">②  A pop (d=0). 이웃 갱신: B=10, C=1</text>
+        <text x="40" y="80" class="a15-S1 viz-label-small">heap = [(1,C), (10,B)]</text>
+        <!-- Step 2: C pop -->
+        <text x="40" y="60" class="a15-S2 viz-label" font-weight="700">③  C pop (d=1). 이웃 갱신: D = 1+1 = 2</text>
+        <text x="40" y="80" class="a15-S2 viz-label-small">heap = [(2,D), (10,B)]</text>
+        <!-- Step 3: D pop -->
+        <text x="40" y="60" class="a15-S3 viz-label" font-weight="700">④  D pop (d=2). 이웃 갱신: B = 2+1 = 3 &lt; 10 ✓</text>
+        <text x="40" y="80" class="a15-S3 viz-label-small">heap = [(3,B), (10,B)] ← B가 두 번 들어있음!</text>
+        <!-- Step 4: B pop (d=3) -->
+        <text x="40" y="60" class="a15-S4 viz-label" font-weight="700" fill="#3b9b6e">⑤  B pop (d=3). B 확정!</text>
+        <text x="40" y="80" class="a15-S4 viz-label-small">dist[B] = 3. 경로 A → C → D → B</text>
+        <!-- Step 5: 옛 B (d=10) pop but stale -->
+        <text x="40" y="60" class="a15-S5 viz-label" font-weight="700" fill="var(--accent)">⑥  (10,B) pop but d=10 &gt; dist[B]=3 → skip (stale!)</text>
+        <text x="40" y="80" class="a15-S5 viz-label-small">heap 비워짐 → 종료</text>
+        <!-- Step 6: 결과 -->
+        <text x="40" y="60" class="a15-S6 viz-label" font-weight="700" fill="#3b9b6e">✅ 완료: dist = {A:0, B:3, C:1, D:2}</text>
+        <text x="40" y="80" class="a15-S6 viz-label-small">최단 경로 A→B = 3 (A→C→D→B)</text>
+        <text x="40" y="60" class="a15-S7 viz-label" font-weight="700" fill="#3b9b6e">🔄 다시 시작…</text>
+
+        <!-- 그래프 (모든 단계에서 동일 위치) -->
+        <g transform="translate(100, 100)">
+          <circle cx="0" cy="60" r="20" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/>
+          <text x="0" y="65" text-anchor="middle" font-weight="700">A</text>
+          <text x="-30" y="60" text-anchor="end" class="viz-label-small">0</text>
+
+          <circle cx="120" cy="0" r="20" class="viz-node"/>
+          <text x="120" y="5" text-anchor="middle" font-weight="700">B</text>
+          <text x="120" y="-30" text-anchor="middle" class="viz-label-small">3</text>
+
+          <circle cx="120" cy="120" r="20" class="viz-node"/>
+          <text x="120" y="125" text-anchor="middle" font-weight="700">C</text>
+          <text x="120" y="155" text-anchor="middle" class="viz-label-small">1</text>
+
+          <circle cx="240" cy="120" r="20" class="viz-node"/>
+          <text x="240" y="125" text-anchor="middle" font-weight="700">D</text>
+          <text x="240" y="155" text-anchor="middle" class="viz-label-small">2</text>
+
+          <line x1="18" y1="50" x2="102" y2="10" stroke="var(--text-muted)" stroke-width="1.5"/>
+          <text x="55" y="25" class="viz-label-small" fill="var(--text-muted)">10</text>
+
+          <line x1="15" y1="75" x2="105" y2="110" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="50" y="105" class="viz-label-small" fill="#3b9b6e" font-weight="700">1</text>
+
+          <line x1="140" y1="120" x2="220" y2="120" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="180" y="115" class="viz-label-small" fill="#3b9b6e" font-weight="700">1</text>
+
+          <line x1="238" y1="100" x2="135" y2="15" stroke="#3b9b6e" stroke-width="2" stroke-dasharray="4,3"/>
+          <text x="200" y="55" class="viz-label-small" fill="#3b9b6e" font-weight="700">1</text>
+        </g>
+      </g>
+
+      <text x="360" y="270" class="viz-label-small" text-anchor="middle" opacity="0.6">애니메이션 12초 주기 (1.5초씩 8단계)</text>
+    </svg>
+    <div class="viz-caption"><strong>Dijkstra 한 주기.</strong> heap에서 거리 최소 노드를 꺼내 "확정" → 이웃 거리 갱신 → 반복. (10,B) 같은 옛 entry는 pop 시 stale 판정으로 skip.</div>
+  </div>
+</section>
+
+<!-- ==================== 06. 정확성 ==================== -->
+<section id="correctness">
+  <h2>06 — 정확성 증명: 왜 그리디가 통하는가</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">루프 불변식</h3>
+    </div>
+    <p>
+      <strong>불변식 I</strong>: 매 반복 직전, 확정 집합 S의 모든 u에 대해 dist[u] = δ(s, u) (진짜 최단 거리).
+    </p>
+    <p>
+      <strong>증명 (모순법)</strong>: 처음으로 잘못된 u가 S에 들어간다고 가정. u ∈ S이지만 dist[u] &gt; δ(s, u). 진짜 최단 경로 P: s → ... → x → y → ... → u에서 y가 첫 번째 미확정 노드(=V\S)라 하자.
+    </p>
+    <ol>
+      <li>x ∈ S이고, x 이전까진 모두 확정. 귀납 가정에 의해 dist[x] = δ(s, x).</li>
+      <li>RELAX(x, y)가 호출됐음 → dist[y] ≤ dist[x] + w(x, y) = δ(s, y).</li>
+      <li>
+        음수 간선 없으므로 δ(s, y) ≤ δ(s, u). 따라서 dist[y] ≤ δ(s, u) &lt; dist[u].
+      </li>
+      <li>Dijkstra가 u를 뽑았다는 건 u가 y보다 작거나 같은 dist라는 뜻 → dist[u] ≤ dist[y]. 모순!</li>
+    </ol>
+    <p>
+      핵심: <strong>음수 간선 없음</strong>이 2→3 단계에서 필수. 음수 있으면 δ(s, y) &gt; δ(s, u) 가능 → 증명 무너짐.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 07. 복잡도 ==================== -->
+<section id="complexity">
+  <h2>07 — 복잡도: O((V+E) log V)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">heapq 기반 분석</h3>
+    </div>
+    <ul>
+      <li>각 노드는 heap에 최대 deg(v)+1번 push → 총 push = O(V + E).</li>
+      <li>각 push/pop은 O(log V) (heap 크기 상한).</li>
+      <li>총 시간 = O((V + E) log V).</li>
+    </ul>
+    <table>
+      <thead>
+        <tr><th>자료구조</th><th>시간</th><th>공간</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Array (min 선형 탐색)</td><td>O(V²)</td><td>O(V)</td></tr>
+        <tr><td>Binary heap (heapq)</td><td><strong>O((V+E) log V)</strong></td><td>O(V+E)</td></tr>
+        <tr><td>Fibonacci heap</td><td>O(V log V + E)</td><td>O(V)</td></tr>
+        <tr><td>Bucket (정수 가중치)</td><td>O(V + E) (Dial)</td><td>O(V+W)</td></tr>
+      </tbody>
+    </table>
+    <p>
+      실무에선 거의 항상 binary heap. Fibonacci heap은 이론적 개선이나 상수가 커 실측에서 느림.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 08. 음수 간선 ==================== -->
+<section id="negative-edges">
+  <h2>08 — 음수 간선의 함정</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">반례</h3>
+    </div>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      그래프 (A가 시작점, 목표는 dist[C]):<br>
+      A ─[4]→ B<br>
+      A ─[2]→ C<br>
+      B ─[−3]→ C<br>
+      <br>
+      <strong>교과서 Dijkstra (visited 집합 버전)</strong>:<br>
+      1. A pop. visited={A}. Relax: dist[B]=4, dist[C]=2.<br>
+      2. C pop (dist=2 — "확정"). visited={A,C}. C의 이웃 없음.<br>
+      3. B pop (dist=4). visited={A,B,C}. Relax C: 4+(−3)=1 &lt; 2 이지만, <strong>C는 이미 visited → 갱신 불가</strong>.<br>
+      4. 결과: dist[C] = 2. &nbsp;실제 최단 A→B→C = <strong>1</strong>. ❌ 틀림.<br>
+      <br>
+      문제의 본질: Dijkstra의 불변식 <em>"pop된 노드의 dist는 확정"</em> (greedy choice)이 음수 간선에서 깨진다. 음수 간선이 <em>미래에</em> 더 짧은 경로를 만들 수 있기 때문.
+    </div>
+    <div class="caution-box">
+      <div class="box-header">💡 lazy deletion과의 미묘한 차이</div>
+      <p>
+        앞서 본 Python 구현(Section 05)은 visited 집합 대신 <em>stale 엔트리 skip</em>만 씀. 이 경우 C가 재삽입되어 정답(1)을 낼 수도 있다. 하지만 이는 <strong>보장이 아님</strong>:
+      </p>
+      <ul>
+        <li>음수 간선이 많으면 노드별 재방문이 지수적으로 폭증 가능 (전형적인 "도미노형" 구성에서 Dijkstra-with-reinsertion은 최악 Ω(2<sup>n</sup>) — 음수 간선에는 Bellman-Ford를 써야 함).</li>
+        <li>음수 사이클이 있으면 영원히 종료 못 함 (dist 무한 감소).</li>
+        <li>"운 좋게 맞는 경우"에 기대는 건 알고리즘이 아님.</li>
+      </ul>
+      <p>
+        <strong>원칙</strong>: 음수 간선이 있을 수 있으면 Dijkstra를 <em>쓰지 말라</em>.
+      </p>
+    </div>
+    <p>
+      <strong>해결</strong>: 음수 간선 허용 그래프는 <strong>Bellman-Ford</strong> (다음 주 Algo 16). O(VE)로 느리지만 정확하며 음수 사이클도 감지.
+    </p>
+
+    <div class="caution-box">
+      <div class="box-header">⚠️ 주의 — 음수 사이클</div>
+      <p>
+        음수 사이클이 있으면 최단 경로가 −∞. Dijkstra, Bellman-Ford 모두 정답 없음. Bellman-Ford는 <em>감지</em>는 가능 (V-1번 반복 후에도 갱신되면 음수 사이클).
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 09. 변종 ==================== -->
+<section id="variants">
+  <h2>09 — 변종: Bidirectional, K-shortest</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Bidirectional Dijkstra</h3>
+    </div>
+    <p>
+      시작점 s와 목표 t를 <em>동시에</em> 양방향에서 탐색 → 두 프런티어가 만나면 종료. 탐색 영역을 크게 줄임.
+    </p>
+    <ul>
+      <li>단방향 Dijkstra: O(exploration of disk radius δ(s,t))</li>
+      <li>Bidirectional: O(2 × exploration of disk radius δ(s,t)/2) → <strong>약 절반 노드만 방문</strong></li>
+    </ul>
+    <p>
+      OSRM, GraphHopper 같은 오픈소스 라우팅 엔진의 표준. Contraction Hierarchies (CH) 같은 전처리 기법과 결합해 쓰이며, 상용 내비·지도 서비스들도 유사한 양방향 탐색 기법을 기반으로 한다고 공개 자료에서 언급됨.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">K-Shortest Paths (Yen's algorithm, 1971)</h3>
+    </div>
+    <p>
+      "최단 경로 K개" 찾기. Yen's algorithm: K-1번의 Dijkstra 변형으로 K개 구함. O(KV(E + V log V)).
+    </p>
+    <p>
+      용도: "최단이 막혔을 때 두 번째 짧은 길" (실시간 교통 대응), 네트워크 fault tolerance 설계.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. A* ==================== -->
+<section id="a-star">
+  <h2>10 — A*: Dijkstra + 휴리스틱</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">직관 (Hart, Nilsson, Raphael 1968)</h3>
+    </div>
+    <p>
+      Dijkstra는 <strong>모든 방향</strong>으로 퍼짐. A*는 "목표 방향으로" 편향된 탐색. 1968년 Peter Hart, Nils Nilsson, Bertram Raphael이 Stanford Research Institute에서 로봇 Shakey의 경로 계획을 위해 제안 — <em>"A Formal Basis for the Heuristic Determination of Minimum Cost Paths"</em> (IEEE Trans. SSC-4, pp. 100-107).
+    </p>
+    <div class="formula-box">
+      f(n) = g(n) + h(n)
+    </div>
+    <ul>
+      <li><strong>g(n)</strong>: s에서 n까지 실제 거리 (Dijkstra와 같음).</li>
+      <li><strong>h(n)</strong>: n에서 목표까지의 <em>휴리스틱 추정</em> 거리. <strong>과대평가 금지</strong> (admissible: h(n) ≤ 진짜 거리).</li>
+      <li><strong>consistent(monotone)</strong>: 모든 간선 (u,v,w)에 대해 h(u) ≤ w + h(v). admissible보다 강한 조건 — 만족하면 각 노드 한 번만 pop(재개방 불필요).</li>
+    </ul>
+    <p>
+      heap 우선순위로 f(n) 사용. 목표 근처 노드가 먼저 탐색됨 → 엄청난 속도 향상. <strong>admissible이면 최적 경로 보장</strong> (Hart–Nilsson–Raphael 정리).
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">휴리스틱 예</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>상황</th><th>휴리스틱</th><th>admissible?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>격자(grid) 맵</td><td>맨해튼 거리 |dx|+|dy|</td><td>✓ (대각선 못 가면)</td></tr>
+        <tr><td>격자(대각선 허용)</td><td>체비쇼프 max(|dx|,|dy|)</td><td>✓</td></tr>
+        <tr><td>지리 좌표</td><td>유클리드 거리 √(dx²+dy²)</td><td>✓ (지구 평면 가정)</td></tr>
+        <tr><td>네트워크 그래프</td><td>0 (Dijkstra로 퇴화)</td><td>✓ (trivially)</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>h(n) = 0</strong>이면 A* = Dijkstra. <strong>h(n) = 진짜 거리</strong>면 최적 탐색 (하지만 이것 자체가 답).
+    </p>
+    <p>
+      A*는 주로 <strong>게임 AI</strong> (경로 찾기), <strong>로봇 공학</strong>, <strong>퍼즐 풀기</strong> (15-puzzle)에 사용. <code>networkx.astar_path</code>로 Python에서 바로.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 11. 실무 ==================== -->
+<section id="real-world">
+  <h2>11 — 실무: 구글 지도는 어떻게 쓰는가</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">단순 Dijkstra는 충분한가?</h3>
+    </div>
+    <p>
+      미국 도로망: 노드 2천만 개, 간선 5천만 개. 한 쿼리 당 Dijkstra 실행하면 <strong>수십 초</strong>. 구글 지도는 0.1초 이내에 답. <em>뭔가 다른 것</em>을 씁니다.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Contraction Hierarchies (CH) — 2008 Geisberger et al.</h3>
+    </div>
+    <p>
+      <strong>아이디어</strong>: 도로망 전처리 — 각 노드를 "중요도" 순서로 제거하며 <em>shortcut</em> 간선 추가. 쿼리 시엔 중요도 높은 노드 위주로 bidirectional Dijkstra.
+    </p>
+    <ul>
+      <li>전처리: 도로망 규모에 따라 분~시간 단위 (한 번만; 실험적으로 근선형에 가깝게 보고됨).</li>
+      <li>쿼리: 대륙 규모 네트워크에서 밀리초 단위.</li>
+      <li><strong>OSRM(Open Source Routing Machine)</strong>, <strong>GraphHopper</strong>가 오픈소스로 CH를 사용. Google Maps 같은 상용 엔진의 내부 알고리즘은 공개되지 않았으나, 공개된 논문·강연에서는 <em>CH 계열 및 CRP(Customizable Route Planning)</em> 같은 전처리 기법이 활용된다고 알려져 있음.</li>
+    </ul>
+    <p>
+      어떤 방식이든 <strong>근간은 Dijkstra</strong> (또는 양방향 Dijkstra)다. 1959년의 3페이지짜리 논문이 아직도 최단 경로 엔진의 뼈대.
+    </p>
+
+    <div class="reading-box">
+      <div class="box-header">📖 Sanders & Schultes 2008 — Engineering Fast Route Planning Algorithms</div>
+      <p>
+        <em>"With multilevel hierarchies and careful engineering, we can compute shortest paths in road networks of continental size in milliseconds on a PC. The underlying algorithm is a bidirectional variant of Dijkstra's."</em>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 12. AI ==================== -->
+<section id="ai-dijkstra">
+  <h2>12 — AI와 Dijkstra</h2>
+
+  <div class="ai-box">
+    <div class="box-header">AI — 4가지 흔한 실수</div>
+    <ol>
+      <li>
+        <strong>queue.PriorityQueue 사용</strong>: 스레드 안전이라 10-100배 느림. <code>heapq</code> 권장.
+      </li>
+      <li>
+        <strong>음수 간선에 Dijkstra 적용</strong>: 조용히 잘못된 답. 음수 있으면 Bellman-Ford.
+      </li>
+      <li>
+        <strong>lazy deletion 스킵 누락</strong>: <code>if d &gt; dist[u]: continue</code> 없으면 같은 노드를 여러 번 처리 → O(VE) degradation.
+      </li>
+      <li>
+        <strong>visited set 사용</strong>: 일부 구현은 "처음 pop된 건 확정"이라 visited set 쓰지만, lazy deletion과 함께 써야 정확. 섞어 쓰면 버그.
+      </li>
+    </ol>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 5가지 검증 질문</div>
+    <ol>
+      <li>"이 그래프에 음수 간선 없나?"</li>
+      <li>"heapq 썼나? lazy deletion 패턴 있나?"</li>
+      <li>"부모 추적 (parent dict) 필요한가? 경로 복원해야 하면 필수."</li>
+      <li>"목표 하나만 찾으면 목표 pop 시점에 조기 종료 가능."</li>
+      <li>"거대한 그래프면 A* (휴리스틱) 또는 bidirectional 고려."</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ==================== 13. 실습 ==================== -->
+<section id="practice">
+  <h2>13 — 실습: Network Delay Time (LeetCode #743)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">문제</h3>
+    </div>
+    <p>
+      N개 노드와 유향 가중 간선 times[(u,v,w)]. 노드 k에서 신호를 보내면 모든 노드에 도달하는 데 걸리는 시간은? (도달 불가면 −1.)
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">network_delay.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">import</span> heapq
+<span class="hl-kw">from</span> collections <span class="hl-kw">import</span> defaultdict
+
+<span class="hl-kw">def</span> <span class="hl-bi">network_delay_time</span>(times, n, k):
+    graph = defaultdict(<span class="hl-bi">list</span>)
+    <span class="hl-kw">for</span> u, v, w <span class="hl-kw">in</span> times:
+        graph[u].append((v, w))
+
+    dist = {k: <span class="hl-num">0</span>}
+    pq = [(<span class="hl-num">0</span>, k)]
+    <span class="hl-kw">while</span> pq:
+        d, u = heapq.heappop(pq)
+        <span class="hl-kw">if</span> d &gt; dist.get(u, <span class="hl-bi">float</span>(<span class="hl-str">'inf'</span>)): <span class="hl-kw">continue</span>
+        <span class="hl-kw">for</span> v, w <span class="hl-kw">in</span> graph[u]:
+            nd = d + w
+            <span class="hl-kw">if</span> nd &lt; dist.get(v, <span class="hl-bi">float</span>(<span class="hl-str">'inf'</span>)):
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+
+    <span class="hl-kw">if</span> <span class="hl-bi">len</span>(dist) != n: <span class="hl-kw">return</span> -<span class="hl-num">1</span>
+    <span class="hl-kw">return</span> <span class="hl-bi">max</span>(dist.values())
+
+
+<span class="hl-bi">print</span>(network_delay_time([[<span class="hl-num">2</span>,<span class="hl-num">1</span>,<span class="hl-num">1</span>],[<span class="hl-num">2</span>,<span class="hl-num">3</span>,<span class="hl-num">1</span>],[<span class="hl-num">3</span>,<span class="hl-num">4</span>,<span class="hl-num">1</span>]], <span class="hl-num">4</span>, <span class="hl-num">2</span>))   <span class="hl-cmt"># 2</span></code></pre>
+    </div>
+    <p>
+      "모든 노드 도달 시간" = dist의 <strong>최댓값</strong>. 모든 노드에 도달 불가능이면 <code>len(dist) != n</code>.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Dijkstra가 음수 간선에서 실패하는 이유를 한 문장으로.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>그리디 "확정된 노드는 다시 안 본다"는 "이미 확정된 노드보다 더 짧은 경로가 음수 간선으로 나중에 발견될 수 있다"는 가능성과 충돌.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">V=10⁵, E=5×10⁵ 그래프에서 binary heap Dijkstra 시간 복잡도 실측 추정.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>O((V+E) log V) = 6×10⁵ × 17 ≈ 10⁷. Python에서 약 <strong>2-5초</strong>. C++이면 0.1초 수준.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-fix">FIX</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 Dijkstra의 버그는?</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">buggy.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">d</span>(g, s):
+    dist = {s: <span class="hl-num">0</span>}
+    pq = [(<span class="hl-num">0</span>, s)]
+    <span class="hl-kw">while</span> pq:
+        d, u = heapq.heappop(pq)
+        <span class="hl-kw">for</span> v, w <span class="hl-kw">in</span> g[u]:
+            <span class="hl-kw">if</span> v <span class="hl-kw">not</span> <span class="hl-kw">in</span> dist <span class="hl-kw">or</span> d+w &lt; dist[v]:
+                dist[v] = d+w
+                heapq.heappush(pq, (d+w, v))
+    <span class="hl-kw">return</span> dist</code></pre>
+      </div>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">버그</div>
+            <p>stale entry skip 누락. (d, u) pop 후 <code>if d &gt; dist[u]: continue</code>가 없으면 같은 u를 여러 번 처리해 O(VE+) degrade. 맨 위에 stale 체크 추가.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Fibonacci heap이 이론적으로 빠른데 실무에서 안 쓰는 이유?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>구현 복잡도 ↑ + 상수 인자 큼. O(V log V + E)의 이론적 개선이 실제론 binary heap보다 느린 경우가 많음. 특히 sparse 그래프에서 binary heap이 캐시 친화적.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Dijkstra에 <strong>목표 t</strong>가 있을 때 조기 종료 최적화. 어떻게?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>heappop에서 u == t면 즉시 return. 그 시점의 dist[t]가 최단 거리 (이미 확정). 큰 그래프에서 쿼리 단축 핵심.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">A*의 h(n)이 <strong>진짜 거리보다 크다</strong>면 무엇이 잘못되나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>최단 경로를 놓칠 수 있음 (최적성 깨짐). h가 과대평가하면 실제 최단 경로 위의 노드의 f 값이 부풀어 heap에서 먼저 처리 안 됨. admissible 조건 (h ≤ 진짜)이 최적성 보장의 전제.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">격자에서 0은 길, 1은 벽. (0,0)에서 (n-1,n-1)까지 최단 경로 길이 (LeetCode #1091의 변형, 8방향).</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">힌트</div>
+            <p>비가중 → BFS로 충분. 8방향 이웃. deque 사용, visited 체크. O(n²).</p>
+            <p>만약 칸마다 "비용"이 있으면 (가중) Dijkstra. heap으로.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">무방향 그래프에서 Dijkstra가 작동하는 이유 (유향 그래프용으로 설계됐는데).</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>무방향 간선 (u,v,w)는 두 유향 간선 (u→v,w)와 (v→u,w)로 표현. Dijkstra는 그대로 작동. 음수 간선이 없다면 (대부분 무방향 그래프는 거리라 양수).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Bidirectional Dijkstra가 단방향 대비 얼마나 빠른가 (경험적)?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>경험적으로 <strong>약 2배</strong> (탐색 영역 절반). CH 같은 전처리와 결합하면 대륙 규모에서 수백~수천 배.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt"><code>networkx.dijkstra_path(G, s, t)</code>는 내부적으로 어떻게 동작하는가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>heapq 기반 Dijkstra + parent 추적. 목표 노드 pop 시 조기 종료. parent 따라 역순 복원. 가중치 속성(<code>weight</code>) 이름 지정 가능.</p>
+            <p>대형 그래프엔 <code>networkx.bidirectional_dijkstra</code>가 더 빠름.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "음수 가중치 그래프 최단 경로"에 Dijkstra를 제안했다. 어떤 질문으로 교정?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">질문</div>
+            <ol>
+              <li>"이 그래프에 음수 간선이 있는데 Dijkstra가 적용 가능한가?"</li>
+              <li>"반례: A→B:1, B→C:−10, A→C:5로 테스트해봐. 답이 맞나?"</li>
+              <li>"Bellman-Ford나 SPFA를 대신 써야 하지 않나?"</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">lazy deletion 패턴이 없으면 정확성은 유지되지만 복잡도만 degrade하는가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>정확성은 유지 (RELAX가 멱등). 하지만 이미 확정된 노드를 다시 처리 → 각 노드 최대 O(deg(u))번 처리 → 최악 O(VE log V) 가능. stale check로 O((V+E) log V) 보장.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">☕</div>
+      <h3>Dijkstra 1959</h3>
+      <p>20분 커피 브레이크에서 태어난 알고리즘. 비가중 BFS의 가중 그래프 일반화.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🎯</div>
+      <h3>그리디 원리</h3>
+      <p>매 반복 "현재 dist 최소 노드 확정". heap으로 O(log V)에 선택.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">⚠️</div>
+      <h3>음수 간선 불가</h3>
+      <p>그리디 확정 가정이 깨짐. Bellman-Ford 필요.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🐍</div>
+      <h3>Python 패턴</h3>
+      <p>heapq + lazy deletion (stale check). decrease-key 없이도 O((V+E) log V).</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🗺️</div>
+      <h3>A* 확장</h3>
+      <p>f = g + h. admissible 휴리스틱으로 목표 방향 가속. 게임 AI 표준.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🌍</div>
+      <h3>구글 지도의 기반</h3>
+      <p>Contraction Hierarchies + Bidirectional Dijkstra. 근간은 여전히 Dijkstra.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Dijkstra's Algorithm</div><div class="glossary-def">1959 Edsger Dijkstra. 비음 가중 그래프 단일 출발 최단 경로. 그리디.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Single-Source Shortest Paths (SSSP)</div><div class="glossary-def">한 시작점에서 모든 노드까지 최단 경로.</div></div>
+    <div class="glossary-item"><div class="glossary-term">RELAX</div><div class="glossary-def">간선 (u,v) 완화. v.d &gt; u.d + w면 업데이트.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Greedy Algorithm</div><div class="glossary-def">매 단계 지역 최적 선택. Dijkstra, Prim, Huffman 등.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Priority Queue</div><div class="glossary-def">우선순위 순 추출. Dijkstra의 핵심. Python heapq.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Lazy Deletion</div><div class="glossary-def">heap의 stale entry는 pop 시 skip. decrease-key 대체.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Stale Entry</div><div class="glossary-def">더 짧은 경로가 발견돼 무효해진 heap entry. <code>d &gt; dist[u]</code>로 판별.</div></div>
+    <div class="glossary-item"><div class="glossary-term">δ(s, v)</div><div class="glossary-def">s에서 v까지 실제 최단 거리. Dijkstra가 계산.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Parent Pointer</div><div class="glossary-def">π(v) = v의 최단 경로상 직전 노드. 경로 복원용.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Binary Heap</div><div class="glossary-def">O(log V) 삽입/삭제. Python heapq의 기본.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Fibonacci Heap</div><div class="glossary-def">이론 O(V log V + E). 실측 느림. 거의 안 씀.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Bellman-Ford</div><div class="glossary-def">음수 간선 허용 SSSP. O(VE). 다음 주.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Negative Edge / Cycle</div><div class="glossary-def">음수 가중치 / 음수 사이클. Dijkstra 실패 조건.</div></div>
+    <div class="glossary-item"><div class="glossary-term">A*</div><div class="glossary-def">f(n) = g(n) + h(n). admissible h로 목표 방향 탐색.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Admissible Heuristic</div><div class="glossary-def">h(n) ≤ 진짜 거리. A* 최적성 조건.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Consistent Heuristic</div><div class="glossary-def">h(u) ≤ w(u,v) + h(v). Admissible + 추가 성질. 재방문 불필요.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Bidirectional Dijkstra</div><div class="glossary-def">양방향 동시 탐색. 만나면 종료. 탐색 반감.</div></div>
+    <div class="glossary-item"><div class="glossary-term">K-Shortest Paths (Yen 1971)</div><div class="glossary-def">K개 최단 경로. O(KV(E+V log V)).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Contraction Hierarchies (CH)</div><div class="glossary-def">도로망 전처리. 실시간 라우팅 엔진.</div></div>
+    <div class="glossary-item"><div class="glossary-term">OSRM</div><div class="glossary-def">Open Source Routing Machine. OSM 데이터 + CH.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Manhattan Distance</div><div class="glossary-def">|dx|+|dy|. 격자에서 대표적 admissible heuristic.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Euclidean Distance</div><div class="glossary-def">√(dx²+dy²). 지리 좌표에서.</div></div>
+    <div class="glossary-item"><div class="glossary-term">networkx.dijkstra_path</div><div class="glossary-def">Python NetworkX 라이브러리의 Dijkstra.</div></div>
+    <div class="glossary-item"><div class="glossary-term">OSPF</div><div class="glossary-def">Open Shortest Path First. 인터넷 라우팅 프로토콜. Dijkstra 기반.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Edsger W. Dijkstra</div><div class="glossary-def">1930-2002. 네덜란드 CS 선구자. 1972 Turing Award. goto 유해 논쟁, 구조적 프로그래밍, Dijkstra 알고리즘.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 16</div>
+    <h3>최단 경로 II — Bellman-Ford, Floyd-Warshall</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      Dijkstra가 못 하는 걸 할 수 있는 두 알고리즘.
+    </p>
+    <ul>
+      <li><strong>Bellman-Ford</strong> (CLRS §22.1) — 음수 간선 허용, 음수 사이클 감지. O(VE).</li>
+      <li><strong>Floyd-Warshall</strong> (CLRS §23.2) — 모든 쌍 최단 경로 (All-Pairs). O(V³) but 단순한 3중 루프.</li>
+      <li><strong>SPFA</strong> — Bellman-Ford의 실전 최적화. 큐 기반.</li>
+      <li><strong>Johnson 알고리즘</strong> — sparse APSP. Bellman-Ford + Dijkstra 조합.</li>
+      <li><strong>언제 무엇을</strong> — 음수·밀도·쿼리 수에 따른 선택 가이드.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo14.html">&larr; Algo 14 — 그래프 + BFS/DFS</a>
+  <a href="algo16.html">Algo 16 — Bellman-Ford, Floyd-Warshall &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">CLRS 4판 §22.3, Dijkstra 1959 (Numerische Mathematik 1:269-271) 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

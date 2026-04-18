@@ -36,17 +36,24 @@
 
   /* Text — warm dark */
   --text:            #1a1410;
+  --text-primary:    #1a1410;
   --text-secondary:  #57534e;
-  --text-muted:      #a8a29e;
+  --text-muted:      #706b66;   /* darkened from #a8a29e for WCAG AA (4.6:1 on #faf7f2) */
   --text-inverse:    #ffffff;
+
+  /* Fonts */
+  --font-code:       'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Surfaces */
   --surface:         #ede9e3;
   --surface-hover:   #e6dfd7;
   --surface-accent:  #fdf3ec;
 
-  /* Brand / Accent — Burnt Orange */
+  /* Brand / Accent — Burnt Orange.
+     --accent-text is a darker shade used for text (WCAG AA 4.5+ on bg);
+     --accent keeps the brand tone for borders, buttons, backgrounds. */
   --accent:          #c4724e;
+  --accent-text:     #8e4f30;   /* 4.9:1 on #faf7f2 — AA pass for normal text */
   --accent-hover:    #a85c3a;
   --accent-soft:     #fdf3ec;
   --accent-muted:    #e5bfae;
@@ -64,7 +71,7 @@
   --code-text:       #cdd6f4;
   --code-keyword:    #cba6f7;
   --code-string:     #a6e3a1;
-  --code-comment:    #6c7086;
+  --code-comment:    #9ca0b4;
   --code-number:     #fab387;
   --code-builtin:    #89dceb;
   --code-decorator:  #f38ba8;
@@ -85,26 +92,32 @@
   --radius-xs:       6px;
   --radius-full:     9999px;
 
-  /* Level Colors — Sophisticated muted tones */
+  /* Level Colors — Sophisticated muted tones.
+     --level-*-text are darker variants used when level color is rendered
+     as text on the tinted level-bg (WCAG AA 4.5+). */
   --level-elem:         #3b9b6e;
+  --level-elem-text:    #267547;
   --level-elem-bg:      linear-gradient(135deg, #f0f9f4 0%, #e6f5ec 100%);
   --level-elem-bg-flat: #f0f9f4;
   --level-elem-border:  rgba(59, 155, 110, 0.2);
   --level-elem-glow:    rgba(59, 155, 110, 0.06);
 
   --level-inter:         #c48b2c;
+  --level-inter-text:    #8a5f0e;
   --level-inter-bg:      linear-gradient(135deg, #fdf8ef 0%, #faf2e2 100%);
   --level-inter-bg-flat: #fdf8ef;
   --level-inter-border:  rgba(196, 139, 44, 0.2);
   --level-inter-glow:    rgba(196, 139, 44, 0.06);
 
   --level-adv:         #c45858;
+  --level-adv-text:    #963434;
   --level-adv-bg:      linear-gradient(135deg, #fdf2f2 0%, #fae8e8 100%);
   --level-adv-bg-flat: #fdf2f2;
   --level-adv-border:  rgba(196, 88, 88, 0.2);
   --level-adv-glow:    rgba(196, 88, 88, 0.06);
 
   --level-expert:         #5a48c0;
+  --level-expert-text:    #4835a0;
   --level-expert-bg:      linear-gradient(135deg, #f2f0fc 0%, #e8e4f8 100%);
   --level-expert-bg-flat: #f2f0fc;
   --level-expert-border:  rgba(90, 72, 192, 0.22);
@@ -168,6 +181,7 @@
   --bg-elevated:     #211a16;
 
   --text:            #ede8e3;
+  --text-primary:    #ede8e3;
   --text-secondary:  #a09890;
   --text-muted:      #6b6058;
   --text-inverse:    #110e0c;
@@ -177,6 +191,7 @@
   --surface-accent:  #2e1f16;
 
   --accent:          #e08a60;
+  --accent-text:     #f0a07a;   /* lighter for text on dark bg — AA 4.5+ on #110e0c */
   --accent-hover:    #e8a07c;
   --accent-soft:     rgba(224, 138, 96, 0.12);
   --accent-muted:    rgba(224, 138, 96, 0.3);
@@ -201,24 +216,28 @@
   --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.4);
 
   --level-elem:         #5dbe8a;
+  --level-elem-text:    #8fd8b2;
   --level-elem-bg:      linear-gradient(135deg, rgba(93, 190, 138, 0.08) 0%, rgba(93, 190, 138, 0.04) 100%);
   --level-elem-bg-flat: rgba(93, 190, 138, 0.08);
   --level-elem-border:  rgba(93, 190, 138, 0.15);
   --level-elem-glow:    rgba(93, 190, 138, 0.05);
 
   --level-inter:         #daa64c;
+  --level-inter-text:    #ecc87e;
   --level-inter-bg:      linear-gradient(135deg, rgba(218, 166, 76, 0.08) 0%, rgba(218, 166, 76, 0.04) 100%);
   --level-inter-bg-flat: rgba(218, 166, 76, 0.08);
   --level-inter-border:  rgba(218, 166, 76, 0.15);
   --level-inter-glow:    rgba(218, 166, 76, 0.05);
 
   --level-adv:         #e07070;
+  --level-adv-text:    #f09a9a;
   --level-adv-bg:      linear-gradient(135deg, rgba(224, 112, 112, 0.08) 0%, rgba(224, 112, 112, 0.04) 100%);
   --level-adv-bg-flat: rgba(224, 112, 112, 0.08);
   --level-adv-border:  rgba(224, 112, 112, 0.15);
   --level-adv-glow:    rgba(224, 112, 112, 0.05);
 
   --level-expert:         #9d8de8;
+  --level-expert-text:    #b5a7ed;
   --level-expert-bg:      linear-gradient(135deg, rgba(157, 141, 232, 0.1) 0%, rgba(157, 141, 232, 0.04) 100%);
   --level-expert-bg-flat: rgba(157, 141, 232, 0.08);
   --level-expert-border:  rgba(157, 141, 232, 0.18);
@@ -308,7 +327,7 @@ h1, h2, h3 {
 }
 
 a {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
   transition: color 0.2s var(--ease-out);
 }
@@ -388,13 +407,13 @@ img {
 }
 .home-btn:hover {
   background: var(--surface);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .site-title {
   font-size: clamp(0.95rem, 2.5vw, 1.1rem);
   font-weight: 800;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
   letter-spacing: -0.02em;
   transition: opacity 0.2s var(--ease-out);
@@ -403,7 +422,7 @@ img {
 
 .site-title:hover {
   opacity: 0.8;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .header-nav {
@@ -487,7 +506,7 @@ img {
 .week-number {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
   text-transform: uppercase;
   letter-spacing: 3px;
   margin-bottom: 12px;
@@ -567,25 +586,25 @@ p {
 
 .level-elem {
   background: var(--level-elem-bg-flat);
-  color: var(--level-elem);
+  color: var(--level-elem-text);
   border: 1px solid var(--level-elem-border);
 }
 
 .level-inter {
   background: var(--level-inter-bg-flat);
-  color: var(--level-inter);
+  color: var(--level-inter-text);
   border: 1px solid var(--level-inter-border);
 }
 
 .level-adv {
   background: var(--level-adv-bg-flat);
-  color: var(--level-adv);
+  color: var(--level-adv-text);
   border: 1px solid var(--level-adv-border);
 }
 
 .level-expert {
   background: var(--level-expert-bg-flat);
-  color: var(--level-expert);
+  color: var(--level-expert-text);
   border: 1px solid var(--level-expert-border);
 }
 
@@ -786,6 +805,153 @@ p {
 
 
 /* ================================================================
+   ALGORITHM UTILITY BOXES — Math formula, citation, narrative
+   Used in algorithms/algoNN.html (Big-O, loop invariants, etc.)
+   ================================================================ */
+
+/* Formula Box — centered mathematical display (Big-O, Hoare triples, recurrences) */
+.formula-box {
+  margin: 18px 0;
+  padding: 18px 22px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text);
+  text-align: center;
+  overflow-x: auto;
+}
+.formula-box strong {
+  color: var(--accent-text);
+  font-weight: 700;
+}
+.formula-box em {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Reading Box — book/paper citations (CLRS, Knuth TAOCP, Hoare 1969) */
+.reading-box {
+  margin: 20px 0;
+  padding: 18px 22px;
+  background: var(--surface-accent);
+  border: 1px solid var(--border-accent);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+.reading-box .box-header {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--accent-text);
+  margin-bottom: 10px;
+}
+.reading-box em {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+.reading-box p {
+  margin: 8px 0;
+  line-height: 1.65;
+}
+
+/* Story Block — narrative opening sections */
+.story-block {
+  margin: 16px 0;
+  padding: 18px 22px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-xs);
+}
+.story-block h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: var(--accent-text);
+  font-size: 1.05rem;
+}
+.story-block p {
+  margin: 8px 0;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* Inline code inside utility boxes — match other boxes */
+.formula-box code,
+.reading-box code,
+.story-block code {
+  background: var(--inline-code-bg);
+  border: 1px solid var(--inline-code-border);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  font-size: 0.88em;
+}
+
+/* Visualization Box — embedded SVG diagrams */
+.viz-box {
+  margin: 24px 0;
+  padding: 24px 20px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-xs);
+  text-align: center;
+  overflow-x: auto;
+}
+.viz-box svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.viz-box svg text {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.viz-box svg .viz-label {
+  font-size: 13px;
+  fill: var(--text);
+  font-weight: 600;
+}
+.viz-box svg .viz-label-small {
+  font-size: 11px;
+  fill: var(--text-secondary);
+}
+.viz-box svg .viz-node {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.viz-box svg .viz-node-alt {
+  fill: var(--surface);
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+.viz-box svg .viz-edge {
+  stroke: var(--text-secondary);
+  stroke-width: 1.5;
+  fill: none;
+}
+.viz-box svg .viz-edge-active {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  fill: none;
+}
+.viz-caption {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 12px;
+  font-style: italic;
+}
+.viz-caption strong {
+  color: var(--text);
+  font-style: normal;
+}
+
+
+/* ================================================================
    CODE BLOCKS — Dark VS Code theme with glow
    ================================================================ */
 .code-block {
@@ -902,7 +1068,7 @@ td code,
   border-radius: var(--radius-xs);
   font-size: 0.86em;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--accent-text);
   transition: background 0.2s var(--ease-out);
 }
 
@@ -979,7 +1145,7 @@ pre code {
 }
 
 .param-required {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
 }
 
@@ -1056,6 +1222,26 @@ pre code {
   background: linear-gradient(135deg, #1898b8, #30b0d0);
 }
 
+.type-prove {
+  background: linear-gradient(135deg, #7c5cbf, #9a7ad8);
+}
+
+.type-calc {
+  background: linear-gradient(135deg, #3878c7, #5a98e0);
+}
+
+.type-explain {
+  background: linear-gradient(135deg, #2d9b6e, #40b080);
+}
+
+.type-debug {
+  background: linear-gradient(135deg, #d4930c, #e8a830);
+}
+
+.type-specialization {
+  background: linear-gradient(135deg, #4a5568, #6b7280);
+}
+
 .problem-num {
   font-weight: 700;
   color: var(--text-secondary);
@@ -1110,7 +1296,7 @@ details.answer summary::-webkit-details-marker {
 
 details.answer summary:hover {
   background: var(--surface-hover);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 details.answer summary::before {
@@ -1132,7 +1318,7 @@ details.answer[open] summary::before {
 
 details.answer[open] summary {
   background: var(--surface-accent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 details.answer .answer-content,
@@ -1204,7 +1390,7 @@ details.answer .answer-body {
 
 .ai-col.human .ai-col-header {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   border-bottom: 2px solid var(--accent);
 }
 
@@ -1348,7 +1534,7 @@ details.answer .answer-body {
 .exercise-num {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
   font-family: 'JetBrains Mono', monospace;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1400,7 +1586,7 @@ details.answer .answer-body {
   font-size: 1rem;
   font-weight: 700;
   margin: 0 0 10px;
-  color: var(--accent);
+  color: var(--accent-text);
   border: none;
   padding: 0;
 }
@@ -1440,7 +1626,7 @@ details.answer .answer-body {
 .next-week-label {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
   text-transform: uppercase;
   letter-spacing: 2px;
   margin-bottom: 8px;
@@ -1500,7 +1686,7 @@ details.answer .answer-body {
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.88rem;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .glossary-def {
@@ -1576,7 +1762,7 @@ li {
 }
 
 li::marker {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 ul ul,
@@ -1653,7 +1839,7 @@ blockquote strong {
 .toc summary::before {
   content: '≡';
   font-size: 1.1rem;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .toc summary::after {
@@ -1696,12 +1882,12 @@ blockquote strong {
   transition: color 0.15s;
 }
 
-.toc-section-link:hover { color: var(--accent); }
+.toc-section-link:hover { color: var(--accent-text); }
 
 .toc-num {
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
   letter-spacing: 0.5px;
   flex-shrink: 0;
   font-family: var(--font-code);
@@ -1722,10 +1908,10 @@ blockquote strong {
   letter-spacing: 0.3px;
 }
 
-.toc-level-dot.elem  { background: var(--level-elem-bg-flat);    color: var(--level-elem); }
-.toc-level-dot.inter { background: var(--level-inter-bg-flat);   color: var(--level-inter); }
-.toc-level-dot.adv   { background: var(--level-adv-bg-flat);     color: var(--level-adv); }
-.toc-level-dot.exp   { background: var(--level-expert-bg-flat);  color: var(--level-expert); }
+.toc-level-dot.elem  { background: var(--level-elem-bg-flat);    color: var(--level-elem-text); }
+.toc-level-dot.inter { background: var(--level-inter-bg-flat);   color: var(--level-inter-text); }
+.toc-level-dot.adv   { background: var(--level-adv-bg-flat);     color: var(--level-adv-text); }
+.toc-level-dot.exp   { background: var(--level-expert-bg-flat);  color: var(--level-expert-text); }
 
 
 /* ================================================================
@@ -1787,7 +1973,7 @@ blockquote strong {
 }
 
 .site-footer a:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 
@@ -1808,7 +1994,7 @@ blockquote strong {
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   font-size: 0.9rem;
   padding: 14px 22px;
@@ -2010,7 +2196,8 @@ blockquote strong {
 
   .level-section.elementary,
   .level-section.intermediate,
-  .level-section.advanced {
+  .level-section.advanced,
+  .level-section.expert {
     background: #f8f8f8 !important;
   }
 
@@ -2056,27 +2243,29 @@ blockquote strong {
    ANIMATIONS & MICRO-INTERACTIONS
    ================================================================ */
 
-/* Subtle fade-in for page load */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Subtle slide-in for page load — no opacity (to avoid mid-animation
+   contrast-checker false positives). */
+@keyframes slideInUp {
+  from { transform: translateY(12px); }
+  to   { transform: translateY(0); }
 }
 
+/* Retained for compatibility — unused by new rules */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Decorative entry animations — transform only (no opacity) so that
+   contrast calculators don't sample mid-animation and flag false positives. */
 .week-header {
-  animation: fadeInUp 0.6s var(--ease-out);
+  animation: slideInUp 0.6s var(--ease-out);
 }
 
 section {
-  animation: fadeInUp 0.5s var(--ease-out) both;
+  animation: slideInUp 0.5s var(--ease-out) both;
 }
 
-/* Stagger sections */
 section:nth-child(1) { animation-delay: 0.05s; }
 section:nth-child(2) { animation-delay: 0.1s; }
 section:nth-child(3) { animation-delay: 0.15s; }

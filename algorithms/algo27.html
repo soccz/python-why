@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 27주차: 고급 자료구조 — Trie, Skip List, B-Tree, LSM | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="고급 자료구조 — Fredkin 1960 Trie, Bayer-McCreight 1972 B-Tree, Pugh 1990 Skip List, O'Neil 1996 LSM. DB 인덱스의 실체.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 27주차: 고급 자료구조 | PyWhy">
+  <meta property="og:description" content="Trie, Skip List, B-Tree, LSM — 데이터베이스·자동완성·CDN의 수학적 뼈대">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo27.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A27">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo26.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo28.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 27</div>
+  <h1 class="week-title">고급 자료구조 — Trie, Skip List, B-Tree, LSM<br>자동완성부터 PostgreSQL 인덱스까지</h1>
+  <p class="week-subtitle">
+    1960년 MIT의 <strong>Edward Fredkin</strong>이 <em>retrieval</em>의 중간 음절을 따서 <strong>Trie</strong>(트라이)를 명명. 12년 뒤 1972년 보잉 연구소의 <strong>Bayer &amp; McCreight</strong>가 디스크 지향 균형 트리 <strong>B-Tree</strong>를 발표 — 오늘날 PostgreSQL, MySQL 인덱스의 실체. 1990년 <strong>William Pugh</strong>가 트리 없이 O(log n) 정렬 집합(sorted set)을 달성하는 <strong>Skip List</strong>를 CACM에 게재. 1996년 <strong>O'Neil et al.</strong>이 <em>쓰기 최적</em> <strong>LSM-Tree</strong>를 제안 — Cassandra, RocksDB, LevelDB의 뿌리.<br>
+    Algo 10-11의 기본 트리를 넘어 <em>디스크·문자열·randomized·쓰기 최적</em>의 세계. 현대 저장 엔진의 네 기둥.<br>
+    핵심 질문: <em>"왜 DB 인덱스는 이진 트리가 아니라 B-Tree인가? Skip List가 왜 Redis의 Sorted Set인가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 60년의 자료구조 혁신</a>
+    </div>
+    <div class="toc-section">
+      <a href="#trie-idea" class="toc-section-link"><span class="toc-num">02</span>Trie — Fredkin 1960</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#trie-python" class="toc-section-link"><span class="toc-num">03</span>Trie Python 구현</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#trie-variants" class="toc-section-link"><span class="toc-num">04</span>Patricia / Radix Tree</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#skip-list-idea" class="toc-section-link"><span class="toc-num">05</span>Skip List — Pugh 1990</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#skip-list-python" class="toc-section-link"><span class="toc-num">06</span>Skip List Python 구현</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#btree-idea" class="toc-section-link"><span class="toc-num">07</span>B-Tree — Bayer-McCreight 1972</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#btree-insert" class="toc-section-link"><span class="toc-num">08</span>B-Tree 삽입과 분할</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#bplus-tree" class="toc-section-link"><span class="toc-num">09</span>B+ Tree — DB 인덱스의 실체</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#lsm-tree" class="toc-section-link"><span class="toc-num">10</span>LSM-Tree — O'Neil 1996</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#comparison" class="toc-section-link"><span class="toc-num">11</span>BST vs B-Tree vs LSM 비교</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#applications" class="toc-section-link"><span class="toc-num">12</span>응용 — Redis, Cassandra, Postgres</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#persistent" class="toc-section-link"><span class="toc-num">13</span>Persistent 자료구조</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 60년의 자료구조 혁신</h2>
+
+  <blockquote>
+    <em>Fredkin은 "reTRIEval"의 중간 네 글자에서 이름을 따왔다고 밝혔으며, 원래는 "tree"와 같이 발음하도록 의도했다. 오늘날 트리(tree)와 구분하기 위해 "트라이(try)"로 발음하는 것이 일반적.</em>
+    <br>— Edward Fredkin, <em>"Trie Memory"</em>, CACM 3(9):490-499, September 1960
+  </blockquote>
+
+  <div class="story-block">
+    <h3>1960 — Edward Fredkin, MIT</h3>
+    <p>
+      MIT 연구원 Fredkin이 <strong>"Trie Memory"</strong> (CACM 3(9):490-499, 1960)에서 문자열 자동완성·사전·IP 주소 조회의 기반이 되는 자료구조를 제안. <em>"retrieval"의 중간 음절을 따서</em> trie라 명명. 발음은 "tree"와 같게(트리) 또는 "try"(트라이) — Fredkin 자신은 "tree"로 발음했으나, 혼동 때문에 지금은 "트라이"가 일반적.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1972 — Rudolf Bayer &amp; Edward McCreight, Boeing Research Labs</h3>
+    <p>
+      <strong>"Organization and Maintenance of Large Ordered Indexes"</strong>(Acta Informatica 1:173-189, 1972; 1970 Boeing 내부 보고서로 먼저 유통). <strong>B-Tree</strong>가 보잉에서 태어남 — 당시 Bayer는 "B는 Boeing의 약자인가, Bayer인가, balanced인가?"라는 질문에 <em>"B stands for balanced, Boeing, Bayer, or whatever you want"</em> 애매하게 답함. 디스크 I/O 지향 → 데이터베이스 인덱스의 표준이 됨.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1990 — William Pugh, University of Maryland</h3>
+    <p>
+      <strong>"Skip Lists: A Probabilistic Alternative to Balanced Trees"</strong>(CACM 33(6):668-676, 1990). 트리 회전(rotation) 없이 <em>확률적 포인터 건너뛰기</em>로 O(log n) 삽입/조회/삭제. 구현이 단순하고 분석이 우아 — <em>"비결정론적 자료구조"</em>의 교과서 예.
+    </p>
+    <p>
+      현재 <strong>Redis Sorted Set</strong>, LevelDB MemTable, Apache Lucene의 내부에서 활용.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1996 — Patrick O'Neil, Edward Cheng, Dieter Gawlick, Elizabeth O'Neil</h3>
+    <p>
+      <strong>"The Log-Structured Merge-Tree (LSM-Tree)"</strong>(Acta Informatica 33(4):351-385, 1996). 쓰기 폭주 워크로드를 위한 설계. <em>"최근 쓰기는 메모리, 배치로 디스크에 머지"</em> — 하드디스크의 순차 쓰기 속도를 극대화. 배경: Rosenblum &amp; Ousterhout의 1992년 <em>log-structured file system</em>(LFS, ACM TOCS 10(1))이 "순차 쓰기가 가장 빠르다"는 철학을 먼저 제시한 뒤 인덱스 구조로 진화한 것.
+    </p>
+    <p>
+      <strong>Google Bigtable 2006</strong>에서 재발견·대중화. 이후 <strong>Cassandra, HBase, RocksDB, LevelDB</strong> 등 NoSQL 스토리지 엔진의 기반. 2020년대 <strong>CockroachDB, TiDB</strong>까지 확장.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="고급 자료구조 타임라인">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📜 자료구조의 60년 — 문자열에서 쓰기 최적화까지</text>
+
+      <line x1="60" y1="140" x2="680" y2="140" stroke="var(--text-muted)" stroke-width="2"/>
+      <polygon points="680,140 670,136 670,144" fill="var(--text-muted)"/>
+
+      <g font-family="JetBrains Mono, monospace" font-size="11">
+        <!-- 1960 Fredkin Trie -->
+        <circle cx="100" cy="140" r="8" fill="#d4930c" stroke="var(--accent)" stroke-width="2"/>
+        <line x1="100" y1="132" x2="100" y2="80" stroke="#d4930c" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="35" y="50" width="130" height="32" rx="4" fill="rgba(212,147,12,0.1)" stroke="#d4930c" stroke-width="1"/>
+        <text x="102" y="67" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Fredkin 1960</text>
+        <text x="102" y="78" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">Trie memory</text>
+        <text x="100" y="165" text-anchor="middle" class="viz-label-small">1960</text>
+
+        <!-- 1968 Morrison Patricia -->
+        <circle cx="150" cy="140" r="5" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="150" y="120" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Patricia</text>
+        <text x="150" y="165" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1968</text>
+
+        <!-- 1972 B-Tree -->
+        <circle cx="250" cy="140" r="8" fill="#196aa1" stroke="#196aa1" stroke-width="2"/>
+        <line x1="250" y1="148" x2="250" y2="210" stroke="#196aa1" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="180" y="210" width="140" height="32" rx="4" fill="rgba(25,106,161,0.1)" stroke="#196aa1" stroke-width="1"/>
+        <text x="252" y="228" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Bayer-McCreight 1972</text>
+        <text x="252" y="239" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">B-Tree (Boeing)</text>
+        <text x="250" y="165" text-anchor="middle" class="viz-label-small">1972</text>
+
+        <!-- 1990 Pugh Skip List -->
+        <circle cx="440" cy="140" r="8" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <line x1="440" y1="132" x2="440" y2="80" stroke="#3b9b6e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="375" y="50" width="135" height="32" rx="4" fill="rgba(59,155,110,0.1)" stroke="#3b9b6e" stroke-width="1"/>
+        <text x="445" y="67" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Pugh 1990</text>
+        <text x="445" y="78" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">Skip List (CACM)</text>
+        <text x="440" y="165" text-anchor="middle" class="viz-label-small">1990</text>
+
+        <!-- 1996 LSM -->
+        <circle cx="540" cy="140" r="8" fill="#c23b5e" stroke="#c23b5e" stroke-width="2"/>
+        <line x1="540" y1="148" x2="540" y2="210" stroke="#c23b5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="475" y="210" width="135" height="32" rx="4" fill="rgba(194,59,94,0.1)" stroke="#c23b5e" stroke-width="1"/>
+        <text x="545" y="228" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">O'Neil 1996</text>
+        <text x="545" y="239" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">LSM-Tree</text>
+        <text x="540" y="165" text-anchor="middle" class="viz-label-small">1996</text>
+
+        <!-- 2006 Bigtable -->
+        <circle cx="620" cy="140" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="620" y="120" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Bigtable/HBase</text>
+        <text x="620" y="165" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">2006</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>60년의 자료구조 계보</strong>: Fredkin 1960 Trie (문자열) → Bayer-McCreight 1972 B-Tree (디스크) → Pugh 1990 Skip List (randomized) → O'Neil 1996 LSM-Tree (쓰기 최적) → 2006 Bigtable로 NoSQL 시대 개막.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. Trie ==================== -->
+<section id="trie-idea">
+  <h2>02 — Trie — Fredkin 1960</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">아이디어</h3>
+    </div>
+    <p>
+      문자 하나씩 분기하는 트리. 루트에서 리프까지의 경로가 <em>하나의 문자열</em>. 공통 prefix는 공유.
+    </p>
+    <ul>
+      <li><strong>삽입</strong>: 문자 하나씩 따라가며 없는 가지 만들기. O(|word|).</li>
+      <li><strong>조회</strong>: 같은 경로 따라가기. O(|word|).</li>
+      <li><strong>prefix 탐색</strong>: prefix까지 내려간 뒤 서브트리 DFS. "ca"로 시작하는 모든 단어.</li>
+      <li><strong>공간</strong>: 문자 집합 Σ 기준 O(Σ · n · L) (n=단어 수, L=평균 길이). 최악. Patricia trie로 압축 가능.</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trie 구조 예">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🔠 Trie — {cat, car, card, dog, do}</text>
+
+      <g transform="translate(60, 55)" font-family="JetBrains Mono, monospace" font-size="12">
+        <!-- Root -->
+        <circle cx="300" cy="20" r="18" fill="#fde6a6" stroke="#d4930c" stroke-width="2"/>
+        <text x="300" y="25" text-anchor="middle" class="viz-label-small" font-weight="700">∅</text>
+
+        <line x1="284" y1="30" x2="180" y2="65" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="222" y="52" class="viz-label-small" fill="#3b9b6e" font-weight="700">c</text>
+        <line x1="316" y1="30" x2="420" y2="65" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="378" y="52" class="viz-label-small" fill="#3b9b6e" font-weight="700">d</text>
+
+        <!-- c subtree -->
+        <circle cx="180" cy="80" r="16" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/>
+        <text x="180" y="85" text-anchor="middle" class="viz-label-small" font-weight="700">c</text>
+
+        <line x1="180" y1="96" x2="180" y2="125" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="190" y="115" class="viz-label-small" fill="#3b9b6e" font-weight="700">a</text>
+
+        <circle cx="180" cy="140" r="16" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/>
+        <text x="180" y="145" text-anchor="middle" class="viz-label-small" font-weight="700">a</text>
+
+        <line x1="168" y1="152" x2="120" y2="185" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="135" y="175" class="viz-label-small" fill="#3b9b6e" font-weight="700">t</text>
+        <line x1="192" y1="152" x2="240" y2="185" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="224" y="175" class="viz-label-small" fill="#3b9b6e" font-weight="700">r</text>
+
+        <!-- cat leaf (end) -->
+        <circle cx="120" cy="200" r="16" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="120" y="205" text-anchor="middle" class="viz-label-small" font-weight="700" fill="#3b9b6e">t★</text>
+        <text x="120" y="232" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">cat</text>
+
+        <!-- car end -->
+        <circle cx="240" cy="200" r="16" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="240" y="205" text-anchor="middle" class="viz-label-small" font-weight="700" fill="#3b9b6e">r★</text>
+        <text x="240" y="232" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">car</text>
+
+        <line x1="240" y1="216" x2="240" y2="245" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="250" y="235" class="viz-label-small" fill="#3b9b6e" font-weight="700">d</text>
+        <circle cx="240" cy="260" r="14" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="240" y="265" text-anchor="middle" class="viz-label-small" font-weight="700" fill="#3b9b6e">d★</text>
+
+        <!-- d subtree -->
+        <circle cx="420" cy="80" r="16" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/>
+        <text x="420" y="85" text-anchor="middle" class="viz-label-small" font-weight="700">d</text>
+
+        <line x1="420" y1="96" x2="420" y2="125" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="430" y="115" class="viz-label-small" fill="#3b9b6e" font-weight="700">o</text>
+
+        <circle cx="420" cy="140" r="16" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="420" y="145" text-anchor="middle" class="viz-label-small" font-weight="700" fill="#3b9b6e">o★</text>
+        <text x="460" y="145" class="viz-label-small" fill="#3b9b6e">do</text>
+
+        <line x1="420" y1="156" x2="420" y2="185" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="430" y="175" class="viz-label-small" fill="#3b9b6e" font-weight="700">g</text>
+
+        <circle cx="420" cy="200" r="16" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="420" y="205" text-anchor="middle" class="viz-label-small" font-weight="700" fill="#3b9b6e">g★</text>
+        <text x="420" y="232" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">dog</text>
+      </g>
+
+      <text x="360" y="285" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">★ 표시 = 단어 끝 (is_end_of_word=True). 공통 prefix "ca", "do"가 공유됨.</text>
+    </svg>
+    <div class="viz-caption"><strong>Trie 구조</strong>: 각 edge가 한 문자. 리프 또는 중간 노드에 ★(단어 끝) 표시. "ca"는 cat/car/card가 공유, "do"는 do/dog가 공유. 공통 prefix 저장 공간 절약.</div>
+  </div>
+</section>
+
+<!-- ==================== 03. Trie Python ==================== -->
+<section id="trie-python">
+  <h2>03 — Trie Python 구현</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">dict 기반 구현</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">trie.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">TrieNode</span>:
+    __slots__ = (<span class="hl-str">'children'</span>, <span class="hl-str">'is_end'</span>)
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(<span class="hl-kw">self</span>):
+        <span class="hl-kw">self</span>.children = {}
+        <span class="hl-kw">self</span>.is_end = <span class="hl-kw">False</span>
+
+
+<span class="hl-kw">class</span> <span class="hl-bi">Trie</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(<span class="hl-kw">self</span>):
+        <span class="hl-kw">self</span>.root = TrieNode()
+
+    <span class="hl-kw">def</span> <span class="hl-bi">insert</span>(<span class="hl-kw">self</span>, word):
+        node = <span class="hl-kw">self</span>.root
+        <span class="hl-kw">for</span> ch <span class="hl-kw">in</span> word:
+            <span class="hl-kw">if</span> ch <span class="hl-kw">not</span> <span class="hl-kw">in</span> node.children:
+                node.children[ch] = TrieNode()
+            node = node.children[ch]
+        node.is_end = <span class="hl-kw">True</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">search</span>(<span class="hl-kw">self</span>, word):
+        node = <span class="hl-kw">self</span>._find(word)
+        <span class="hl-kw">return</span> node <span class="hl-kw">is</span> <span class="hl-kw">not</span> <span class="hl-kw">None</span> <span class="hl-kw">and</span> node.is_end
+
+    <span class="hl-kw">def</span> <span class="hl-bi">starts_with</span>(<span class="hl-kw">self</span>, prefix):
+        <span class="hl-kw">return</span> <span class="hl-kw">self</span>._find(prefix) <span class="hl-kw">is</span> <span class="hl-kw">not</span> <span class="hl-kw">None</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_find</span>(<span class="hl-kw">self</span>, s):
+        node = <span class="hl-kw">self</span>.root
+        <span class="hl-kw">for</span> ch <span class="hl-kw">in</span> s:
+            <span class="hl-kw">if</span> ch <span class="hl-kw">not</span> <span class="hl-kw">in</span> node.children: <span class="hl-kw">return</span> <span class="hl-kw">None</span>
+            node = node.children[ch]
+        <span class="hl-kw">return</span> node
+
+    <span class="hl-kw">def</span> <span class="hl-bi">autocomplete</span>(<span class="hl-kw">self</span>, prefix):
+        node = <span class="hl-kw">self</span>._find(prefix)
+        <span class="hl-kw">if</span> node <span class="hl-kw">is</span> <span class="hl-kw">None</span>: <span class="hl-kw">return</span> []
+        result = []
+        <span class="hl-kw">def</span> <span class="hl-bi">dfs</span>(n, path):
+            <span class="hl-kw">if</span> n.is_end: result.append(prefix + <span class="hl-str">''</span>.join(path))
+            <span class="hl-kw">for</span> ch, child <span class="hl-kw">in</span> <span class="hl-bi">sorted</span>(n.children.items()):
+                path.append(ch); dfs(child, path); path.pop()
+        dfs(node, [])
+        <span class="hl-kw">return</span> result
+
+
+<span class="hl-cmt"># 테스트</span>
+t = Trie()
+<span class="hl-kw">for</span> w <span class="hl-kw">in</span> [<span class="hl-str">"cat"</span>, <span class="hl-str">"car"</span>, <span class="hl-str">"card"</span>, <span class="hl-str">"do"</span>, <span class="hl-str">"dog"</span>]:
+    t.insert(w)
+<span class="hl-bi">print</span>(t.search(<span class="hl-str">"cat"</span>))          <span class="hl-cmt"># True</span>
+<span class="hl-bi">print</span>(t.search(<span class="hl-str">"ca"</span>))           <span class="hl-cmt"># False (prefix but not word)</span>
+<span class="hl-bi">print</span>(t.starts_with(<span class="hl-str">"ca"</span>))     <span class="hl-cmt"># True</span>
+<span class="hl-bi">print</span>(t.autocomplete(<span class="hl-str">"ca"</span>))    <span class="hl-cmt"># ['car', 'card', 'cat']</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>dict 기반</strong>: 각 노드가 dict로 children 관리. 알파벳 크기 가변 (영어 26 또는 유니코드 전체).</li>
+      <li><strong>배열 기반</strong>: 고정 알파벳(예: 소문자 26자)에 <code>[None]*26</code>. 빠르지만 공간 낭비.</li>
+      <li><strong>__slots__</strong>: Python에서 객체 공간 절약. 큰 trie에 필수.</li>
+      <li><strong>복잡도</strong>: 삽입/조회 O(|word|). prefix search + DFS O(|prefix| + k·L) (k=매치 수).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 04. Patricia / Radix Tree ==================== -->
+<section id="trie-variants">
+  <h2>04 — Patricia / Radix Tree</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Trie의 압축</h3>
+    </div>
+    <p>
+      표준 trie는 공간 낭비가 큼 — 중간에 자식이 하나뿐인 체인들이 많음. <strong>Patricia Trie</strong>(Morrison 1968, "PATRICIA: Practical Algorithm To Retrieve Information Coded in Alphanumeric") 또는 <strong>Radix Tree</strong>: 단일 자식 체인을 한 edge로 압축 → 공간 O(n·L) 이하.
+    </p>
+    <ul>
+      <li><strong>edge에 문자열 저장</strong>: "car"의 경우 하나의 edge가 "car" 전체를 담음.</li>
+      <li><strong>삽입 시 분할</strong>: 새 단어가 기존 edge와 prefix 공유 시 edge를 쪼개고 분기 생성.</li>
+      <li>응용: <strong>IP 라우팅 테이블</strong> (Longest Prefix Match), <strong>Linux 커널 route table</strong>, <strong>Rust BTreeMap</strong>(내부는 B-tree지만 radix 유사 기법도 혼합), <strong>Redis Streams</strong> 내부.</li>
+    </ul>
+    <p>
+      <strong>LC-Trie</strong>(Nilsson-Karlsson 1999): level-compressed trie. 자식이 꽉 찬 내부 노드는 높이를 압축. 라우터 성능을 위한 DB 인덱스 변종.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 05. Skip List 아이디어 ==================== -->
+<section id="skip-list-idea">
+  <h2>05 — Skip List — Pugh 1990</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">"여러 레벨의 링크드 리스트"</h3>
+    </div>
+    <p>
+      정렬된 연결 리스트에 <em>고속도로 같은 상위 레벨</em>을 추가. 높은 레벨은 듬성듬성 원소만 포함 → 검색 시 빠르게 건너뜀.
+    </p>
+    <ul>
+      <li>각 노드가 <em>무작위</em> 높이 (레벨). 확률 p=1/2로 "한 레벨 더 올라감" 반복.</li>
+      <li>높은 레벨에서 "너무 크면 한 레벨 내려감" → 단계적으로 좁혀가며 검색.</li>
+      <li><strong>기대</strong> O(log n) 시간 (모든 연산). <em>확률적 보장</em> — 최악은 O(n)이지만 확률 극소.</li>
+    </ul>
+    <p>
+      <strong>왜 이 단순한 구조가 쓰이는가</strong>:
+    </p>
+    <ul>
+      <li>구현이 AVL/Red-Black 트리보다 훨씬 짧음 (회전 로직 없음).</li>
+      <li>동시성(lock-free) 구현이 용이 — 각 노드의 next 포인터 CAS 한 번.</li>
+      <li>Redis Sorted Set, LevelDB MemTable, Lucene internals에 사용.</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a27sl-show { 0%,2%{opacity:0} 4%,14%{opacity:1} 16%,100%{opacity:0} }
+      .a27sl-S0{animation:a27sl-show 12s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a27sl-S1{animation:a27sl-show 12s linear infinite;animation-delay:2.4s;animation-fill-mode:backwards}
+      .a27sl-S2{animation:a27sl-show 12s linear infinite;animation-delay:4.8s;animation-fill-mode:backwards}
+      .a27sl-S3{animation:a27sl-show 12s linear infinite;animation-delay:7.2s;animation-fill-mode:backwards}
+      .a27sl-S4{animation:a27sl-show 12s linear infinite;animation-delay:9.6s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Skip List 검색">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🚄 Skip List — search(17) 트레이스</text>
+
+      <!-- Level 3 (top): head → 20 → tail -->
+      <g transform="translate(60, 60)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="-40" y="5" class="viz-label-small" fill="var(--text-muted)">L3:</text>
+        <rect x="0"   y="-10" width="40" height="24" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="20" y="5" text-anchor="middle" font-weight="700">head</text>
+        <line x1="40" y1="2" x2="340" y2="2" stroke="var(--text-muted)" stroke-width="1.2" marker-end="url(#arr-s)"/>
+        <rect x="340" y="-10" width="40" height="24" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="360" y="5" text-anchor="middle" font-weight="700">20</text>
+        <line x1="380" y1="2" x2="620" y2="2" stroke="var(--text-muted)" stroke-width="1.2" marker-end="url(#arr-s)"/>
+        <rect x="620" y="-10" width="40" height="24" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="640" y="5" text-anchor="middle" font-weight="700">NIL</text>
+      </g>
+
+      <!-- Level 2: head → 7 → 20 → NIL -->
+      <g transform="translate(60, 100)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="-40" y="5" class="viz-label-small" fill="var(--text-muted)">L2:</text>
+        <rect x="0"   y="-10" width="40" height="24" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.2"/>
+        <text x="20" y="5" text-anchor="middle" font-weight="700">head</text>
+        <line x1="40" y1="2" x2="160" y2="2" stroke="var(--text-muted)" stroke-width="1.2" marker-end="url(#arr-s)"/>
+        <rect x="160" y="-10" width="40" height="24" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.2"/>
+        <text x="180" y="5" text-anchor="middle" font-weight="700">7</text>
+        <line x1="200" y1="2" x2="340" y2="2" stroke="var(--text-muted)" stroke-width="1.2" marker-end="url(#arr-s)"/>
+        <rect x="340" y="-10" width="40" height="24" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.2"/>
+        <text x="360" y="5" text-anchor="middle" font-weight="700">20</text>
+        <line x1="380" y1="2" x2="620" y2="2" stroke="var(--text-muted)" stroke-width="1.2" marker-end="url(#arr-s)"/>
+      </g>
+
+      <!-- Level 1: head → 3 → 7 → 12 → 20 → 25 → NIL -->
+      <g transform="translate(60, 140)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="-40" y="5" class="viz-label-small" fill="var(--text-muted)">L1:</text>
+        <rect x="0"   y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="20" y="5" text-anchor="middle" font-weight="700">head</text>
+        <line x1="40" y1="2" x2="80" y2="2" stroke="var(--text-muted)" stroke-width="1"/>
+        <rect x="80"  y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="100" y="5" text-anchor="middle" font-weight="700">3</text>
+        <line x1="120" y1="2" x2="160" y2="2" stroke="var(--text-muted)" stroke-width="1"/>
+        <rect x="160" y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="180" y="5" text-anchor="middle" font-weight="700">7</text>
+        <line x1="200" y1="2" x2="240" y2="2" stroke="var(--text-muted)" stroke-width="1"/>
+        <rect x="240" y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="260" y="5" text-anchor="middle" font-weight="700">12</text>
+        <line x1="280" y1="2" x2="340" y2="2" stroke="var(--text-muted)" stroke-width="1"/>
+        <rect x="340" y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="360" y="5" text-anchor="middle" font-weight="700">20</text>
+        <line x1="380" y1="2" x2="440" y2="2" stroke="var(--text-muted)" stroke-width="1"/>
+        <rect x="440" y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="460" y="5" text-anchor="middle" font-weight="700">25</text>
+      </g>
+
+      <!-- L0: full list including 17 -->
+      <g transform="translate(60, 180)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="-40" y="5" class="viz-label-small" fill="var(--text-muted)">L0:</text>
+        <rect x="0"   y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="20" y="5" text-anchor="middle" font-weight="700">head</text>
+        <rect x="80"  y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="100" y="5" text-anchor="middle" font-weight="700">3</text>
+        <rect x="120" y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="140" y="5" text-anchor="middle" font-weight="700">5</text>
+        <rect x="160" y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="180" y="5" text-anchor="middle" font-weight="700">7</text>
+        <rect x="200" y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="220" y="5" text-anchor="middle" font-weight="700">10</text>
+        <rect x="240" y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="260" y="5" text-anchor="middle" font-weight="700">12</text>
+        <rect x="280" y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="300" y="5" text-anchor="middle" font-weight="700">15</text>
+        <rect x="320" y="-10" width="40" height="24" fill="#fde6a6" stroke="#d4930c" stroke-width="2.5"/>
+        <text x="340" y="5" text-anchor="middle" font-weight="700" fill="#d4930c">17</text>
+        <rect x="360" y="-10" width="40" height="24" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="380" y="5" text-anchor="middle" font-weight="700">20</text>
+      </g>
+
+      <defs>
+        <marker id="arr-s" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
+          <path d="M0,0 L5,3 L0,6 Z" fill="var(--text-muted)"/>
+        </marker>
+        <marker id="arr-sr" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
+          <path d="M0,0 L5,3 L0,6 Z" fill="#c23b5e"/>
+        </marker>
+      </defs>
+
+      <!-- Search trace arrows (down and forward) -->
+      <g class="a27sl-S1">
+        <circle cx="80" cy="62" r="6" fill="#c23b5e" stroke="#c23b5e"/>
+        <text x="80" y="50" text-anchor="middle" class="viz-label-small" fill="#c23b5e" font-weight="700">start</text>
+      </g>
+      <g class="a27sl-S2">
+        <line x1="80" y1="62" x2="350" y2="62" stroke="#c23b5e" stroke-width="2" marker-end="url(#arr-sr)"/>
+        <text x="215" y="58" text-anchor="middle" class="viz-label-small" fill="#c23b5e">L3: 20 &gt; 17 → ↓</text>
+      </g>
+      <g class="a27sl-S3">
+        <line x1="80" y1="62" x2="80" y2="100" stroke="#c23b5e" stroke-width="2" marker-end="url(#arr-sr)"/>
+        <line x1="80" y1="102" x2="170" y2="102" stroke="#c23b5e" stroke-width="2" marker-end="url(#arr-sr)"/>
+        <text x="240" y="100" class="viz-label-small" fill="#c23b5e">L2: 7 ≤ 17, 다음 20 &gt; 17 → ↓</text>
+      </g>
+      <g class="a27sl-S4">
+        <line x1="170" y1="102" x2="170" y2="140" stroke="#c23b5e" stroke-width="2" marker-end="url(#arr-sr)"/>
+        <line x1="170" y1="142" x2="350" y2="142" stroke="#c23b5e" stroke-width="2" marker-end="url(#arr-sr)"/>
+        <line x1="350" y1="142" x2="350" y2="182" stroke="#c23b5e" stroke-width="2" marker-end="url(#arr-sr)"/>
+        <text x="200" y="260" class="viz-label" font-weight="700" fill="#3b9b6e">L1: 12 ≤ 17, 20 &gt; 17 → ↓L0: 15 → 17 ✓</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>Skip list search(17)</strong>: L3에서 시작 → 20&gt;17이라 한 레벨 내려감 → L2 7에서 시작, 20&gt;17로 내려감 → L1 12에서 시작, 20&gt;17로 내려감 → L0에서 15→17 발견. 4 레벨 × 평균 2 스텝 = O(log n).</div>
+  </div>
+</section>
+
+<!-- ==================== 06. Skip List Python ==================== -->
+<section id="skip-list-python">
+  <h2>06 — Skip List Python 구현</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">확률적 자료구조</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">skip_list.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">import</span> random
+
+<span class="hl-kw">class</span> <span class="hl-bi">SkipNode</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(<span class="hl-kw">self</span>, key, level):
+        <span class="hl-kw">self</span>.key = key
+        <span class="hl-kw">self</span>.forward = [<span class="hl-kw">None</span>] * (level + <span class="hl-num">1</span>)
+
+
+<span class="hl-kw">class</span> <span class="hl-bi">SkipList</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(<span class="hl-kw">self</span>, max_level=<span class="hl-num">16</span>, p=<span class="hl-num">0.5</span>):
+        <span class="hl-kw">self</span>.max_level = max_level
+        <span class="hl-kw">self</span>.p = p
+        <span class="hl-kw">self</span>.head = SkipNode(-<span class="hl-bi">float</span>(<span class="hl-str">'inf'</span>), max_level)
+        <span class="hl-kw">self</span>.level = <span class="hl-num">0</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_random_level</span>(<span class="hl-kw">self</span>):
+        lvl = <span class="hl-num">0</span>
+        <span class="hl-kw">while</span> random.random() &lt; <span class="hl-kw">self</span>.p <span class="hl-kw">and</span> lvl &lt; <span class="hl-kw">self</span>.max_level:
+            lvl += <span class="hl-num">1</span>
+        <span class="hl-kw">return</span> lvl
+
+    <span class="hl-kw">def</span> <span class="hl-bi">insert</span>(<span class="hl-kw">self</span>, key):
+        update = [<span class="hl-kw">None</span>] * (<span class="hl-kw">self</span>.max_level + <span class="hl-num">1</span>)
+        curr = <span class="hl-kw">self</span>.head
+        <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-kw">self</span>.level, -<span class="hl-num">1</span>, -<span class="hl-num">1</span>):
+            <span class="hl-kw">while</span> curr.forward[i] <span class="hl-kw">and</span> curr.forward[i].key &lt; key:
+                curr = curr.forward[i]
+            update[i] = curr
+
+        <span class="hl-kw">if</span> curr.forward[<span class="hl-num">0</span>] <span class="hl-kw">and</span> curr.forward[<span class="hl-num">0</span>].key == key:
+            <span class="hl-kw">return</span>    <span class="hl-cmt"># 중복 방지</span>
+
+        lvl = <span class="hl-kw">self</span>._random_level()
+        <span class="hl-kw">if</span> lvl &gt; <span class="hl-kw">self</span>.level:
+            <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-kw">self</span>.level + <span class="hl-num">1</span>, lvl + <span class="hl-num">1</span>):
+                update[i] = <span class="hl-kw">self</span>.head
+            <span class="hl-kw">self</span>.level = lvl
+
+        new_node = SkipNode(key, lvl)
+        <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(lvl + <span class="hl-num">1</span>):
+            new_node.forward[i] = update[i].forward[i]
+            update[i].forward[i] = new_node
+
+    <span class="hl-kw">def</span> <span class="hl-bi">search</span>(<span class="hl-kw">self</span>, key):
+        curr = <span class="hl-kw">self</span>.head
+        <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-kw">self</span>.level, -<span class="hl-num">1</span>, -<span class="hl-num">1</span>):
+            <span class="hl-kw">while</span> curr.forward[i] <span class="hl-kw">and</span> curr.forward[i].key &lt; key:
+                curr = curr.forward[i]
+        curr = curr.forward[<span class="hl-num">0</span>]
+        <span class="hl-kw">return</span> curr <span class="hl-kw">is</span> <span class="hl-kw">not</span> <span class="hl-kw">None</span> <span class="hl-kw">and</span> curr.key == key</code></pre>
+    </div>
+    <ul>
+      <li><strong>기대 레벨</strong>: p=1/2일 때 기대 높이 ≈ log<sub>2</sub> n. 공간 기대 O(n / (1-p)) = O(2n).</li>
+      <li><strong>시간 보장</strong>: 확률 1 − n<sup>−c</sup>로 O(log n) — 매우 높은 확률.</li>
+      <li><strong>Determinism</strong>: 무작위성 없이 동일 성능 보장은 어려움. 실무에선 고정 seed로 재현성 확보 가능.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 07. B-Tree ==================== -->
+<section id="btree-idea">
+  <h2>07 — B-Tree — Bayer-McCreight 1972</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">디스크 지향 트리</h3>
+    </div>
+    <p>
+      이진 트리의 문제: <em>디스크 접근이 많음</em>. 각 노드 = 한 디스크 블록(보통 4KB-16KB). 이진 트리는 노드당 키 1개 → 1M 원소면 깊이 20. 20번 디스크 I/O는 치명적.
+    </p>
+    <p>
+      <strong>B-Tree 해결책</strong>: 각 노드에 <em>많은 키(예: 수십~수백 개)</em>. 노드는 정확히 한 디스크 블록. 깊이가 log<sub>B</sub> n으로 줄어듦 (B=branching factor).
+    </p>
+    <ul>
+      <li>각 내부 노드: <strong>k개 키 + k+1개 자식 포인터</strong>.</li>
+      <li>키들은 정렬된 상태.</li>
+      <li>노드당 키 수는 <strong>[t-1, 2t-1]</strong> 범위 (t는 minimum degree).</li>
+      <li>모든 리프가 <em>같은 깊이</em>.</li>
+      <li>조회: O(log<sub>t</sub> n) — 디스크 지향에선 t=100이면 n=10억도 깊이 5-6.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">B의 의미</h3>
+    </div>
+    <p>
+      Knuth <em>TAOCP</em> vol.3에 따르면 Bayer는 "B가 무엇을 의미하는지 생각할수록 B-Tree를 더 잘 이해하게 된다"고 답했다고 전해짐. "balanced / Boeing / Bayer 중 어느 것이든"이라는 대중적 버전은 출처 불분명한 민담. 확실한 건: <em>Boeing Research Labs에서 1970년 내부 보고서, 1972년 Acta Informatica 논문</em>이라는 역사.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 08. B-Tree 삽입 ==================== -->
+<section id="btree-insert">
+  <h2>08 — B-Tree 삽입과 분할</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">분할(split) 메커니즘</h3>
+    </div>
+    <ol>
+      <li>리프까지 내려가며 올바른 위치 찾기.</li>
+      <li>리프가 꽉 차있지 않으면 (키 수 &lt; 2t-1) 단순 삽입.</li>
+      <li>꽉 차있으면 <strong>분할</strong>: 중간 키를 부모로 올리고, 좌/우 절반으로 쪼갬.</li>
+      <li>부모도 꽉 차면 재귀적으로 분할.</li>
+      <li>루트가 분할되면 트리 높이 +1.</li>
+    </ol>
+    <p>
+      <strong>선제적 분할(proactive split)</strong>: CLRS 구현은 내려가면서 "꽉 찬 노드"를 미리 분할. 재귀 없이 한 번에 내려감. 실무엔 "꽉 찬 후 분할"도 혼재.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="B-Tree 삽입 예">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🌳 B-Tree t=3 (키 2-5개/노드): insert(22)</text>
+
+      <!-- Before -->
+      <g transform="translate(60, 55)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="130" y="0" text-anchor="middle" class="viz-label" font-weight="700">Before: 리프 꽉 참</text>
+
+        <!-- Root -->
+        <rect x="100" y="15" width="60" height="24" rx="3" fill="#fde6a6" stroke="#d4930c" stroke-width="1.5"/>
+        <text x="130" y="32" text-anchor="middle" font-weight="700">15</text>
+
+        <line x1="120" y1="40" x2="60" y2="65" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="140" y1="40" x2="220" y2="65" stroke="var(--text-muted)" stroke-width="1"/>
+
+        <!-- Left leaf -->
+        <rect x="5" y="70" width="110" height="24" rx="3" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="25"  y="87" text-anchor="middle" class="viz-label-small">3</text>
+        <text x="55"  y="87" text-anchor="middle" class="viz-label-small">7</text>
+        <text x="85"  y="87" text-anchor="middle" class="viz-label-small">10</text>
+
+        <!-- Right leaf — full with 5 keys [17,19,20,23,25] -->
+        <rect x="155" y="70" width="130" height="24" rx="3" fill="#f5c6c6" stroke="#c23b5e" stroke-width="2"/>
+        <text x="170" y="87" text-anchor="middle" class="viz-label-small" font-weight="700">17</text>
+        <text x="195" y="87" text-anchor="middle" class="viz-label-small" font-weight="700">19</text>
+        <text x="220" y="87" text-anchor="middle" class="viz-label-small" font-weight="700">20</text>
+        <text x="245" y="87" text-anchor="middle" class="viz-label-small" font-weight="700">23</text>
+        <text x="270" y="87" text-anchor="middle" class="viz-label-small" font-weight="700">25</text>
+
+        <text x="130" y="120" text-anchor="middle" class="viz-label-small" fill="#c23b5e">오른쪽 리프가 꽉 참 (5키, 2t-1=5)</text>
+      </g>
+
+      <!-- After split -->
+      <g transform="translate(380, 55)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="160" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">After: 중간 키 20을 부모로</text>
+
+        <!-- New root with 15, 20 -->
+        <rect x="130" y="15" width="90" height="24" rx="3" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="150" y="32" text-anchor="middle" font-weight="700">15</text>
+        <text x="195" y="32" text-anchor="middle" font-weight="700" fill="#3b9b6e">20</text>
+
+        <line x1="140" y1="40" x2="60" y2="65" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="175" y1="40" x2="175" y2="65" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="210" y1="40" x2="295" y2="65" stroke="var(--text-muted)" stroke-width="1"/>
+
+        <!-- Left leaf unchanged -->
+        <rect x="5" y="70" width="110" height="24" rx="3" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="25"  y="87" text-anchor="middle" class="viz-label-small">3</text>
+        <text x="55"  y="87" text-anchor="middle" class="viz-label-small">7</text>
+        <text x="85"  y="87" text-anchor="middle" class="viz-label-small">10</text>
+
+        <!-- Middle leaf (17, 19) + 22 inserted here -->
+        <rect x="125" y="70" width="100" height="24" rx="3" fill="#fde6a6" stroke="#d4930c" stroke-width="2"/>
+        <text x="145" y="87" text-anchor="middle" class="viz-label-small">17</text>
+        <text x="170" y="87" text-anchor="middle" class="viz-label-small">19</text>
+        <text x="200" y="87" text-anchor="middle" class="viz-label-small" font-weight="700" fill="#d4930c">22 ★</text>
+
+        <!-- Right leaf (23, 25) -->
+        <rect x="240" y="70" width="75" height="24" rx="3" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="260" y="87" text-anchor="middle" class="viz-label-small">23</text>
+        <text x="290" y="87" text-anchor="middle" class="viz-label-small">25</text>
+
+        <text x="160" y="120" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">분할 + 22 삽입 완료</text>
+      </g>
+
+      <!-- 설명 -->
+      <g transform="translate(60, 195)" font-size="12" font-family="JetBrains Mono, monospace">
+        <text x="330" y="0" text-anchor="middle" class="viz-label" font-weight="700">분할 단계</text>
+        <text x="0" y="25" class="viz-label-small">① 22를 삽입할 리프 [17,19,20,23,25]가 꽉 참 (5키).</text>
+        <text x="0" y="45" class="viz-label-small">② 중간 키 <tspan font-weight="700" fill="#3b9b6e">20</tspan>을 부모로 밀어 올림. 좌/우 반으로 쪼갬: [17,19] / [23,25].</text>
+        <text x="0" y="65" class="viz-label-small">③ 22는 [17,19]에 적절히 삽입 → [17,19,22].</text>
+        <text x="0" y="85" class="viz-label-small" fill="var(--text-muted)">디스크 I/O: 경로의 노드만 읽기/쓰기. O(log_t n) I/O.</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>B-Tree 삽입 22</strong>: 꽉 찬 리프를 분할 → 중간 키 올리기 → 22 삽입. B-tree는 모든 리프가 같은 깊이 보장 — 최악·평균 O(log n) 보장.</div>
+  </div>
+</section>
+
+<!-- ==================== 09. B+ Tree ==================== -->
+<section id="bplus-tree">
+  <h2>09 — B+ Tree — DB 인덱스의 실체</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">B-Tree의 실무 변종</h3>
+    </div>
+    <p>
+      <strong>B+ Tree</strong>: B-Tree의 변종 (Comer의 1979 survey <em>"The Ubiquitous B-Tree"</em>, ACM Computing Surveys 11(2)에서 정리). 오늘날 PostgreSQL, MySQL/InnoDB, SQLite, Oracle의 주 인덱스.
+    </p>
+    <ul>
+      <li><strong>데이터는 리프에만</strong>: 내부 노드는 라우팅만.</li>
+      <li><strong>리프 연결 리스트</strong>: 인접 리프가 수평 포인터로 연결 → <em>범위 스캔 효율</em>.</li>
+      <li><strong>장점</strong>: 내부 노드에 더 많은 키를 담을 수 있어 분기 수 ↑ 깊이 ↓. 범위 질의("WHERE price BETWEEN 100 AND 500")에 매우 빠름.</li>
+      <li><strong>Fill factor</strong>: 리프 70-80% 차있는 상태 유지. 삽입 여유 + 공간 효율 균형.</li>
+    </ul>
+    <p>
+      PostgreSQL의 <code>CREATE INDEX</code>는 기본 B+ Tree. <code>psql \d+ table_name</code>로 확인 가능. 10억 row도 깊이 4-5의 B+ Tree로 관리.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">B* Tree, B-link Tree</h3>
+    </div>
+    <ul>
+      <li><strong>B* Tree</strong>: 분할 전에 <em>형제 노드와 키 분배</em> — 공간 효율 ↑. IBM VSAM.</li>
+      <li><strong>B-link Tree</strong>(Lehman-Yao 1981): 리프뿐 아니라 모든 레벨이 오른쪽 링크 유지. 동시성 friendly — PostgreSQL의 기본 인덱스 구현.</li>
+      <li><strong>Blink Tree 변형</strong>: 현대 DB의 lock-free 인덱스 기반.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 10. LSM-Tree ==================== -->
+<section id="lsm-tree">
+  <h2>10 — LSM-Tree — O'Neil 1996</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">쓰기 최적화의 혁명</h3>
+    </div>
+    <p>
+      B-Tree의 약점: 랜덤 쓰기. 레코드 삽입마다 해당 리프 블록을 디스크에서 읽고, 수정하고, 다시 씀. HDD의 seek 시간 때문에 초당 수백 IOPS 제한.
+    </p>
+    <p>
+      <strong>LSM의 아이디어</strong>: 쓰기를 <em>순차적으로 모아서</em> 나중에 정리.
+    </p>
+    <ol>
+      <li><strong>MemTable</strong>: 메모리 내 정렬 구조 (Skip list/BST). 쓰기는 여기에.</li>
+      <li><strong>Immutable MemTable</strong>: 꽉 차면 flush 대기.</li>
+      <li><strong>SSTable (Sorted String Table)</strong>: 디스크의 불변 정렬 파일. flush로 생성.</li>
+      <li><strong>Compaction</strong>: 여러 SSTable을 주기적으로 머지 → 중복 제거 + 삭제 적용.</li>
+      <li><strong>Level/Tiered</strong>: 여러 레벨로 SSTable 조직. L<sub>k</sub>는 L<sub>k-1</sub>의 10배 크기 (LevelDB 기본).</li>
+    </ol>
+    <p>
+      <strong>조회</strong>: MemTable → Immutable → L0 → L1 → ... 순서대로 탐색. <em>Bloom filter로 가속</em>(Algo 25) — 각 SSTable에 "이 키 있을 수도" 빠른 판단.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">B-Tree vs LSM: 쓰기/읽기 trade-off</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>측면</th><th>B-Tree</th><th>LSM-Tree</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>점 읽기</td><td>O(log n) 디스크 I/O</td><td>O(log n) but 여러 SSTable 확인 필요</td></tr>
+        <tr><td>쓰기</td><td>랜덤 I/O (느림)</td><td>순차 I/O (빠름)</td></tr>
+        <tr><td>범위 스캔</td><td>매우 빠름 (리프 링크)</td><td>다수 SSTable 병합 필요</td></tr>
+        <tr><td>공간</td><td>Fill factor 70-80%</td><td>중복 버전 존재 (compaction 전)</td></tr>
+        <tr><td>쓰기 증폭(Write Amplification)</td><td>작음</td><td>큼 (compaction 반복)</td></tr>
+        <tr><td>대표 시스템</td><td>PostgreSQL, MySQL InnoDB, SQLite</td><td>Cassandra, RocksDB, LevelDB, HBase</td></tr>
+      </tbody>
+    </table>
+    <p>
+      요약: <em>쓰기가 많으면 LSM, 균형/읽기 중심이면 B-Tree</em>. 최근 하이브리드(예: MySQL X Engine, Wiredtiger)도 증가.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 11. 비교 ==================== -->
+<section id="comparison">
+  <h2>11 — BST vs B-Tree vs LSM 비교</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">언제 무엇을</h3>
+    </div>
+    <ul>
+      <li><strong>BST / AVL / Red-Black</strong> (Algo 11): 메모리 내 소~중규모. 모든 연산 O(log n). Java TreeMap, C++ std::map.</li>
+      <li><strong>Skip List</strong>: BST 대안, 구현 단순, 동시성 friendly. Redis Sorted Set, LevelDB MemTable.</li>
+      <li><strong>Trie</strong>: 문자열 prefix 질의. 자동완성, IP 라우팅.</li>
+      <li><strong>B-Tree / B+ Tree</strong>: 디스크 지향. 대규모 정렬 인덱스, 범위 스캔. 전통 RDBMS.</li>
+      <li><strong>LSM-Tree</strong>: 쓰기 폭주. NoSQL, 로그/시계열, 블록체인 상태.</li>
+      <li><strong>Fractal Tree / B<sup>ε</sup>-Tree</strong>: B-Tree와 LSM의 중간. Tokutek, MongoDB 일부.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 12. 응용 ==================== -->
+<section id="applications">
+  <h2>12 — 응용 — Redis, Cassandra, Postgres</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Redis — Skip List의 주 사용처</h3>
+    </div>
+    <p>
+      Redis의 <strong>Sorted Set (ZSET)</strong>은 내부적으로 두 자료구조 유지:
+    </p>
+    <ul>
+      <li><strong>Skip List</strong>: 점수 기준 정렬. 범위 질의 O(log n).</li>
+      <li><strong>Hash Table</strong>: 멤버 → 점수 O(1) 매핑.</li>
+    </ul>
+    <p>
+      게임 리더보드, 순위 조회, 타임라인 등 Redis의 킬러 기능. Antirez(Redis 창시자)는 skip list를 선택한 이유로 <em>"구현 단순성 + 범위 질의 효율 + 메모리 효율"</em>을 꼽음.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Cassandra / RocksDB — LSM 기반</h3>
+    </div>
+    <ul>
+      <li><strong>Apache Cassandra</strong>(2008, Facebook): LSM. 쓰기 폭주 환경 (시계열, 로그, IoT).</li>
+      <li><strong>RocksDB</strong>(Facebook 2012): Google LevelDB fork. Ethereum, TiKV, MyRocks, CockroachDB 내부 엔진.</li>
+      <li><strong>LevelDB</strong>(Google 2011): Jeff Dean &amp; Sanjay Ghemawat. Bigtable의 단일 노드 버전.</li>
+      <li><strong>Amazon DynamoDB</strong>: LSM 기반 스토리지.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">IP 라우팅 — Radix Tree</h3>
+    </div>
+    <p>
+      인터넷 라우터가 패킷을 포워딩할 때 목적지 IP에서 <em>최장 prefix 일치 (Longest Prefix Match)</em>를 찾음. 테이블이 수십만~수백만 개 prefix.
+    </p>
+    <ul>
+      <li><strong>Linux 커널</strong>: FIB_TRIE (Level Compressed Trie, Nilsson-Karlsson 1999).</li>
+      <li><strong>Cisco/Juniper 라우터</strong>: 하드웨어 TCAM + Patricia 변종.</li>
+      <li>100 Gbps 링크에서 초당 수억 패킷 처리 — 자료구조 선택이 네트워크 인프라의 속도를 결정.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">자동완성 — Trie + Ranking</h3>
+    </div>
+    <ul>
+      <li>Google, Naver, YouTube 검색 자동완성: Trie로 prefix 매칭 + 인기 가중치 ranking.</li>
+      <li><strong>T9 키패드</strong>(1990s 피처폰): 숫자 → 가능 단어 매핑을 trie로.</li>
+      <li><strong>Elasticsearch</strong>: Completion Suggester가 Finite State Transducer(FST) — trie의 일반화.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">AI가 자료구조를 잘못 고르는 패턴</h3>
+    </div>
+    <ul>
+      <li><strong>dict로 자동완성</strong>: prefix 찾으려면 모든 키 순회 O(n). Trie는 O(|prefix|).</li>
+      <li><strong>BST로 디스크 DB 인덱스</strong>: 깊이 log₂(10⁹) ≈ 30 → I/O 30번. B-Tree는 4-5번.</li>
+      <li><strong>균형 트리 구현 고집</strong>: Red-Black 회전 디버깅 지옥. Skip list나 treap이 훨씬 간단.</li>
+      <li><strong>일반 DB에 LSM</strong>: 읽기/범위 스캔이 많으면 B-Tree가 빠를 수 있음.</li>
+      <li><strong>IP 라우팅에 해시</strong>: 해시는 최장 prefix 안 됨. Radix tree 필수.</li>
+    </ul>
+    <p>
+      <strong>교정 질문</strong>: "prefix 질의 필요?", "디스크 기반?", "쓰기 vs 읽기 비율?", "범위 스캔?"
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 13. Persistent ==================== -->
+<section id="persistent">
+  <h2>13 — Persistent 자료구조</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">불변성의 힘</h3>
+    </div>
+    <p>
+      <strong>Persistent data structure</strong>: 업데이트 시 <em>원본 보존 + 새 버전 반환</em>. 함수형 언어(Haskell, Clojure)의 표준. Git도 persistent tree (commit마다 새 tree, 공유 노드 재사용).
+    </p>
+    <ul>
+      <li><strong>Path copying</strong>: 업데이트 경로의 노드만 복사, 나머지는 공유. 트리 자료구조에 자연스러움.</li>
+      <li><strong>Hash Array Mapped Trie (HAMT)</strong>: Bagwell 2000. Clojure/Scala의 불변 Map/Set 기반.</li>
+      <li><strong>Finger Trees</strong>: Hinze &amp; Paterson 2006. 불변 시퀀스의 앞/뒤 O(1) 접근.</li>
+      <li><strong>RRB Tree</strong>: relaxed radix balanced. Scala Vector, Clojure vector 내부.</li>
+    </ul>
+    <p>
+      응용: 함수형 프로그래밍, 버전 관리 시스템 (Git, Mercurial), Undo/Redo, 분산 시스템 (Event Sourcing, CRDTs).
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">n개 단어 총 길이 L의 trie에서 공간 상한은?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>최악 O(L·σ) (σ=알파벳 크기, 배열 기반). dict 기반이면 O(L). 공통 prefix 공유로 L보다 적을 수 있음. 극단: 모든 단어가 같은 prefix → 크게 줄어듦. 반대로 prefix 없는 단어들 → L 그대로.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Skip list에서 p=1/4로 하면 공간과 검색 시간은?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>기대 노드 수 = n/(1-p) = n/0.75 ≈ 1.33n (p=1/2의 2n보다 작음 — <strong>공간 효율 ↑</strong>). 기대 비교 수 = log_{1/p}(n)/p = 4·log₄(n) = <strong>2·log₂(n)</strong> — p=1/2의 log₂(n)의 약 2배. <em>공간은 줄지만 비교 수는 늘어남</em>. Pugh는 p=1/4 전후가 총 작업량(포인터 저장 + 비교) 관점에서 optimal이라고 분석함.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Trie로 "단어 경로" 문제 (Word Search II, LeetCode 212) 접근.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>입력 단어들로 trie 구축. 보드의 각 셀에서 DFS + trie 동시 추적. 현재 문자가 trie의 한 자식에 있으면 진행, 없으면 가지치기. O(M·4^L)이 아닌 O(M·σ·L) 같은 더 tight한 시간. 단순 단어별 DFS보다 훨씬 빠름.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">B-Tree 분할의 중간 키 "올리기"가 왜 필요한가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>키 분할 후 두 자식이 각각 절반씩 가짐. 부모는 "이 키 미만은 왼쪽, 이상은 오른쪽"을 안내해야 하므로 중간 키를 <em>라우팅 지표</em>로 가져야 함. B+ Tree는 중간 키를 "복사"해서 내부와 리프 양쪽에 둠 — 리프 스캔 위해.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">왜 PostgreSQL 기본 인덱스가 hash가 아니라 B+ Tree?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Hash는 점 조회만 O(1). <strong>범위 질의</strong>(WHERE price &gt; 100), <strong>정렬</strong>(ORDER BY), <strong>prefix 매칭</strong>(LIKE 'abc%')에 무력. B+ Tree는 이 모두 자연스럽게. 실제로 PostgreSQL에 hash index 있지만 기본/주력은 B+ Tree. 특수 목적에만 hash index.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">LSM-Tree에서 삭제는 어떻게 구현?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>Tombstone</strong>: 삭제도 "삭제 마커"를 넣는 쓰기. 조회 시 tombstone 만나면 "없음" 반환. Compaction 때 tombstone + 해당 키의 옛 버전 모두 제거. 결과: 삭제도 순차 쓰기라 빠름. 단점: <em>삭제 후 공간 즉시 회수 안 됨</em>.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">n=10억 row의 테이블에 B+ Tree 인덱스 깊이 예상.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>페이지 8KB, 키 100바이트 가정 → 노드당 ~80 키/포인터. depth = log₈₀(10⁹) ≈ 4.7 → <strong>5레벨</strong>. 조회 디스크 I/O 5번. 상위 레벨은 캐시되어 실제 I/O 1-2번. <em>10억 row도 밀리초 이내 조회 가능</em>.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Skip list가 "lock-free 친화적"인 이유.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>트리와 달리 <em>회전 없음</em>. 삽입은 <em>각 레벨별 forward 포인터 CAS 한 번</em>으로 끝남. 동시성 충돌 범위가 작고 로컬. Red-Black/AVL의 회전은 여러 포인터 동시 수정 필요 → lock-free 구현 극도로 복잡. Java ConcurrentSkipListMap의 설계 배경.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Bloom filter가 LSM-Tree에 왜 필수?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>조회 시 최악 모든 SSTable 열어 탐색 → 디스크 I/O 폭발. Bloom filter(각 SSTable당 수 KB)로 "이 키 없음" 빠르게 확인 → 불필요한 디스크 읽기 회피. 일반적 워크로드에서 조회 시 대부분의 SSTable은 Bloom filter로 즉시 스킵. <em>LSM 성능의 숨은 주역</em>.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Patricia trie의 edge label 압축 예.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>{apple, application, banana}:
+            <ul>
+              <li>기본 trie: 루트 → a → p → p → l → {e(★), i → c → a → t → i → o → n(★)} / b → a → n → a → n → a(★). 깊이 7+, 많은 단일 자식 체인.</li>
+              <li>Patricia: 루트 → "appl" → {"e"(★), "ication"(★)} / "banana"(★). 3개 내부 노드로 압축.</li>
+            </ul>
+            IP 라우팅 테이블처럼 넓고 희소한 키 공간에 대폭 압축.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "대규모 timeseries DB에 B-Tree"를 제안. 교정?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">질문</div>
+            <ol>
+              <li>"쓰기 폭주 (초당 수만~수백만 이벤트) 예상인가?"</li>
+              <li>"쓰기가 많으면 B-Tree 랜덤 I/O 병목. LSM (InfluxDB, TimescaleDB continuous aggregates) 적합."</li>
+              <li>"InfluxDB는 TSI(Time-Series Index) + TSM(Tree-Structured Merge)로 LSM 변형."</li>
+              <li>"삭제보다 TTL 기반 retention이 대부분 — tombstone 문제 최소."</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Git의 "commit이 persistent tree"라는 말의 의미.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>각 commit은 그 시점의 파일 트리 전체를 표현하지만, 실제로는 <em>변경된 파일만 새로 저장 + 나머지는 이전 commit과 해시 주소 공유</em>. 파일 한 개 바꾸고 commit하면 그 파일의 blob + 포함 디렉토리 트리들만 새로 만듦. <em>수천 개 이전 commit이 공존해도 공간은 누적 변경분만</em>. Path copying persistent tree의 실제 구현.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">🔠</div>
+      <h3>Trie (Fredkin 1960)</h3>
+      <p>문자 분기 트리. 자동완성·IP 라우팅.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🚄</div>
+      <h3>Skip List (Pugh 1990)</h3>
+      <p>확률적 O(log n). Redis Sorted Set.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🌳</div>
+      <h3>B-Tree (1972)</h3>
+      <p>디스크 지향. PostgreSQL, MySQL 인덱스.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">📚</div>
+      <h3>B+ Tree</h3>
+      <p>리프 연결, 범위 스캔 효율. RDBMS 표준.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">📝</div>
+      <h3>LSM-Tree (O'Neil 1996)</h3>
+      <p>순차 쓰기, compaction. Cassandra, RocksDB.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">♻️</div>
+      <h3>Persistent</h3>
+      <p>불변 + 구조 공유. Git, Clojure.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Trie</div><div class="glossary-def">Fredkin 1960. 문자 분기 트리. "retrieval"에서 명명.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Edward Fredkin</div><div class="glossary-def">1934-2023. MIT. Trie memory 저자.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Patricia Trie</div><div class="glossary-def">Morrison 1968. 압축 trie. IP 라우팅.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Radix Tree</div><div class="glossary-def">Patricia와 유사. edge에 문자열 저장.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Skip List</div><div class="glossary-def">Pugh 1990. 확률적 정렬 자료구조. O(log n) 기대.</div></div>
+    <div class="glossary-item"><div class="glossary-term">William Pugh</div><div class="glossary-def">U Maryland. 1990 Skip list 창안.</div></div>
+    <div class="glossary-item"><div class="glossary-term">B-Tree</div><div class="glossary-def">Bayer-McCreight 1972. 디스크 지향 균형 트리.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Rudolf Bayer</div><div class="glossary-def">1939-. Boeing → TU Munich. B-tree 공동발명.</div></div>
+    <div class="glossary-item"><div class="glossary-term">B+ Tree</div><div class="glossary-def">데이터는 리프에만 + 리프 링크. RDBMS 표준.</div></div>
+    <div class="glossary-item"><div class="glossary-term">B-link Tree</div><div class="glossary-def">Lehman-Yao 1981. 동시성 B-Tree. PostgreSQL.</div></div>
+    <div class="glossary-item"><div class="glossary-term">LSM-Tree</div><div class="glossary-def">O'Neil 1996. 쓰기 최적. MemTable + SSTable + compaction.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Patrick O'Neil</div><div class="glossary-def">UMass Boston. LSM-Tree 대표 저자.</div></div>
+    <div class="glossary-item"><div class="glossary-term">MemTable</div><div class="glossary-def">LSM의 메모리 내 쓰기 버퍼. 보통 skip list.</div></div>
+    <div class="glossary-item"><div class="glossary-term">SSTable</div><div class="glossary-def">Sorted String Table. 불변 정렬 디스크 파일.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Compaction</div><div class="glossary-def">SSTable 병합 + 중복 제거. LSM 유지.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Write Amplification</div><div class="glossary-def">실제 쓰기 / 논리 쓰기 비율. LSM은 크고 B-Tree는 작음.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Tombstone</div><div class="glossary-def">LSM 삭제 마커. compaction 시 정리.</div></div>
+    <div class="glossary-item"><div class="glossary-term">HAMT</div><div class="glossary-def">Hash Array Mapped Trie. Bagwell 2000. Clojure 내부.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Longest Prefix Match</div><div class="glossary-def">IP 라우팅 기본 연산. Patricia/Radix.</div></div>
+    <div class="glossary-item"><div class="glossary-term">FIB_TRIE</div><div class="glossary-def">Linux 커널 라우팅 trie. Nilsson-Karlsson 1999.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Bigtable</div><div class="glossary-def">Google 2006. LSM 기반 분산 DB. Cassandra/HBase 영감.</div></div>
+    <div class="glossary-item"><div class="glossary-term">RocksDB</div><div class="glossary-def">Facebook 2012. LevelDB fork. LSM. MyRocks/TiKV 엔진.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Redis Sorted Set</div><div class="glossary-def">Skip list + hash table 하이브리드. ZADD/ZRANGE.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Persistent Data Structure</div><div class="glossary-def">업데이트가 새 버전 생성. Path copying.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Fractal / Bε-Tree</div><div class="glossary-def">B-Tree와 LSM 중간. Tokutek.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 28</div>
+    <h3>계산 기하 — 볼록 껍질, 선분 교차, Sweep Line</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      "점들의 기하학"을 알고리즘으로 — GIS, 게임, CAD의 기반.
+    </p>
+    <ul>
+      <li><strong>Graham Scan 1972</strong> — 볼록 껍질 O(n log n).</li>
+      <li><strong>Andrew's Monotone Chain</strong> — 더 간단한 볼록 껍질.</li>
+      <li><strong>Bentley-Ottmann 1979</strong> — 선분 교차 sweep line.</li>
+      <li><strong>CCW (Counter-Clockwise) Primitive</strong> — 기하 알고리즘의 원자.</li>
+      <li><strong>Voronoi / Delaunay</strong> — 공간 분할의 대표.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo26.html">&larr; Algo 26 — 구간 자료구조</a>
+  <a href="algo28.html">Algo 28 — 계산 기하 &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">Fredkin 1960 (CACM 3:490-499), Bayer-McCreight 1972 (Acta Informatica 1:173-189), Pugh 1990 (CACM 33:668-676), O'Neil et al. 1996 (Acta Informatica 33:351-385) 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

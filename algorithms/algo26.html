@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 26주차: 구간 자료구조 — Segment Tree, Fenwick | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="구간 자료구조 — Bentley 1977 Segment Tree, Fenwick 1994 BIT. O(log n) 구간 질의·업데이트의 세계.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 26주차: 구간 자료구조 | PyWhy">
+  <meta property="og:description" content="세그먼트 트리, BIT, lazy propagation — 경쟁 프로그래밍과 DB 인덱스의 기반">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo26.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A26">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo25.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo27.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 26</div>
+  <h1 class="week-title">구간 자료구조 — Segment Tree, Fenwick<br>"구간 합 + 업데이트"를 O(log n)에</h1>
+  <p class="week-subtitle">
+    1977년 <strong>Jon Bentley</strong>(프로그래밍 펄 시리즈의 그 Bentley)가 계산 기하 문제 — "점이 몇 개 선분에 포함되는가" — 를 위해 <strong>Segment Tree</strong>를 고안. 17년 뒤인 1994년 <strong>Peter Fenwick</strong>이 arithmetic coding의 빈도표를 위해 더 간결한 <strong>Binary Indexed Tree</strong>(BIT/Fenwick Tree)를 발표. 사실 1989년 러시아 Boris Ryabko가 먼저 제시했지만 Fenwick의 이름이 굳어짐.<br>
+    naive O(n) 업데이트를 O(log n)으로, 구간 질의도 O(log n)으로. 경쟁 프로그래밍 단골, PostgreSQL/MySQL 인덱스, 게임 공간 질의의 기반.<br>
+    핵심 질문: <em>"왜 prefix sum만으론 부족한가? Fenwick이 세그먼트 트리보다 작은데 왜 둘 다 쓰이는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — Bentley 1977 &amp; Fenwick 1994</a>
+    </div>
+    <div class="toc-section">
+      <a href="#problem" class="toc-section-link"><span class="toc-num">02</span>문제 — 구간 질의 + 업데이트</a>
+      <div class="toc-levels"><span class="toc-level-dot elem">초</span><span class="toc-level-dot inter">중</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#prefix-sum" class="toc-section-link"><span class="toc-num">03</span>Prefix Sum의 한계</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#segtree-idea" class="toc-section-link"><span class="toc-num">04</span>Segment Tree 아이디어</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#segtree-build" class="toc-section-link"><span class="toc-num">05</span>구축 O(n)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#segtree-query" class="toc-section-link"><span class="toc-num">06</span>구간 질의 O(log n)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#segtree-update" class="toc-section-link"><span class="toc-num">07</span>점 업데이트 O(log n)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#lazy" class="toc-section-link"><span class="toc-num">08</span>Lazy Propagation — 구간 업데이트</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#fenwick-idea" class="toc-section-link"><span class="toc-num">09</span>Fenwick Tree 아이디어</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#fenwick-code" class="toc-section-link"><span class="toc-num">10</span>Fenwick Python 구현</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#comparison" class="toc-section-link"><span class="toc-num">11</span>Segment vs Fenwick 비교</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#variants" class="toc-section-link"><span class="toc-num">12</span>변종 — 2D, Persistent, Merge Sort Tree</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#applications" class="toc-section-link"><span class="toc-num">13</span>응용 — DB, 게임, 주식</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: Bentley 1977 &amp; Fenwick 1994</h2>
+
+  <p>
+    <strong>Segment tree</strong>는 Jon Bentley가 1977년 미발표 원고 <em>"Solutions to Klee's rectangle problems"</em>에서 처음 도입한 자료구조로, 이후 Bentley &amp; Wood의 1980년 논문 <em>"An optimal worst case algorithm for reporting intersections of rectangles"</em> (IEEE Trans. Computers C-29(7):571-577)에서 공식 출판되었습니다.
+  </p>
+
+  <div class="story-block">
+    <h3>1977 — Jon Bentley, CMU</h3>
+    <p>
+      <strong>Jon Louis Bentley</strong>(1953-), <em>Programming Pearls</em>의 저자. 1976년 UNC Chapel Hill에서 박사 학위를 받고 1977년 CMU 교수로 임용된 해에 <em>"Solutions to Klee's rectangle problems"</em>의 계산 기하 문제를 풀면서 <strong>segment tree</strong>를 고안. <em>"점 p가 주어진 n개 구간 중 몇 개에 포함되는가?"</em>를 O(log n)에.
+    </p>
+    <p>
+      원래 기하 자료구조였지만, 1990-2000년대 경쟁 프로그래밍에서 <em>"배열의 구간 합/최솟값 질의 + 업데이트"</em>의 만능 해답으로 재발견. 지금은 대회 문제의 단골.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1989 — Boris Ryabko, 러시아</h3>
+    <p>
+      Ryabko가 <em>정보 이론</em> 맥락에서 오늘날의 Fenwick tree와 동등한 자료구조를 발표. 산술 부호화(arithmetic coding)에서 <em>누적 빈도표</em>를 업데이트/조회하기 위함. 러시아어로 발표돼 서방에 늦게 알려짐.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1994 — Peter Fenwick, University of Auckland</h3>
+    <p>
+      <strong>"A new data structure for cumulative frequency tables"</strong>(Software: Practice &amp; Experience 24(3):327-336, 1994). Fenwick도 산술 부호화 맥락. 이름이 붙으며 서방에 전파. Ryabko 1989가 먼저였지만 <em>Fenwick tree / BIT(Binary Indexed Tree)</em>로 굳어짐.
+    </p>
+    <p>
+      <strong>Fenwick의 천재성</strong>: 세그먼트 트리의 4n 대비 약 <em>1/4 공간(n+1)</em>, 더 짧은 코드 — 이진 표현의 <em>최하위 1비트 추출</em>(<code>x &amp; -x</code>) 트릭. 경쟁 프로그래밍 필수 기법.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1995 이후 — 변종의 시대</h3>
+    <ul>
+      <li><strong>Lazy propagation</strong>: 구간 업데이트까지 O(log n)으로. 1990년대 말 ICPC 대회에서 유행.</li>
+      <li><strong>Persistent segment tree</strong>: 버전 관리. k-th smallest in range query 등.</li>
+      <li><strong>2D segment tree</strong>: 평면 영역 질의.</li>
+      <li><strong>Segment tree beats</strong>(Jiry 2016): chmin/chmax 같은 복잡한 연산.</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="구간 자료구조 역사">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📜 구간 자료구조의 50년 — 기하에서 경쟁 프로그래밍으로</text>
+
+      <line x1="60" y1="130" x2="680" y2="130" stroke="var(--text-muted)" stroke-width="2"/>
+      <polygon points="680,130 670,126 670,134" fill="var(--text-muted)"/>
+
+      <g font-family="JetBrains Mono, monospace" font-size="11">
+        <!-- 1977 Bentley -->
+        <circle cx="120" cy="130" r="9" fill="#d4930c" stroke="var(--accent)" stroke-width="2.5"/>
+        <line x1="120" y1="121" x2="120" y2="70" stroke="#d4930c" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="55" y="40" width="130" height="32" rx="4" fill="rgba(212,147,12,0.12)" stroke="#d4930c" stroke-width="1.5"/>
+        <text x="122" y="57" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Bentley 1977</text>
+        <text x="122" y="68" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">Segment Tree</text>
+        <text x="120" y="155" text-anchor="middle" class="viz-label-small">1977</text>
+
+        <!-- 1989 Ryabko -->
+        <circle cx="360" cy="130" r="7" fill="#196aa1" stroke="#196aa1" stroke-width="2"/>
+        <line x1="360" y1="138" x2="360" y2="200" stroke="#196aa1" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="300" y="200" width="130" height="32" rx="4" fill="rgba(25,106,161,0.1)" stroke="#196aa1" stroke-width="1"/>
+        <text x="365" y="218" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Ryabko 1989</text>
+        <text x="365" y="229" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">(먼저, 러시아어)</text>
+        <text x="360" y="155" text-anchor="middle" class="viz-label-small">1989</text>
+
+        <!-- 1994 Fenwick -->
+        <circle cx="440" cy="130" r="8" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <line x1="440" y1="122" x2="440" y2="80" stroke="#3b9b6e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="375" y="50" width="135" height="32" rx="4" fill="rgba(59,155,110,0.1)" stroke="#3b9b6e" stroke-width="1.5"/>
+        <text x="445" y="67" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Fenwick 1994</text>
+        <text x="445" y="78" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">BIT, 이름 정착</text>
+        <text x="440" y="155" text-anchor="middle" class="viz-label-small">1994</text>
+
+        <!-- Late 90s Lazy -->
+        <circle cx="540" cy="130" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="540" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Lazy Propagation</text>
+        <text x="540" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1990s</text>
+
+        <!-- 2016 Segment Tree Beats -->
+        <circle cx="640" cy="130" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="640" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Seg Tree Beats</text>
+        <text x="640" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">2016</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>구간 자료구조의 진화</strong>: Bentley 1977 기하용 → 1989-94 Ryabko/Fenwick의 간결 버전 → 1990s 경쟁 프로그래밍 표준 → 2016 Jiry의 Segment Tree Beats.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. 문제 ==================== -->
+<section id="problem">
+  <h2>02 — 문제 — 구간 질의 + 업데이트</h2>
+
+  <div class="level-section elementary">
+    <div class="level-section-header">
+      <span class="level-badge level-elem">초급</span>
+      <h3 class="level-section-title">상황: "매일 주식 거래량" 분석</h3>
+    </div>
+    <p>
+      배열 A[0..n-1]에 각 날 거래량 저장. 자주 다음 두 연산 필요:
+    </p>
+    <ul>
+      <li><strong>Range Query</strong>: 구간 [l, r]의 합 / 최솟값 / 최댓값.</li>
+      <li><strong>Point Update</strong>: A[i]를 새 값으로.</li>
+    </ul>
+    <p>
+      예: n = 100만, 질의와 업데이트 각각 100만 번. 어떤 자료구조가 적합?
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">naive 전략들의 한계</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>전략</th><th>Query</th><th>Update</th><th>전체 시간 (10⁶ · 10⁶)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>배열 + 반복 합산</td><td>O(n)</td><td>O(1)</td><td>10¹² — 불가능</td></tr>
+        <tr><td>Prefix sum</td><td>O(1)</td><td>O(n)</td><td>10¹² — 불가능</td></tr>
+        <tr><td><strong>Segment Tree</strong></td><td><strong>O(log n)</strong></td><td><strong>O(log n)</strong></td><td><strong>4·10⁷ — 충분</strong></td></tr>
+      </tbody>
+    </table>
+    <p>
+      둘 다 O(log n) — 업데이트와 질의가 모두 빈번할 때의 <em>균형</em>.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. Prefix Sum ==================== -->
+<section id="prefix-sum">
+  <h2>03 — Prefix Sum의 한계</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">복습: 구간 합 O(1)</h3>
+    </div>
+    <div class="formula-box" style="text-align:left;font-size:0.9rem;">
+      prefix[0] = 0<br>
+      prefix[i+1] = prefix[i] + A[i]<br>
+      <br>
+      sum(l, r) = prefix[r+1] − prefix[l]    <em>// O(1)</em>
+    </div>
+    <ul>
+      <li>구축: O(n).</li>
+      <li>질의: O(1) — 빼기 한 번.</li>
+      <li><strong>업데이트 문제</strong>: A[i] 변경 시 prefix[i+1..n]을 모두 갱신 → O(n). 업데이트 많으면 치명적.</li>
+    </ul>
+    <p>
+      <em>읽기만 하는 데이터</em>엔 prefix sum이 최고. 하지만 실시간 업데이트가 있으면 segment tree/BIT가 필요.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 04. Segment Tree 아이디어 ==================== -->
+<section id="segtree-idea">
+  <h2>04 — Segment Tree 아이디어</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">"반씩 쪼개어 미리 계산"</h3>
+    </div>
+    <p>
+      배열 [0..n-1]을 이진 트리로 표현:
+    </p>
+    <ul>
+      <li><strong>루트</strong>: 전체 구간 [0, n-1]의 집약값(합/최솟값/...).</li>
+      <li><strong>자식</strong>: 부모 구간을 정확히 반으로 나눈 두 부분 구간.</li>
+      <li><strong>리프</strong>: 단일 원소.</li>
+    </ul>
+    <p>
+      총 노드 수 ≈ 2n (정확히는 &lt; 4n 안전 상한). 높이 O(log n).
+    </p>
+    <p>
+      <strong>구간 [l, r] 질의</strong>: 트리를 DFS하며 "완전히 포함" 노드의 값을 직접 사용, "일부 겹침"이면 자식으로 내려감. 최대 O(log n) 노드 방문.
+    </p>
+    <p>
+      <strong>업데이트 A[i] = v</strong>: i를 포함하는 노드들의 경로만 업데이트. 리프→루트 O(log n).
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Segment Tree 구조">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🌳 Segment Tree — A = [1, 3, 5, 7, 9, 11, 13, 15], 합 질의</text>
+
+      <g transform="translate(60, 55)" font-family="JetBrains Mono, monospace" font-size="11">
+        <!-- Root: [0..7] sum=64 -->
+        <circle cx="300" cy="20" r="20" fill="#fde6a6" stroke="#d4930c" stroke-width="2.5"/>
+        <text x="300" y="18" text-anchor="middle" class="viz-label-small" font-weight="700">[0-7]</text>
+        <text x="300" y="31" text-anchor="middle" class="viz-label-small" font-weight="700">64</text>
+
+        <line x1="285" y1="32" x2="155" y2="65" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <line x1="315" y1="32" x2="445" y2="65" stroke="var(--text-muted)" stroke-width="1.2"/>
+
+        <!-- Level 1: [0..3] sum=16, [4..7] sum=48 -->
+        <circle cx="150" cy="75" r="18" fill="#cfe3ed" stroke="#196aa1" stroke-width="2"/>
+        <text x="150" y="73" text-anchor="middle" class="viz-label-small" font-weight="700">[0-3]</text>
+        <text x="150" y="85" text-anchor="middle" class="viz-label-small" font-weight="700">16</text>
+
+        <circle cx="450" cy="75" r="18" fill="#cfe3ed" stroke="#196aa1" stroke-width="2"/>
+        <text x="450" y="73" text-anchor="middle" class="viz-label-small" font-weight="700">[4-7]</text>
+        <text x="450" y="85" text-anchor="middle" class="viz-label-small" font-weight="700">48</text>
+
+        <line x1="140" y1="88" x2="75" y2="115" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="160" y1="88" x2="225" y2="115" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="440" y1="88" x2="375" y2="115" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="460" y1="88" x2="525" y2="115" stroke="var(--text-muted)" stroke-width="1"/>
+
+        <!-- Level 2: [0..1]=4, [2..3]=12, [4..5]=20, [6..7]=28 -->
+        <circle cx="75" cy="125" r="16" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5"/>
+        <text x="75" y="123" text-anchor="middle" class="viz-label-small" font-weight="700">[0-1]</text>
+        <text x="75" y="133" text-anchor="middle" class="viz-label-small">4</text>
+        <circle cx="225" cy="125" r="16" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5"/>
+        <text x="225" y="123" text-anchor="middle" class="viz-label-small" font-weight="700">[2-3]</text>
+        <text x="225" y="133" text-anchor="middle" class="viz-label-small">12</text>
+        <circle cx="375" cy="125" r="16" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5"/>
+        <text x="375" y="123" text-anchor="middle" class="viz-label-small" font-weight="700">[4-5]</text>
+        <text x="375" y="133" text-anchor="middle" class="viz-label-small">20</text>
+        <circle cx="525" cy="125" r="16" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5"/>
+        <text x="525" y="123" text-anchor="middle" class="viz-label-small" font-weight="700">[6-7]</text>
+        <text x="525" y="133" text-anchor="middle" class="viz-label-small">28</text>
+
+        <line x1="68" y1="138" x2="40" y2="163" stroke="var(--text-muted)" stroke-width="0.8"/>
+        <line x1="82" y1="138" x2="110" y2="163" stroke="var(--text-muted)" stroke-width="0.8"/>
+        <line x1="218" y1="138" x2="190" y2="163" stroke="var(--text-muted)" stroke-width="0.8"/>
+        <line x1="232" y1="138" x2="260" y2="163" stroke="var(--text-muted)" stroke-width="0.8"/>
+        <line x1="368" y1="138" x2="340" y2="163" stroke="var(--text-muted)" stroke-width="0.8"/>
+        <line x1="382" y1="138" x2="410" y2="163" stroke="var(--text-muted)" stroke-width="0.8"/>
+        <line x1="518" y1="138" x2="490" y2="163" stroke="var(--text-muted)" stroke-width="0.8"/>
+        <line x1="532" y1="138" x2="560" y2="163" stroke="var(--text-muted)" stroke-width="0.8"/>
+
+        <!-- Leaves -->
+        <g font-size="10">
+          <circle cx="40"  cy="175" r="12" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="40"  y="178" text-anchor="middle" font-weight="700">1</text>
+          <circle cx="110" cy="175" r="12" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="110" y="178" text-anchor="middle" font-weight="700">3</text>
+          <circle cx="190" cy="175" r="12" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="190" y="178" text-anchor="middle" font-weight="700">5</text>
+          <circle cx="260" cy="175" r="12" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="260" y="178" text-anchor="middle" font-weight="700">7</text>
+          <circle cx="340" cy="175" r="12" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="340" y="178" text-anchor="middle" font-weight="700">9</text>
+          <circle cx="410" cy="175" r="12" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="410" y="178" text-anchor="middle" font-weight="700">11</text>
+          <circle cx="490" cy="175" r="12" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="490" y="178" text-anchor="middle" font-weight="700">13</text>
+          <circle cx="560" cy="175" r="12" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="560" y="178" text-anchor="middle" font-weight="700">15</text>
+        </g>
+
+        <g font-size="9" fill="var(--text-muted)">
+          <text x="40"  y="205" text-anchor="middle">0</text>
+          <text x="110" y="205" text-anchor="middle">1</text>
+          <text x="190" y="205" text-anchor="middle">2</text>
+          <text x="260" y="205" text-anchor="middle">3</text>
+          <text x="340" y="205" text-anchor="middle">4</text>
+          <text x="410" y="205" text-anchor="middle">5</text>
+          <text x="490" y="205" text-anchor="middle">6</text>
+          <text x="560" y="205" text-anchor="middle">7</text>
+        </g>
+
+        <text x="300" y="235" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">질의 sum(1, 5)는 [1-1]+[2-3]+[4-5] = 3+12+20 = <tspan font-weight="700" fill="#3b9b6e">35</tspan></text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>Segment Tree 구조</strong>: 각 내부 노드가 자식 구간의 합. 구간 질의는 최대 O(log n)개 노드만 결합. 업데이트도 루트 경로 O(log n). 공간 O(4n) — 완전 이진 트리 상한.</div>
+  </div>
+</section>
+
+<!-- ==================== 05. 구축 ==================== -->
+<section id="segtree-build">
+  <h2>05 — 구축 O(n)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">재귀 구축</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">segment_tree_build.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">SegmentTree</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(<span class="hl-kw">self</span>, arr):
+        n = <span class="hl-bi">len</span>(arr)
+        <span class="hl-kw">self</span>.n = n
+        <span class="hl-kw">self</span>.tree = [<span class="hl-num">0</span>] * (<span class="hl-num">4</span> * n)    <span class="hl-cmt"># 안전 상한 4n</span>
+        <span class="hl-kw">if</span> n &gt; <span class="hl-num">0</span>:
+            <span class="hl-kw">self</span>._build(arr, <span class="hl-num">1</span>, <span class="hl-num">0</span>, n - <span class="hl-num">1</span>)
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_build</span>(<span class="hl-kw">self</span>, arr, node, start, end):
+        <span class="hl-kw">if</span> start == end:
+            <span class="hl-kw">self</span>.tree[node] = arr[start]
+            <span class="hl-kw">return</span>
+        mid = (start + end) // <span class="hl-num">2</span>
+        <span class="hl-kw">self</span>._build(arr, <span class="hl-num">2</span>*node,     start,   mid)
+        <span class="hl-kw">self</span>._build(arr, <span class="hl-num">2</span>*node + <span class="hl-num">1</span>, mid+<span class="hl-num">1</span>, end)
+        <span class="hl-kw">self</span>.tree[node] = <span class="hl-kw">self</span>.tree[<span class="hl-num">2</span>*node] + <span class="hl-kw">self</span>.tree[<span class="hl-num">2</span>*node + <span class="hl-num">1</span>]</code></pre>
+    </div>
+    <ul>
+      <li><strong>인덱싱 컨벤션</strong>: 1-indexed. 노드 <code>node</code>의 자식은 <code>2*node</code>, <code>2*node+1</code>. 부모는 <code>node // 2</code>. 힙과 같은 구조.</li>
+      <li><strong>공간 4n</strong>: n이 2의 거듭제곱이면 정확히 2n-1. 아니면 최대 4n-1. 4n이 안전.</li>
+      <li><strong>시간 O(n)</strong>: 각 노드 O(1) 계산, 총 노드 &lt; 4n.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 06. 구간 질의 ==================== -->
+<section id="segtree-query">
+  <h2>06 — 구간 질의 O(log n)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">재귀 질의</h3>
+    </div>
+    <p>
+      현재 노드의 범위 [start, end] vs 질의 범위 [l, r]:
+    </p>
+    <ol>
+      <li>완전 분리 ([end &lt; l] 또는 [r &lt; start]): 0 반환 (합의 항등원).</li>
+      <li>완전 포함 ([l ≤ start ≤ end ≤ r]): tree[node] 반환.</li>
+      <li>부분 겹침: 자식 두 개 재귀 호출 후 합산.</li>
+    </ol>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">segment_tree_query.py</span><button class="copy-btn">복사</button></div>
+<pre><code>    <span class="hl-kw">def</span> <span class="hl-bi">query</span>(<span class="hl-kw">self</span>, l, r):
+        <span class="hl-kw">return</span> <span class="hl-kw">self</span>._query(<span class="hl-num">1</span>, <span class="hl-num">0</span>, <span class="hl-kw">self</span>.n - <span class="hl-num">1</span>, l, r)
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_query</span>(<span class="hl-kw">self</span>, node, start, end, l, r):
+        <span class="hl-kw">if</span> r &lt; start <span class="hl-kw">or</span> end &lt; l: <span class="hl-kw">return</span> <span class="hl-num">0</span>    <span class="hl-cmt"># 분리</span>
+        <span class="hl-kw">if</span> l &lt;= start <span class="hl-kw">and</span> end &lt;= r:        <span class="hl-cmt"># 완전 포함</span>
+            <span class="hl-kw">return</span> <span class="hl-kw">self</span>.tree[node]
+        mid = (start + end) // <span class="hl-num">2</span>
+        <span class="hl-kw">return</span> (<span class="hl-kw">self</span>._query(<span class="hl-num">2</span>*node,     start,   mid, l, r) +
+                <span class="hl-kw">self</span>._query(<span class="hl-num">2</span>*node + <span class="hl-num">1</span>, mid+<span class="hl-num">1</span>, end, l, r))</code></pre>
+    </div>
+    <p>
+      <strong>왜 O(log n)?</strong> 깊이마다 최대 4개 노드만 방문 (다른 연구에선 2개 <em>부분 겹침</em> 노드만 양측 재귀 + 2개 <em>완전 포함</em> 노드). 총 O(log n).
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 07. 점 업데이트 ==================== -->
+<section id="segtree-update">
+  <h2>07 — 점 업데이트 O(log n)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">리프 → 루트 경로</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">segment_tree_update.py</span><button class="copy-btn">복사</button></div>
+<pre><code>    <span class="hl-kw">def</span> <span class="hl-bi">update</span>(<span class="hl-kw">self</span>, idx, value):
+        <span class="hl-kw">self</span>._update(<span class="hl-num">1</span>, <span class="hl-num">0</span>, <span class="hl-kw">self</span>.n - <span class="hl-num">1</span>, idx, value)
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_update</span>(<span class="hl-kw">self</span>, node, start, end, idx, value):
+        <span class="hl-kw">if</span> start == end:
+            <span class="hl-kw">self</span>.tree[node] = value
+            <span class="hl-kw">return</span>
+        mid = (start + end) // <span class="hl-num">2</span>
+        <span class="hl-kw">if</span> idx &lt;= mid:
+            <span class="hl-kw">self</span>._update(<span class="hl-num">2</span>*node, start, mid, idx, value)
+        <span class="hl-kw">else</span>:
+            <span class="hl-kw">self</span>._update(<span class="hl-num">2</span>*node + <span class="hl-num">1</span>, mid+<span class="hl-num">1</span>, end, idx, value)
+        <span class="hl-kw">self</span>.tree[node] = <span class="hl-kw">self</span>.tree[<span class="hl-num">2</span>*node] + <span class="hl-kw">self</span>.tree[<span class="hl-num">2</span>*node + <span class="hl-num">1</span>]
+
+
+<span class="hl-cmt"># 테스트</span>
+st = SegmentTree([<span class="hl-num">1</span>, <span class="hl-num">3</span>, <span class="hl-num">5</span>, <span class="hl-num">7</span>, <span class="hl-num">9</span>, <span class="hl-num">11</span>, <span class="hl-num">13</span>, <span class="hl-num">15</span>])
+<span class="hl-bi">print</span>(st.query(<span class="hl-num">1</span>, <span class="hl-num">5</span>))    <span class="hl-cmt"># 35 (3+5+7+9+11)</span>
+st.update(<span class="hl-num">3</span>, <span class="hl-num">100</span>)         <span class="hl-cmt"># A[3]을 100으로</span>
+<span class="hl-bi">print</span>(st.query(<span class="hl-num">1</span>, <span class="hl-num">5</span>))    <span class="hl-cmt"># 128 (35 - 7 + 100)</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>변형</strong>: sum → min/max/gcd/xor로 바꾸면 구간 최솟값/최댓값/gcd/xor 질의. <em>결합 법칙</em>이 성립하는 모든 연산에 적용 가능 (semigroup).</li>
+      <li><strong>Idempotent 연산</strong>(min, max, gcd)에는 <strong>Sparse Table</strong>(Bender-Farach-Colton 2000)이 O(n log n) 전처리 + O(1) 질의 — 업데이트 없을 때 더 빠름.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 08. Lazy Propagation ==================== -->
+<section id="lazy">
+  <h2>08 — Lazy Propagation — 구간 업데이트</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">"나중에 처리하자"</h3>
+    </div>
+    <p>
+      구간 [l, r]에 모두 v를 더하라면? naive하면 O((r-l+1) · log n) — 크면 느림. <strong>Lazy</strong>: 각 노드에 "아직 자식에게 전파하지 않은 업데이트"를 저장.
+    </p>
+    <ol>
+      <li>노드에 내려오면 먼저 <em>저장된 lazy가 있으면 자식으로 전파</em>.</li>
+      <li>업데이트 [l, r, v]가 현재 노드 범위에 <em>완전 포함</em>이면: lazy에 저장만 (자식 내려가지 않음).</li>
+      <li>부분 겹침이면: lazy 전파 + 자식 재귀.</li>
+    </ol>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">segment_tree_lazy.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">SegTreeLazy</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(<span class="hl-kw">self</span>, arr):
+        n = <span class="hl-bi">len</span>(arr)
+        <span class="hl-kw">self</span>.n = n
+        <span class="hl-kw">self</span>.tree = [<span class="hl-num">0</span>] * (<span class="hl-num">4</span> * n)
+        <span class="hl-kw">self</span>.lazy = [<span class="hl-num">0</span>] * (<span class="hl-num">4</span> * n)
+        <span class="hl-kw">if</span> n &gt; <span class="hl-num">0</span>:
+            <span class="hl-kw">self</span>._build(arr, <span class="hl-num">1</span>, <span class="hl-num">0</span>, n - <span class="hl-num">1</span>)
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_push</span>(<span class="hl-kw">self</span>, node, start, end):
+        <span class="hl-cmt">"""lazy를 자식으로 전파."""</span>
+        <span class="hl-kw">if</span> <span class="hl-kw">self</span>.lazy[node] != <span class="hl-num">0</span>:
+            mid = (start + end) // <span class="hl-num">2</span>
+            <span class="hl-kw">self</span>.tree[<span class="hl-num">2</span>*node]     += <span class="hl-kw">self</span>.lazy[node] * (mid - start + <span class="hl-num">1</span>)
+            <span class="hl-kw">self</span>.tree[<span class="hl-num">2</span>*node + <span class="hl-num">1</span>] += <span class="hl-kw">self</span>.lazy[node] * (end - mid)
+            <span class="hl-kw">self</span>.lazy[<span class="hl-num">2</span>*node]     += <span class="hl-kw">self</span>.lazy[node]
+            <span class="hl-kw">self</span>.lazy[<span class="hl-num">2</span>*node + <span class="hl-num">1</span>] += <span class="hl-kw">self</span>.lazy[node]
+            <span class="hl-kw">self</span>.lazy[node] = <span class="hl-num">0</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">update_range</span>(<span class="hl-kw">self</span>, l, r, v):
+        <span class="hl-kw">self</span>._update(<span class="hl-num">1</span>, <span class="hl-num">0</span>, <span class="hl-kw">self</span>.n - <span class="hl-num">1</span>, l, r, v)
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_update</span>(<span class="hl-kw">self</span>, node, start, end, l, r, v):
+        <span class="hl-kw">if</span> r &lt; start <span class="hl-kw">or</span> end &lt; l: <span class="hl-kw">return</span>
+        <span class="hl-kw">if</span> l &lt;= start <span class="hl-kw">and</span> end &lt;= r:
+            <span class="hl-kw">self</span>.tree[node] += v * (end - start + <span class="hl-num">1</span>)
+            <span class="hl-kw">self</span>.lazy[node] += v
+            <span class="hl-kw">return</span>
+        <span class="hl-kw">self</span>._push(node, start, end)
+        mid = (start + end) // <span class="hl-num">2</span>
+        <span class="hl-kw">self</span>._update(<span class="hl-num">2</span>*node,     start,   mid, l, r, v)
+        <span class="hl-kw">self</span>._update(<span class="hl-num">2</span>*node + <span class="hl-num">1</span>, mid+<span class="hl-num">1</span>, end, l, r, v)
+        <span class="hl-kw">self</span>.tree[node] = <span class="hl-kw">self</span>.tree[<span class="hl-num">2</span>*node] + <span class="hl-kw">self</span>.tree[<span class="hl-num">2</span>*node + <span class="hl-num">1</span>]</code></pre>
+    </div>
+    <p>
+      결과: <strong>구간 업데이트 O(log n), 구간 질의 O(log n)</strong>. 경쟁 프로그래밍 고수 기법.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 09. Fenwick Tree ==================== -->
+<section id="fenwick-idea">
+  <h2>09 — Fenwick Tree 아이디어</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">이진 표현의 마법</h3>
+    </div>
+    <p>
+      Fenwick의 핵심: 1-indexed 배열 <code>BIT[1..n]</code>에서 <code>BIT[i]</code>는 <em>i의 이진 표현에서 최하위 1비트만큼의 길이</em>에 해당하는 구간 합 저장.
+    </p>
+    <div class="formula-box" style="text-align:left;font-size:0.92rem;">
+      lowbit(i) = i &amp; (-i)    <em>// 최하위 1비트 (2's complement 트릭)</em><br>
+      <br>
+      BIT[i] = sum(A[i − lowbit(i) + 1 .. i])<br>
+      <br>
+      예: i = 12 = 1100₂, lowbit = 100₂ = 4. BIT[12] = A[9]+A[10]+A[11]+A[12].
+    </div>
+    <p>
+      <strong>prefix 합 질의</strong> sum(1..i): <code>i</code>에서 lowbit만큼 빼며 거슬러 올라감. O(log n).
+    </p>
+    <p>
+      <strong>업데이트</strong>: A[i]에 delta 더할 때, <code>i</code>에서 lowbit만큼 더하며 올라감. O(log n).
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a26bit-show { 0%,2%{opacity:0} 4%,18%{opacity:1} 20%,100%{opacity:0} }
+      .a26bit-F0{animation:a26bit-show 9s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a26bit-F1{animation:a26bit-show 9s linear infinite;animation-delay:3s;animation-fill-mode:backwards}
+      .a26bit-F2{animation:a26bit-show 9s linear infinite;animation-delay:6s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fenwick Tree 구조">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🌲 Fenwick Tree — A = [1,3,5,7,9,11,13,15] (1-indexed), sum(1..7) 질의</text>
+
+      <!-- 원 배열 -->
+      <g transform="translate(80, 50)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="0" y="0" class="viz-label-small" fill="var(--text-muted)">A[i]:</text>
+        <g font-size="12">
+          <rect x="40"  y="-15" width="40" height="30" fill="var(--why-bg-flat)" stroke="var(--text-muted)"/>
+          <text x="60"  y="4" text-anchor="middle" font-weight="700">1</text>
+          <rect x="80"  y="-15" width="40" height="30" fill="var(--why-bg-flat)" stroke="var(--text-muted)"/>
+          <text x="100" y="4" text-anchor="middle" font-weight="700">3</text>
+          <rect x="120" y="-15" width="40" height="30" fill="var(--why-bg-flat)" stroke="var(--text-muted)"/>
+          <text x="140" y="4" text-anchor="middle" font-weight="700">5</text>
+          <rect x="160" y="-15" width="40" height="30" fill="var(--why-bg-flat)" stroke="var(--text-muted)"/>
+          <text x="180" y="4" text-anchor="middle" font-weight="700">7</text>
+          <rect x="200" y="-15" width="40" height="30" fill="var(--why-bg-flat)" stroke="var(--text-muted)"/>
+          <text x="220" y="4" text-anchor="middle" font-weight="700">9</text>
+          <rect x="240" y="-15" width="40" height="30" fill="var(--why-bg-flat)" stroke="var(--text-muted)"/>
+          <text x="260" y="4" text-anchor="middle" font-weight="700">11</text>
+          <rect x="280" y="-15" width="40" height="30" fill="var(--why-bg-flat)" stroke="var(--text-muted)"/>
+          <text x="300" y="4" text-anchor="middle" font-weight="700">13</text>
+          <rect x="320" y="-15" width="40" height="30" fill="var(--why-bg-flat)" stroke="var(--text-muted)"/>
+          <text x="340" y="4" text-anchor="middle" font-weight="700">15</text>
+        </g>
+        <g font-size="9" fill="var(--text-muted)">
+          <text x="60"  y="32" text-anchor="middle">1</text>
+          <text x="100" y="32" text-anchor="middle">2</text>
+          <text x="140" y="32" text-anchor="middle">3</text>
+          <text x="180" y="32" text-anchor="middle">4</text>
+          <text x="220" y="32" text-anchor="middle">5</text>
+          <text x="260" y="32" text-anchor="middle">6</text>
+          <text x="300" y="32" text-anchor="middle">7</text>
+          <text x="340" y="32" text-anchor="middle">8</text>
+        </g>
+      </g>
+
+      <!-- BIT 배열 -->
+      <g transform="translate(80, 110)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="0" y="0" class="viz-label-small" fill="var(--text-muted)">BIT[i]:</text>
+
+        <!-- BIT[1]=A[1]=1, [2]=A[1..2]=4, [3]=A[3]=5, [4]=A[1..4]=16, [5]=A[5]=9, [6]=A[5..6]=20, [7]=A[7]=13, [8]=A[1..8]=64 -->
+        <g font-size="12">
+          <rect x="40"  y="-15" width="40" height="30" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5"/>
+          <text x="60"  y="4" text-anchor="middle" font-weight="700">1</text>
+
+          <rect x="80"  y="-15" width="40" height="30" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+          <text x="100" y="4" text-anchor="middle" font-weight="700">4</text>
+
+          <rect x="120" y="-15" width="40" height="30" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5"/>
+          <text x="140" y="4" text-anchor="middle" font-weight="700">5</text>
+
+          <rect x="160" y="-15" width="40" height="30" fill="#fde6a6" stroke="#d4930c" stroke-width="1.5"/>
+          <text x="180" y="4" text-anchor="middle" font-weight="700">16</text>
+
+          <rect x="200" y="-15" width="40" height="30" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5"/>
+          <text x="220" y="4" text-anchor="middle" font-weight="700">9</text>
+
+          <rect x="240" y="-15" width="40" height="30" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+          <text x="260" y="4" text-anchor="middle" font-weight="700">20</text>
+
+          <rect x="280" y="-15" width="40" height="30" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5"/>
+          <text x="300" y="4" text-anchor="middle" font-weight="700">13</text>
+
+          <rect x="320" y="-15" width="40" height="30" fill="#f5c6c6" stroke="#c23b5e" stroke-width="1.5"/>
+          <text x="340" y="4" text-anchor="middle" font-weight="700">64</text>
+        </g>
+
+        <g font-size="9" fill="var(--text-muted)">
+          <text x="60"  y="30" text-anchor="middle">1b=1</text>
+          <text x="100" y="30" text-anchor="middle">10b=2</text>
+          <text x="140" y="30" text-anchor="middle">11b=1</text>
+          <text x="180" y="30" text-anchor="middle">100b=4</text>
+          <text x="220" y="30" text-anchor="middle">101b=1</text>
+          <text x="260" y="30" text-anchor="middle">110b=2</text>
+          <text x="300" y="30" text-anchor="middle">111b=1</text>
+          <text x="340" y="30" text-anchor="middle">1000b=8</text>
+        </g>
+      </g>
+
+      <!-- 질의 sum(1..7) 애니메이션 -->
+      <g transform="translate(80, 190)" font-family="JetBrains Mono, monospace" font-size="12">
+        <g class="a26bit-F0">
+          <text x="180" y="0" text-anchor="middle" class="viz-label" font-weight="700">query(7) 시작</text>
+          <text x="180" y="22" text-anchor="middle" class="viz-label-small">i = 7 = 111₂</text>
+          <text x="180" y="42" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">sum = 0</text>
+        </g>
+        <g class="a26bit-F1">
+          <text x="180" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="#196aa1">i=7: +BIT[7]=13, i -= lowbit(7)=1 → i=6</text>
+          <text x="180" y="22" text-anchor="middle" class="viz-label-small">BIT[7]=13 포함. i = 110₂</text>
+          <text x="180" y="42" text-anchor="middle" class="viz-label-small" fill="#196aa1">sum = 13</text>
+          <text x="180" y="64" text-anchor="middle" class="viz-label" font-weight="700" fill="#196aa1">i=6: +BIT[6]=20, i -= lowbit(6)=2 → i=4</text>
+          <text x="180" y="86" text-anchor="middle" class="viz-label-small" fill="#196aa1">sum = 13+20 = 33</text>
+        </g>
+        <g class="a26bit-F2">
+          <text x="180" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="#d4930c">i=4: +BIT[4]=16, i -= lowbit(4)=4 → i=0</text>
+          <text x="180" y="22" text-anchor="middle" class="viz-label-small">sum = 33+16 = <tspan font-weight="700" fill="#3b9b6e">49</tspan></text>
+          <text x="180" y="44" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">i=0이 되면 종료. 답: 49</text>
+          <text x="180" y="64" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">검증: A[1]+...+A[7] = 1+3+5+7+9+11+13 = 49 ✓</text>
+          <text x="180" y="84" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">총 3회 접근 = ⌈log₂ 7⌉ = O(log n)</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>Fenwick Tree query(7)</strong>: i = 7 → 6 → 4 → 0 으로 lowbit씩 감소. 각 단계 BIT[i] 누적. 3회 접근 = O(log n). 배열만큼 작은 공간(n+1)으로 구간 질의·업데이트 모두 O(log n).</div>
+  </div>
+</section>
+
+<!-- ==================== 10. Fenwick Python ==================== -->
+<section id="fenwick-code">
+  <h2>10 — Fenwick Python 구현</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">10줄의 마법</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">fenwick_tree.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">FenwickTree</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(<span class="hl-kw">self</span>, n):
+        <span class="hl-kw">self</span>.n = n
+        <span class="hl-kw">self</span>.bit = [<span class="hl-num">0</span>] * (n + <span class="hl-num">1</span>)    <span class="hl-cmt"># 1-indexed</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">update</span>(<span class="hl-kw">self</span>, i, delta):
+        <span class="hl-cmt">"""A[i]에 delta 더하기. 1-indexed."""</span>
+        <span class="hl-kw">while</span> i &lt;= <span class="hl-kw">self</span>.n:
+            <span class="hl-kw">self</span>.bit[i] += delta
+            i += i &amp; -i    <span class="hl-cmt"># lowbit 더하기</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">query</span>(<span class="hl-kw">self</span>, i):
+        <span class="hl-cmt">"""A[1..i] prefix sum."""</span>
+        s = <span class="hl-num">0</span>
+        <span class="hl-kw">while</span> i &gt; <span class="hl-num">0</span>:
+            s += <span class="hl-kw">self</span>.bit[i]
+            i -= i &amp; -i    <span class="hl-cmt"># lowbit 빼기</span>
+        <span class="hl-kw">return</span> s
+
+    <span class="hl-kw">def</span> <span class="hl-bi">range_query</span>(<span class="hl-kw">self</span>, l, r):
+        <span class="hl-kw">return</span> <span class="hl-kw">self</span>.query(r) - <span class="hl-kw">self</span>.query(l - <span class="hl-num">1</span>)
+
+
+<span class="hl-cmt"># 테스트</span>
+ft = FenwickTree(<span class="hl-num">8</span>)
+<span class="hl-kw">for</span> i, v <span class="hl-kw">in</span> <span class="hl-bi">enumerate</span>([<span class="hl-num">1</span>, <span class="hl-num">3</span>, <span class="hl-num">5</span>, <span class="hl-num">7</span>, <span class="hl-num">9</span>, <span class="hl-num">11</span>, <span class="hl-num">13</span>, <span class="hl-num">15</span>], <span class="hl-num">1</span>):
+    ft.update(i, v)
+
+<span class="hl-bi">print</span>(ft.query(<span class="hl-num">7</span>))    <span class="hl-cmt"># 49 (1+3+5+7+9+11+13)</span>
+<span class="hl-bi">print</span>(ft.range_query(<span class="hl-num">3</span>, <span class="hl-num">6</span>))    <span class="hl-cmt"># 32 (5+7+9+11)</span>
+ft.update(<span class="hl-num">3</span>, <span class="hl-num">10</span>)    <span class="hl-cmt"># A[3] += 10 (5 → 15)</span>
+<span class="hl-bi">print</span>(ft.range_query(<span class="hl-num">3</span>, <span class="hl-num">6</span>))    <span class="hl-cmt"># 42</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>시간</strong>: query, update 모두 O(log n).</li>
+      <li><strong>공간</strong>: n+1개 원소. Segment tree의 4n 대비 25%.</li>
+      <li><strong>lowbit 트릭</strong>: <code>i &amp; -i</code>는 2's complement에서 최하위 1비트만 남김. x=12=1100₂ → -x=...0100₂ → AND = 0100₂ = 4.</li>
+      <li><strong>한계</strong>: 합 외에 min/max 등 <em>역원 없는</em> 연산엔 잘 안 맞음. XOR은 됨 (자기 자신이 역원).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 11. 비교 ==================== -->
+<section id="comparison">
+  <h2>11 — Segment vs Fenwick 비교</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">언제 무엇을</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>기준</th><th>Segment Tree</th><th>Fenwick Tree (BIT)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>공간</td><td>4n</td><td>n+1</td></tr>
+        <tr><td>코드 길이</td><td>~50줄 (재귀)</td><td>~10줄 (반복)</td></tr>
+        <tr><td>구축</td><td>O(n)</td><td>O(n log n) 또는 O(n)</td></tr>
+        <tr><td>점 업데이트</td><td>O(log n)</td><td>O(log n)</td></tr>
+        <tr><td>구간 질의</td><td>O(log n)</td><td>O(log n) — 합만</td></tr>
+        <tr><td>구간 업데이트</td><td>O(log n) (lazy)</td><td>두 BIT로 O(log n)</td></tr>
+        <tr><td>연산 종류</td><td>합, min, max, gcd, 임의 결합 법칙</td><td>합, xor (역원 있는 것)</td></tr>
+        <tr><td>k-th 등 trivia</td><td>강력</td><td>가능 (binary lifting)</td></tr>
+        <tr><td>디버깅</td><td>상대적 어려움</td><td>쉬움</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>Fenwick</strong>: 합/xor만 필요하고 짧은 코드로 빠르게 제출할 때.</li>
+      <li><strong>Segment tree</strong>: min/max/gcd 질의, 복잡한 연산, lazy propagation 필요할 때.</li>
+      <li>경쟁 프로그래밍에서 둘 다 필수 — 문제에 맞는 것 선택.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 12. 변종 ==================== -->
+<section id="variants">
+  <h2>12 — 변종 — 2D, Persistent, Merge Sort Tree</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">2D Segment Tree / BIT</h3>
+    </div>
+    <p>
+      2차원 격자의 사각형 영역 합. "segment tree of segment trees". 시간 O(log² n), 공간 O(n²). 게임 공간 질의, 이미지 처리에 사용.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Persistent Segment Tree</h3>
+    </div>
+    <p>
+      각 업데이트마다 <em>새 버전</em>을 만듦. O(log n) 추가 노드만 생성 (공유 가능한 노드는 재사용). 응용: "k-th smallest in range [l, r]" 질의를 O(log n)에 — <strong>Wavelet tree</strong>의 대안.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Merge Sort Tree</h3>
+    </div>
+    <p>
+      각 노드에 해당 구간의 정렬된 배열 저장. "[l, r]에서 x보다 작은 원소 개수" 같은 질의 O(log² n). 공간 O(n log n).
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Segment Tree Beats (Jiry 2016)</h3>
+    </div>
+    <p>
+      "각 원소에 min(x, v) 적용" 같은 복잡한 범위 연산. 각 노드에 최댓값, 차순 최댓값, 개수를 저장. 특정 조건 만족 시 "break" 또는 "tag" — amortized O(n log² n).
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 13. 응용 ==================== -->
+<section id="applications">
+  <h2>13 — 응용 — DB, 게임, 주식</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">데이터베이스 인덱스</h3>
+    </div>
+    <p>
+      Range query가 DB 핵심 연산. "가격 1000-5000 사이 상품 수?" 같은. 실무 DB의 주 인덱스는 B-tree/B+tree(다음 주 Algo 27)지만, 특수 aggregation 인덱스나 인메모리 OLAP 레이어에서 segment tree/BIT 아이디어가 사용됨.
+    </p>
+    <ul>
+      <li>PostgreSQL GIN/GiST: 트리 인덱스의 일반화 (segment tree의 직접 사용은 아님).</li>
+      <li>Time-series DB (InfluxDB, TimescaleDB): 시간 구간 aggregation을 위한 bucket tree — segment tree의 변형 아이디어.</li>
+      <li>OLAP 데이터 큐브: 차원별 prefix sum / 구간 축약.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">게임 / 시뮬레이션</h3>
+    </div>
+    <ul>
+      <li><strong>공간 분할</strong>: 2D segment tree로 "영역 내 적 수", "사각형 내 플레이어 경험치 합" 등.</li>
+      <li><strong>경로 탐색</strong>: Grid map에서 구간 장애물 업데이트 + 구간 조회.</li>
+      <li><strong>이벤트 관리</strong>: 시간 축의 segment tree로 "이 시점에 활성 이벤트들".</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">금융 / 시계열</h3>
+    </div>
+    <ul>
+      <li><strong>고빈도 거래(HFT)</strong>: "최근 N틱 내 최고가" 같은 슬라이딩 max (monotonic deque가 주로 쓰이지만 segment tree도).</li>
+      <li><strong>기술적 지표</strong>: 이동 평균, 변동성 — 구간 합/분산 계산.</li>
+      <li><strong>백테스트</strong>: 과거 기간의 통계 빠르게.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">AI가 구간 자료구조를 잘못 쓰는 패턴</h3>
+    </div>
+    <ul>
+      <li><strong>Prefix sum만 사용</strong>: 업데이트 빈번하면 O(n) 업데이트. BIT가 적절.</li>
+      <li><strong>Segment tree 과잉</strong>: 합만 필요하면 BIT 10줄이 충분. 과잉 엔지니어링.</li>
+      <li><strong>Lazy 구현 버그</strong>: push 순서, 타이밍을 틀리기 쉬움. 꼭 완전 포함 전에 push, 업데이트 후 tree 갱신.</li>
+      <li><strong>1-indexed vs 0-indexed 혼동</strong>: Fenwick은 1-indexed가 표준. 섞어 쓰면 off-by-one 지옥.</li>
+      <li><strong>Semigroup 아닌 연산을 segment tree로</strong>: 예: 평균(결합 법칙 없음). 합/개수 두 개를 따로 저장.</li>
+    </ul>
+    <p>
+      <strong>교정 질문</strong>: "합/min/max 어느 것?", "구간 업데이트 필요?", "lazy에 push 넣었나?"
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">왜 segment tree 공간이 4n인가? 정확한 상한?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>n이 2의 거듭제곱이면 2n-1 노드 (리프 n + 내부 n-1). n이 2^k와 2^(k+1) 사이면 최대 2·2^(k+1) - 1 ≈ 4n. 정확히는 ⌈2·2^⌈log₂n⌉ − 1⌉. 4n이 안전한 상한. n=5 → 2·8-1=15, n=8 → 15, n=9 → 31.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Fenwick tree에서 <code>x &amp; -x</code>가 왜 최하위 1비트인지 2's complement 관점에서.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>−x = ~x + 1 (2's complement). x=12=01100₂, ~x=10011₂, −x=10100₂. x &amp; −x = 00100₂ = 4. 원리: ~x는 모든 비트 반전 → +1이면 최하위 0 비트들이 1로 뒤집히며 carry 발생, 최하위 1 비트까지 carry 전파되어 그 비트만 1로 남고 위 비트는 원 x와 반전된 상태. AND 결과는 그 1 비트만 살아남음.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"배열 역전(inversion) 수 세기" Fenwick으로 풀기.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>값 좌표 압축 후 뒤에서 앞으로 순회. BIT에 각 값의 "이후 등장 횟수" 저장. a[i]에 대해 query(a[i] − 1) = "뒤에 더 작은 값 수" = inversion 기여. 업데이트 → 다음 i로. 총 O(n log n). merge sort로도 O(n log n), 둘 다 표준.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Segment tree에서 "완전 포함"과 "분리"의 경계 조건이 왜 O(log n)?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>질의 범위의 경계 l, r에 대해 각 깊이에서 최대 2개 "부분 겹침" 노드가 생김. 부분 겹침은 자식에게 전파되지만 각 자식 중 최대 하나만 또 부분 겹침. 다른 자식은 완전 포함 또는 분리 → 즉시 종료. 깊이당 O(1) → 총 O(log n). CLRS 같은 상세 증명.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">왜 Fenwick이 min/max에 맞지 않나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Fenwick의 query는 prefix에서 구간을 <em>빼기</em>로 구함 (sum(r) − sum(l−1)). min은 역원 없음: min(a,b,c,d) − min(a,b)를 계산 불가. 따라서 업데이트 시 해당 원소만 감소하는 경우 BIT로 복원 불가. 구간 min/max는 <em>segment tree</em>나 <em>sparse table</em>(업데이트 없을 때)이 표준.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Lazy propagation으로 "구간 대입(set) + 구간 합 질의" 구현 아이디어.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>lazy[node]: "이 노드의 모든 원소가 이 값으로 설정됨" 또는 None(미설정). 업데이트 [l,r,v] 완전 포함 시 lazy[node]=v, tree[node]=v·(end-start+1). push 시 자식 lazy 덮어쓰기 + tree 재계산. 구간 덧셈과 구간 대입이 동시에 있으면 lazy 두 개 (add, set) 관리 — 순서 주의.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">n=10⁶, 구간 질의+업데이트 10⁶번. Segment tree vs Fenwick vs Prefix sum 실측.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Segment tree: ~2초 (C++), ~20-30초 (Python). Fenwick: 더 빠름 (~1초 C++, 코드 짧고 캐시 좋음). Prefix sum: 업데이트가 O(n)이라 총 10¹² — 불가능. <em>경쟁에서 합만 필요하면 무조건 Fenwick</em>.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"구간 덧셈 + 점 질의"를 Fenwick으로.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>트릭: BIT에 <em>차분 배열</em>(difference array) 저장. 구간 [l, r]에 v 더하기 = BIT.update(l, v); BIT.update(r+1, −v). 점 질의 A[i] = BIT.query(i). 모두 O(log n). "구간 덧셈 + 구간 합"은 Fenwick 두 개로 가능 (더 복잡).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Persistent segment tree가 "k-th smallest in range" 문제를 어떻게 푸나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>각 prefix [1..i]에 대한 segment tree (값 도메인). 위치 i의 트리 = 위치 i-1의 트리 + a[i] 추가 (log n 새 노드). 질의 [l, r]: root[r] − root[l-1]이 개념상 [l, r] 트리. k-th smallest는 이 합 트리에서 좌/우 자식 count 비교하며 내려감 — O(log V) 시간.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Segment tree를 이용한 "가장 긴 증가 부분수열 길이" 풀이 (LIS).</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>값 도메인 [1, max]에 segment tree. tree[v] = "값 v로 끝나는 LIS 길이". 각 a[i]마다 query(1, a[i]-1)로 이전 최대 LIS 얻고 +1, update(a[i], 값). O(n log n). Algo 21의 patience sort와 복잡도 같음, 다른 관점.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "LeetCode Range Sum Query 문제에 Fenwick"을 제안. 문제가 update 없으면?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>업데이트 없으면 <em>prefix sum</em>만으로 O(1) 질의 + O(n) 전처리. Fenwick 은 O(log n) 질의라 오히려 느림. "Range Sum Query — Immutable"(LC 303) = prefix sum. "Mutable"(LC 307) = Fenwick/Segment tree. 문제 읽기가 핵심.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Bentley가 segment tree를 계산 기하용으로 만들었는데, 왜 "배열 구간 합"에도 완벽히 맞나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>공통 구조: "구간들을 쪼개어 관리". 기하에선 실수 구간, 배열에선 정수 인덱스 구간 — 추상 수준에서 같은 문제. Bentley의 자료구조가 이 추상화를 포착. <em>좋은 자료구조는 예상 못한 문제에도 맞아들어감</em> — Dijkstra가 최단경로를 넘어 MST·A*에 스며들듯.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">🌳</div>
+      <h3>Segment Tree (Bentley 1977)</h3>
+      <p>구간 이진 트리. 임의 결합 연산 O(log n).</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🌲</div>
+      <h3>Fenwick Tree (1994)</h3>
+      <p>합/xor 특화. 10줄 코드. x&amp;-x 트릭.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">💤</div>
+      <h3>Lazy Propagation</h3>
+      <p>구간 업데이트 O(log n). ICPC 핵심 기법.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">📏</div>
+      <h3>Prefix Sum</h3>
+      <p>읽기만 있으면 O(1) 질의. 업데이트 있으면 BIT.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🎯</div>
+      <h3>Semigroup</h3>
+      <p>Segment tree는 결합 법칙만 있으면 작동. Fenwick은 역원도 필요 (합/xor).</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🚀</div>
+      <h3>변종</h3>
+      <p>2D, Persistent, Merge Sort, Segment Tree Beats.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Range Query</div><div class="glossary-def">구간 [l, r]의 집약값 (합/min/max/...).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Point Update</div><div class="glossary-def">단일 원소 값 변경.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Range Update</div><div class="glossary-def">구간 모든 원소에 연산 적용.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Prefix Sum</div><div class="glossary-def">누적합 배열. 업데이트 없을 때 O(1) 질의.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Segment Tree</div><div class="glossary-def">Bentley 1977. 구간 이진 트리. 공간 4n.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Jon Bentley</div><div class="glossary-def">1953-. CMU, Bell Labs. Programming Pearls 저자.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Fenwick Tree (BIT)</div><div class="glossary-def">Fenwick 1994. 공간 n+1. x&amp;-x 트릭.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Peter Fenwick</div><div class="glossary-def">U. Auckland. 1994 BIT 논문.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Boris Ryabko</div><div class="glossary-def">1989 Fenwick 이전 발표 (러시아어).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Binary Indexed Tree</div><div class="glossary-def">Fenwick tree의 별칭. 이진 인덱스 활용.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Lazy Propagation</div><div class="glossary-def">구간 업데이트를 미루었다가 필요 시 전파.</div></div>
+    <div class="glossary-item"><div class="glossary-term">lowbit(x)</div><div class="glossary-def">x &amp; -x. 최하위 1비트.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Semigroup</div><div class="glossary-def">결합 법칙 성립 연산. Segment tree 일반 조건.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Group</div><div class="glossary-def">semigroup + 역원. Fenwick 조건.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Idempotent</div><div class="glossary-def">f(x,x)=x. min/max/gcd. Sparse Table 적용 가능.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Sparse Table</div><div class="glossary-def">Bender-Farach-Colton 2000. O(n log n) 전처리, O(1) 질의.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Persistent Data Structure</div><div class="glossary-def">업데이트 시 새 버전 생성. 이전 버전도 접근 가능.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Merge Sort Tree</div><div class="glossary-def">각 노드에 정렬 배열. 범위 순위 질의.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Segment Tree Beats</div><div class="glossary-def">Jiry 2016. chmin/chmax 복잡 연산.</div></div>
+    <div class="glossary-item"><div class="glossary-term">2D Segment Tree</div><div class="glossary-def">격자 사각형 영역 질의. O(log² n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Difference Array</div><div class="glossary-def">차분. 구간 덧셈을 점 업데이트로.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Coordinate Compression</div><div class="glossary-def">희소 좌표를 [0, k-1]로 축소. Fenwick 같은 자료구조 활용.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Klee's Problems</div><div class="glossary-def">Bentley 1977 원 연구. 구간의 측도, 점 포함 등.</div></div>
+    <div class="glossary-item"><div class="glossary-term">ICPC</div><div class="glossary-def">국제 대학생 프로그래밍 대회. segment tree 필수 기법.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Competitive Programming</div><div class="glossary-def">구간 자료구조의 주요 무대. Codeforces, AtCoder.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 27</div>
+    <h3>고급 자료구조 — Trie, Skip List, B-Tree</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      데이터베이스 인덱스의 실체 + 자동완성의 수학.
+    </p>
+    <ul>
+      <li><strong>Trie</strong> — 문자열 자동완성, 사전, IP 라우팅 테이블.</li>
+      <li><strong>Skip List (Pugh 1989)</strong> — 트리 없이도 O(log n) 정렬 자료구조.</li>
+      <li><strong>B-Tree (Bayer &amp; McCreight 1972)</strong> — PostgreSQL, MySQL 인덱스의 실체.</li>
+      <li><strong>B+ Tree</strong> — 디스크 친화적. 현대 RDBMS 표준.</li>
+      <li><strong>LSM Tree</strong> — RocksDB, Cassandra의 쓰기 최적화 구조.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo25.html">&larr; Algo 25 — 해시 심화</a>
+  <a href="algo27.html">Algo 27 — 고급 자료구조 &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">Bentley 1977 (Computational Geometry), Ryabko 1989, Fenwick 1994 (SP&amp;E 24:327-336), Jiry 2016 (Segment Tree Beats) 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

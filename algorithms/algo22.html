@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 22주차: 백트래킹 — N-Queens, 스도쿠, 가지치기 | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="백트래킹 — 1848년 Bezzel의 8-Queens부터 Lehmer/Walker/Golomb의 formalization까지. 가지치기와 제약 전파의 예술.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 22주차: 백트래킹 | PyWhy">
+  <meta property="og:description" content="DFS + 되돌림 — N-Queens, 스도쿠, 부분집합 생성, 가지치기 기법">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo22.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A22">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo21.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo23.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 22</div>
+  <h1 class="week-title">백트래킹 — N-Queens, 스도쿠, 가지치기<br>"되돌아가는" 것도 알고리즘이다</h1>
+  <p class="week-subtitle">
+    1848년 체스 문제 출제자 <strong>Max Bezzel</strong>이 독일 체스 신문에 8-Queens 퍼즐을 냅니다. 2년 뒤 <strong>Franz Nauck</strong>이 첫 해법 12개를 발표하며 <em>n-Queens로 일반화</em>. 100년 뒤인 1950년대, <strong>Derrick Lehmer</strong>가 이런 체계적 탐색을 <em>"backtracking"</em>이라 명명. 1965년 <strong>Golomb &amp; Baumert</strong>가 JACM에 <em>"Backtrack Programming"</em>으로 정식화. 1972년 <strong>Dijkstra</strong>는 8-Queens를 써서 "구조적 프로그래밍"을 설명합니다.<br>
+    DP는 "모든 경우를 기억", 백트래킹은 "가능성 탐색 + 실패 시 되돌림". SAT solver, 자동 증명, 게임 AI(minimax) 모두 백트래킹의 후예.<br>
+    핵심 질문: <em>"가지치기(pruning)가 왜 지수 시간 알고리즘을 실무 가능하게 만드는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 170년의 여왕들</a>
+    </div>
+    <div class="toc-section">
+      <a href="#framework" class="toc-section-link"><span class="toc-num">02</span>백트래킹 프레임워크</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#subsets" class="toc-section-link"><span class="toc-num">03</span>부분집합 생성 — 교과서 예제</a>
+      <div class="toc-levels"><span class="toc-level-dot elem">초</span><span class="toc-level-dot inter">중</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#permutations" class="toc-section-link"><span class="toc-num">04</span>순열 생성</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#n-queens" class="toc-section-link"><span class="toc-num">05</span>N-Queens 문제와 가지치기</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#n-queens-python" class="toc-section-link"><span class="toc-num">06</span>N-Queens Python 구현</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#n-queens-opt" class="toc-section-link"><span class="toc-num">07</span>비트마스크 최적화</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#sudoku" class="toc-section-link"><span class="toc-num">08</span>스도쿠 해법</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#constraint-prop" class="toc-section-link"><span class="toc-num">09</span>제약 전파 (Constraint Propagation)</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#pruning" class="toc-section-link"><span class="toc-num">10</span>가지치기 기법</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#complexity" class="toc-section-link"><span class="toc-num">11</span>복잡도 — 최악 vs 실제</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#dp-vs-backtrack" class="toc-section-link"><span class="toc-num">12</span>DP vs 백트래킹</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#applications" class="toc-section-link"><span class="toc-num">13</span>응용 — SAT, 게임 AI, 증명</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 170년의 여왕들</h2>
+
+  <blockquote>
+    <em>"Es ist schon vor langer Zeit die Aufgabe gestellt worden: Acht Damen auf dem Schachbrett so zu stellen, dass keine die andere schlagen kann."</em>
+    <br>(<em>"오래 전부터 문제가 주어졌다: 체스판에 여덟 개의 여왕을 서로 공격하지 않게 배치하라."</em>)
+    <br>— Max Bezzel, <em>Schachzeitung</em>, 1848
+  </blockquote>
+
+  <div class="story-block">
+    <h3>1848 — Max Bezzel의 체스 퍼즐</h3>
+    <p>
+      독일 체스 문제 출제자 Max Bezzel(1824-1871)이 <em>Berliner Schachzeitung</em>에 8-Queens 퍼즐을 게재. <em>"체스판 8×8에 여왕 8개를 서로 공격하지 않게 놓는 방법은?"</em> 당시엔 체스 퍼즐, 수학 문제가 아니었음.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1850 — Franz Nauck의 첫 풀이</h3>
+    <p>
+      Nauck이 <em>Illustrirte Zeitung</em>에 92개 중 12개 해를 발표(회전/반사 제외 시 12개). <strong>그리고 n-Queens로 일반화</strong>: "n×n 보드에 n개 여왕". 이때부터 조합론 문제가 됨.
+    </p>
+    <p>
+      Gauss도 이 문제에 관심을 가졌다는 전설이 있지만, 1874년 Glaisher(Phil. Mag. 48:457-467)의 추론에서 비롯된 과장일 가능성 (역사 오류의 전파 사례).
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1950s — D. H. Lehmer, "Backtrack"</h3>
+    <p>
+      미국 수학자 Derrick H. Lehmer(1905-1991)가 수조합 문제 탐색법에 <strong>"backtrack"</strong>이라는 용어 명명. 당시는 초기 컴퓨터로 조합 문제를 풀기 시작한 시대.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1960 — Robert J. Walker의 일반화</h3>
+    <p>
+      Walker가 <em>"An Enumerative Technique for a Class of Combinatorial Problems"</em>(1960, Proc. Sympos. Appl. Math.)에서 백트래킹 절차를 일반적으로 기술. <em>"깊이 우선 + 실패 시 부모로 복귀"</em>라는 틀 확립.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1965 — Golomb &amp; Baumert, JACM</h3>
+    <p>
+      Solomon W. Golomb, Leonard D. Baumert가 <em>"Backtrack Programming"</em>(J. ACM 12:516-524, 1965)에서 CS 정식 논문으로 등장. 가지치기(pruning) 기법과 일반 프레임워크.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1972 — Dijkstra와 구조적 프로그래밍</h3>
+    <p>
+      Dijkstra가 <em>"Notes on Structured Programming"</em>(1972)에서 8-Queens를 예제로 "구조적 프로그래밍"을 설명. 재귀의 아름다움, 불변식(invariant)의 역할 등. <em>이 에세이가 "goto 유해 논쟁"과 함께 현대 프로그래밍 스타일 확립</em>.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="백트래킹 역사 타임라인">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📜 백트래킹의 170년 — 체스 퍼즐에서 SAT solver까지</text>
+
+      <line x1="60" y1="140" x2="680" y2="140" stroke="var(--text-muted)" stroke-width="2"/>
+      <polygon points="680,140 670,136 670,144" fill="var(--text-muted)"/>
+
+      <g font-family="JetBrains Mono, monospace" font-size="11">
+        <!-- 1848 Bezzel -->
+        <circle cx="90" cy="140" r="8" fill="#d4930c" stroke="var(--accent)" stroke-width="2"/>
+        <line x1="90" y1="132" x2="90" y2="80" stroke="#d4930c" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="30" y="50" width="120" height="32" rx="4" fill="rgba(212,147,12,0.1)" stroke="#d4930c" stroke-width="1"/>
+        <text x="92" y="67" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Bezzel 1848</text>
+        <text x="92" y="78" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">8-Queens 퍼즐</text>
+        <text x="90" y="165" text-anchor="middle" class="viz-label-small">1848</text>
+
+        <!-- 1850 Nauck -->
+        <circle cx="140" cy="140" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="140" y="120" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Nauck</text>
+        <text x="140" y="165" text-anchor="middle" class="viz-label-small">1850</text>
+
+        <!-- 1950s Lehmer -->
+        <circle cx="360" cy="140" r="8" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <line x1="360" y1="148" x2="360" y2="210" stroke="#3b9b6e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="300" y="210" width="125" height="32" rx="4" fill="rgba(59,155,110,0.1)" stroke="#3b9b6e" stroke-width="1"/>
+        <text x="362" y="228" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Lehmer 1950s</text>
+        <text x="362" y="239" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">"backtrack" 용어</text>
+        <text x="360" y="165" text-anchor="middle" class="viz-label-small">1950s</text>
+
+        <!-- 1960 Walker -->
+        <circle cx="420" cy="140" r="7" fill="#196aa1" stroke="#196aa1" stroke-width="2"/>
+        <line x1="420" y1="132" x2="420" y2="80" stroke="#196aa1" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="360" y="50" width="130" height="32" rx="4" fill="rgba(25,106,161,0.1)" stroke="#196aa1" stroke-width="1"/>
+        <text x="425" y="67" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Walker 1960</text>
+        <text x="425" y="78" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">일반 프레임워크</text>
+        <text x="420" y="165" text-anchor="middle" class="viz-label-small">1960</text>
+
+        <!-- 1965 Golomb-Baumert -->
+        <circle cx="480" cy="140" r="7" fill="#c23b5e" stroke="#c23b5e" stroke-width="2"/>
+        <line x1="480" y1="148" x2="480" y2="210" stroke="#c23b5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="420" y="210" width="135" height="32" rx="4" fill="rgba(194,59,94,0.1)" stroke="#c23b5e" stroke-width="1"/>
+        <text x="487" y="228" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Golomb-Baumert</text>
+        <text x="487" y="239" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">J. ACM — 정식화</text>
+        <text x="480" y="165" text-anchor="middle" class="viz-label-small">1965</text>
+
+        <!-- 1972 Dijkstra -->
+        <circle cx="560" cy="140" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="560" y="120" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="10">Dijkstra 에세이</text>
+        <text x="560" y="165" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1972</text>
+
+        <!-- 1960-1999 SAT -->
+        <circle cx="640" cy="140" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="640" y="120" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="10">DPLL, SAT</text>
+        <text x="640" y="165" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">현대</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>백트래킹의 진화</strong> — 체스 퍼즐(1848)에서 CS 정식 논문(1965)으로, 그리고 현대 SAT/CSP solver의 근간으로. "가능성 탐색 + 되돌림"이라는 단순 아이디어가 170년간 진화.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. 프레임워크 ==================== -->
+<section id="framework">
+  <h2>02 — 백트래킹 프레임워크</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">"선택 → 탐색 → 되돌림" 패턴</h3>
+    </div>
+    <p>
+      모든 백트래킹은 세 단계의 반복:
+    </p>
+    <ol>
+      <li><strong>Choose (선택)</strong>: 현재 상태에서 가능한 한 가지 선택을 시도.</li>
+      <li><strong>Explore (탐색)</strong>: 그 선택으로 생긴 새 상태에서 재귀적으로 계속.</li>
+      <li><strong>Unchoose (되돌림)</strong>: 실패 시 선택을 취소하고 다음 가능성 시도.</li>
+    </ol>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">backtrack_template.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">backtrack</span>(state, solutions):
+    <span class="hl-kw">if</span> is_solution(state):
+        solutions.append(<span class="hl-bi">list</span>(state))    <span class="hl-cmt"># 복사 저장</span>
+        <span class="hl-kw">return</span>
+    <span class="hl-kw">for</span> choice <span class="hl-kw">in</span> possible_choices(state):
+        <span class="hl-kw">if</span> is_valid(state, choice):    <span class="hl-cmt"># 가지치기</span>
+            state.append(choice)      <span class="hl-cmt"># choose</span>
+            backtrack(state, solutions)  <span class="hl-cmt"># explore</span>
+            state.pop()               <span class="hl-cmt"># unchoose</span></code></pre>
+    </div>
+    <p>
+      <strong>핵심 관찰</strong>: <code>state.pop()</code>이 진짜 "되돌림". 이 한 줄이 없으면 DFS가 모든 조합을 누적해 쓰레기값.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="백트래킹 의사결정 트리">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🌳 백트래킹 의사결정 트리 — 단순 예 (3 원소 부분집합)</text>
+
+      <!-- 루트 -->
+      <g transform="translate(60, 50)" font-family="JetBrains Mono, monospace" font-size="11">
+        <circle cx="300" cy="10" r="18" fill="#fde6a6" stroke="#d4930c" stroke-width="2"/>
+        <text x="300" y="15" text-anchor="middle" class="viz-label-small" font-weight="700">{}</text>
+
+        <!-- 깊이 1: A 포함 / 미포함 -->
+        <line x1="285" y1="22" x2="180" y2="55" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="220" y="40" class="viz-label-small" fill="#3b9b6e">+A</text>
+        <line x1="315" y1="22" x2="420" y2="55" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <text x="380" y="40" class="viz-label-small" fill="var(--text-muted)">−A</text>
+
+        <circle cx="160" cy="70" r="18" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="160" y="75" text-anchor="middle" class="viz-label-small" font-weight="700">{A}</text>
+        <circle cx="440" cy="70" r="18" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1.5"/>
+        <text x="440" y="75" text-anchor="middle" class="viz-label-small" font-weight="700">{}</text>
+
+        <!-- 깊이 2: B 포함/미포함 -->
+        <line x1="148" y1="82" x2="80" y2="115" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="100" y="100" class="viz-label-small" fill="#3b9b6e">+B</text>
+        <line x1="172" y1="82" x2="230" y2="115" stroke="var(--text-muted)" stroke-width="1.2" stroke-dasharray="3,2"/>
+        <text x="210" y="100" class="viz-label-small" fill="var(--text-muted)">−B</text>
+
+        <line x1="428" y1="82" x2="370" y2="115" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="390" y="100" class="viz-label-small" fill="#3b9b6e">+B</text>
+        <line x1="452" y1="82" x2="510" y2="115" stroke="var(--text-muted)" stroke-width="1.2" stroke-dasharray="3,2"/>
+        <text x="490" y="100" class="viz-label-small" fill="var(--text-muted)">−B</text>
+
+        <circle cx="60" cy="130" r="16" fill="#cfe3ed" stroke="#196aa1" stroke-width="1"/>
+        <text x="60" y="134" text-anchor="middle" class="viz-label-small">{A,B}</text>
+        <circle cx="250" cy="130" r="16" fill="#cfe3ed" stroke="#196aa1" stroke-width="1"/>
+        <text x="250" y="134" text-anchor="middle" class="viz-label-small">{A}</text>
+        <circle cx="350" cy="130" r="16" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="350" y="134" text-anchor="middle" class="viz-label-small">{B}</text>
+        <circle cx="530" cy="130" r="16" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+        <text x="530" y="134" text-anchor="middle" class="viz-label-small">{}</text>
+
+        <!-- 깊이 3: C 포함/미포함 -->
+        <line x1="50" y1="142" x2="20" y2="175" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="70" y1="142" x2="100" y2="175" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="240" y1="142" x2="210" y2="175" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="260" y1="142" x2="290" y2="175" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="340" y1="142" x2="310" y2="175" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="360" y1="142" x2="390" y2="175" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="520" y1="142" x2="490" y2="175" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="540" y1="142" x2="570" y2="175" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,2"/>
+
+        <!-- 8개 리프 (2³ 부분집합) -->
+        <g fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1">
+          <rect x="-8" y="178" width="56" height="20" rx="3"/>
+          <rect x="72" y="178" width="56" height="20" rx="3"/>
+          <rect x="182" y="178" width="56" height="20" rx="3"/>
+          <rect x="262" y="178" width="56" height="20" rx="3"/>
+          <rect x="282" y="178" width="56" height="20" rx="3"/>
+          <rect x="362" y="178" width="56" height="20" rx="3"/>
+          <rect x="462" y="178" width="56" height="20" rx="3"/>
+          <rect x="542" y="178" width="56" height="20" rx="3"/>
+        </g>
+        <g font-size="9" font-weight="700" text-anchor="middle">
+          <text x="20" y="192">{A,B,C}</text>
+          <text x="100" y="192">{A,B}</text>
+          <text x="210" y="192">{A,C}</text>
+          <text x="290" y="192">{A}</text>
+          <text x="310" y="192">{B,C}</text>
+          <text x="390" y="192">{B}</text>
+          <text x="490" y="192">{C}</text>
+          <text x="570" y="192">{}</text>
+        </g>
+
+        <text x="300" y="230" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">깊이 우선 순회: 왼쪽부터 {A,B,C} → {A,B} → ... → {} (8개 리프 = 모든 부분집합)</text>
+        <text x="300" y="250" text-anchor="middle" class="viz-label" fill="#3b9b6e" font-weight="700">실선 = "포함(+)", 점선 = "미포함(−)", state.pop()이 점선으로 돌아가게 만듦</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>2³ = 8개 부분집합을 탐색</strong>하는 트리. 각 노드에서 "원소 포함(+)" 또는 "미포함(−)" 두 선택. DFS로 왼쪽부터 순회, pop()으로 되돌아가며 모든 리프 도달. <em>가지치기가 없으면 전수 탐색</em>.</div>
+  </div>
+</section>
+
+<!-- ==================== 03. 부분집합 ==================== -->
+<section id="subsets">
+  <h2>03 — 부분집합 생성 — 교과서 예제</h2>
+
+  <div class="level-section elementary">
+    <div class="level-section-header">
+      <span class="level-badge level-elem">초급</span>
+      <h3 class="level-section-title">n개 원소의 모든 부분집합 2<sup>n</sup>개</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">subsets.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">subsets</span>(nums):
+    result = []
+    path = []
+
+    <span class="hl-kw">def</span> <span class="hl-bi">backtrack</span>(start):
+        result.append(path.copy())    <span class="hl-cmt"># 현재 경로 저장</span>
+        <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(start, <span class="hl-bi">len</span>(nums)):
+            path.append(nums[i])      <span class="hl-cmt"># choose</span>
+            backtrack(i + <span class="hl-num">1</span>)             <span class="hl-cmt"># explore (다음 시작점 i+1)</span>
+            path.pop()                <span class="hl-cmt"># unchoose</span>
+
+    backtrack(<span class="hl-num">0</span>)
+    <span class="hl-kw">return</span> result
+
+
+<span class="hl-bi">print</span>(subsets([<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>]))
+<span class="hl-cmt"># [[], [1], [1,2], [1,2,3], [1,3], [2], [2,3], [3]]</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>복잡도</strong>: O(n · 2<sup>n</sup>) — 2<sup>n</sup>개 부분집합 생성, 각 복사 O(n).</li>
+      <li><code>start</code> 인자가 중복 방지의 핵심.</li>
+      <li>Python의 <code>itertools.chain.from_iterable(combinations(nums, r) for r in range(len(nums)+1))</code>로도 가능.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 04. 순열 ==================== -->
+<section id="permutations">
+  <h2>04 — 순열 생성</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">n! 개의 순열</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">permutations.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">permutations</span>(nums):
+    result = []
+    path = []
+    used = [<span class="hl-kw">False</span>] * <span class="hl-bi">len</span>(nums)
+
+    <span class="hl-kw">def</span> <span class="hl-bi">backtrack</span>():
+        <span class="hl-kw">if</span> <span class="hl-bi">len</span>(path) == <span class="hl-bi">len</span>(nums):
+            result.append(path.copy())
+            <span class="hl-kw">return</span>
+        <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-bi">len</span>(nums)):
+            <span class="hl-kw">if</span> <span class="hl-kw">not</span> used[i]:
+                used[i] = <span class="hl-kw">True</span>
+                path.append(nums[i])
+                backtrack()
+                path.pop()
+                used[i] = <span class="hl-kw">False</span>    <span class="hl-cmt"># 꼭 되돌리기!</span>
+
+    backtrack()
+    <span class="hl-kw">return</span> result
+
+
+<span class="hl-bi">print</span>(permutations([<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>]))
+<span class="hl-cmt"># [[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]]</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>복잡도</strong>: O(n · n!) — n! 개 순열, 각 복사 O(n).</li>
+      <li><code>used</code> 배열로 중복 사용 방지.</li>
+      <li><strong>핵심</strong>: <code>used[i] = False</code>도 꼭 되돌려야 함. 이것이 "unchoose"의 진정한 의미.</li>
+      <li>Python <code>itertools.permutations</code>가 표준 제공.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 05. N-Queens ==================== -->
+<section id="n-queens">
+  <h2>05 — N-Queens 문제와 가지치기</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">문제 재정의</h3>
+    </div>
+    <p>
+      n×n 체스판에 n개의 여왕을 <em>서로 공격하지 않게</em> 배치. 여왕은 가로, 세로, 대각선 모두 공격 가능.
+    </p>
+    <ul>
+      <li>같은 행에 두 여왕 → 공격.</li>
+      <li>같은 열에 두 여왕 → 공격.</li>
+      <li>같은 대각선에 두 여왕 → 공격. |row_i − row_j| = |col_i − col_j|.</li>
+    </ul>
+    <p>
+      <strong>관찰 1</strong>: 각 행에 정확히 1 여왕 → 문제를 "행별 열 선택"으로 단순화. 상태는 <code>cols[row] = 선택한 열</code> 배열.
+    </p>
+    <p>
+      <strong>관찰 2 — 가지치기</strong>: 새 여왕을 놓기 전에, 이미 놓인 여왕들과 충돌 체크. 충돌하면 그 가지 자체를 포기 → 지수적 탐색 공간을 대폭 감축.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a22nq-show { 0%,2%{opacity:0} 4%,13%{opacity:1} 15%,100%{opacity:0} }
+      .a22nq-S0{animation:a22nq-show 14s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a22nq-S1{animation:a22nq-show 14s linear infinite;animation-delay:2s;animation-fill-mode:backwards}
+      .a22nq-S2{animation:a22nq-show 14s linear infinite;animation-delay:4s;animation-fill-mode:backwards}
+      .a22nq-S3{animation:a22nq-show 14s linear infinite;animation-delay:6s;animation-fill-mode:backwards}
+      .a22nq-S4{animation:a22nq-show 14s linear infinite;animation-delay:8s;animation-fill-mode:backwards}
+      .a22nq-S5{animation:a22nq-show 14s linear infinite;animation-delay:10s;animation-fill-mode:backwards}
+      .a22nq-S6{animation:a22nq-show 14s linear infinite;animation-delay:12s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="4-Queens 백트래킹 애니메이션">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">♛ 4-Queens 백트래킹 — 첫 해법 {1,3,0,2} 찾기</text>
+
+      <!-- 4x4 체스판 배경 (항상 보임) -->
+      <g transform="translate(140, 45)" font-family="JetBrains Mono, monospace" font-size="12">
+        <!-- 체스판 격자 -->
+        <g>
+          <!-- 행 0 -->
+          <rect x="0" y="0" width="50" height="50" fill="#f5e8d0" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="50" y="0" width="50" height="50" fill="#b88860" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="100" y="0" width="50" height="50" fill="#f5e8d0" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="150" y="0" width="50" height="50" fill="#b88860" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <!-- 행 1 -->
+          <rect x="0" y="50" width="50" height="50" fill="#b88860" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="50" y="50" width="50" height="50" fill="#f5e8d0" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="100" y="50" width="50" height="50" fill="#b88860" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="150" y="50" width="50" height="50" fill="#f5e8d0" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <!-- 행 2 -->
+          <rect x="0" y="100" width="50" height="50" fill="#f5e8d0" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="50" y="100" width="50" height="50" fill="#b88860" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="100" y="100" width="50" height="50" fill="#f5e8d0" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="150" y="100" width="50" height="50" fill="#b88860" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <!-- 행 3 -->
+          <rect x="0" y="150" width="50" height="50" fill="#b88860" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="50" y="150" width="50" height="50" fill="#f5e8d0" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="100" y="150" width="50" height="50" fill="#b88860" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="150" y="150" width="50" height="50" fill="#f5e8d0" stroke="var(--text-muted)" stroke-width="0.5"/>
+        </g>
+
+        <!-- 여왕 배치 (단계별) -->
+        <!-- S1: Q at (0,0) — 곧 실패 -->
+        <g class="a22nq-S1">
+          <text x="25" y="33" text-anchor="middle" font-size="24" fill="#c23b5e">♛</text>
+          <rect x="0" y="0" width="50" height="50" fill="rgba(194,59,94,0.3)" stroke="#c23b5e" stroke-width="2"/>
+        </g>
+
+        <!-- S2: Q (0,0) 실패 표시 -->
+        <g class="a22nq-S2">
+          <text x="25" y="33" text-anchor="middle" font-size="24" fill="var(--text-muted)" opacity="0.3">♛</text>
+          <text x="25" y="40" text-anchor="middle" font-size="28" fill="#c23b5e" font-weight="700">✗</text>
+        </g>
+
+        <!-- S3: Q (0,1) -->
+        <g class="a22nq-S3 a22nq-S4 a22nq-S5 a22nq-S6">
+          <text x="75" y="33" text-anchor="middle" font-size="24" fill="#3b9b6e">♛</text>
+        </g>
+
+        <!-- S4: Q (0,1) + Q (1,3) -->
+        <g class="a22nq-S4 a22nq-S5 a22nq-S6">
+          <text x="175" y="83" text-anchor="middle" font-size="24" fill="#3b9b6e">♛</text>
+        </g>
+
+        <!-- S5: + Q (2,0) -->
+        <g class="a22nq-S5 a22nq-S6">
+          <text x="25" y="133" text-anchor="middle" font-size="24" fill="#3b9b6e">♛</text>
+        </g>
+
+        <!-- S6: + Q (3,2) — 완성 -->
+        <g class="a22nq-S6">
+          <text x="125" y="183" text-anchor="middle" font-size="24" fill="#3b9b6e">♛</text>
+          <rect x="0" y="0" width="200" height="200" fill="none" stroke="#3b9b6e" stroke-width="3"/>
+        </g>
+
+        <!-- 열 좌표 -->
+        <g font-size="9" fill="var(--text-muted)">
+          <text x="25" y="218" text-anchor="middle">col 0</text>
+          <text x="75" y="218" text-anchor="middle">col 1</text>
+          <text x="125" y="218" text-anchor="middle">col 2</text>
+          <text x="175" y="218" text-anchor="middle">col 3</text>
+          <text x="-10" y="33" text-anchor="end">row 0</text>
+          <text x="-10" y="83" text-anchor="end">row 1</text>
+          <text x="-10" y="133" text-anchor="end">row 2</text>
+          <text x="-10" y="183" text-anchor="end">row 3</text>
+        </g>
+      </g>
+
+      <!-- 설명 -->
+      <g transform="translate(400, 55)" font-size="12" font-family="JetBrains Mono, monospace">
+        <g class="a22nq-S0">
+          <text x="0" y="0" class="viz-label" font-weight="700">시작: 빈 보드</text>
+          <text x="0" y="22" class="viz-label-small">cols = []</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">row 0부터 시작</text>
+        </g>
+        <g class="a22nq-S1">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#c23b5e">단계 1: (0,0)</text>
+          <text x="0" y="22" class="viz-label-small">cols = [0]</text>
+          <text x="0" y="42" class="viz-label-small">row 1에서 (1,2), (1,3)은 가능</text>
+          <text x="0" y="62" class="viz-label-small" fill="var(--text-muted)">하지만 더 깊이 가보면...</text>
+        </g>
+        <g class="a22nq-S2">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#c23b5e">단계 2: 전 서브트리 실패</text>
+          <text x="0" y="22" class="viz-label-small">(0,0)에서 시작한 모든 하위 탐색 실패</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">예: (1,2)→row2 모두 충돌</text>
+          <text x="0" y="58" class="viz-label-small" fill="var(--text-muted)">(1,3)→row2의 (2,1) 후 row3 모두 충돌</text>
+          <text x="0" y="78" class="viz-label-small" fill="#c23b5e" font-weight="700">↻ col 0 포기, col 1 시도</text>
+        </g>
+        <g class="a22nq-S3">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 3: (0,1)</text>
+          <text x="0" y="22" class="viz-label-small">cols = [1]</text>
+          <text x="0" y="42" class="viz-label-small">row 1에서 (1,3)만 가능</text>
+          <text x="0" y="62" class="viz-label-small" fill="var(--text-muted)">(1,0),(1,1),(1,2) 모두 충돌</text>
+        </g>
+        <g class="a22nq-S4">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 4: (1,3) 추가</text>
+          <text x="0" y="22" class="viz-label-small">cols = [1, 3]</text>
+          <text x="0" y="42" class="viz-label-small">row 2 탐색: (2,0) 가능</text>
+        </g>
+        <g class="a22nq-S5">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 5: (2,0) 추가</text>
+          <text x="0" y="22" class="viz-label-small">cols = [1, 3, 0]</text>
+          <text x="0" y="42" class="viz-label-small">row 3 탐색: (3,2) 가능</text>
+        </g>
+        <g class="a22nq-S6">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">완성! ✓</text>
+          <text x="0" y="22" class="viz-label-small">cols = [1, 3, 0, 2]</text>
+          <text x="0" y="42" class="viz-label-small" fill="#3b9b6e" font-weight="700">4-Queens 첫 해법</text>
+          <text x="0" y="62" class="viz-label-small" fill="var(--text-muted)">(두 번째 해법 [2,0,3,1]도 존재)</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>7단계 4-Queens 트레이스</strong>: (0,0)에서 시작 → 막힘 → 되돌려 (0,1)에서 재시작 → [1,3,0,2] 완성. <em>가지치기 없이는 4<sup>4</sup>=256 조합, 가지치기로 훨씬 적은 노드만 탐색</em>.</div>
+  </div>
+</section>
+
+<!-- ==================== 06. N-Queens Python ==================== -->
+<section id="n-queens-python">
+  <h2>06 — N-Queens Python 구현</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">직관적 구현</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">n_queens.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">solve_n_queens</span>(n):
+    result = []
+    cols = []    <span class="hl-cmt"># cols[row] = 해당 행 여왕의 열</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">is_safe</span>(row, col):
+        <span class="hl-kw">for</span> r, c <span class="hl-kw">in</span> <span class="hl-bi">enumerate</span>(cols):
+            <span class="hl-kw">if</span> c == col: <span class="hl-kw">return</span> <span class="hl-kw">False</span>                    <span class="hl-cmt"># 같은 열</span>
+            <span class="hl-kw">if</span> <span class="hl-bi">abs</span>(r - row) == <span class="hl-bi">abs</span>(c - col): <span class="hl-kw">return</span> <span class="hl-kw">False</span>  <span class="hl-cmt"># 대각선</span>
+        <span class="hl-kw">return</span> <span class="hl-kw">True</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">backtrack</span>(row):
+        <span class="hl-kw">if</span> row == n:
+            result.append(cols.copy())
+            <span class="hl-kw">return</span>
+        <span class="hl-kw">for</span> col <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n):
+            <span class="hl-kw">if</span> is_safe(row, col):
+                cols.append(col)
+                backtrack(row + <span class="hl-num">1</span>)
+                cols.pop()
+
+    backtrack(<span class="hl-num">0</span>)
+    <span class="hl-kw">return</span> result
+
+
+<span class="hl-bi">print</span>(<span class="hl-bi">len</span>(solve_n_queens(<span class="hl-num">4</span>)))    <span class="hl-cmt"># 2</span>
+<span class="hl-bi">print</span>(<span class="hl-bi">len</span>(solve_n_queens(<span class="hl-num">8</span>)))    <span class="hl-cmt"># 92</span>
+<span class="hl-bi">print</span>(<span class="hl-bi">len</span>(solve_n_queens(<span class="hl-num">12</span>)))    <span class="hl-cmt"># 14200</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>복잡도</strong>: 최악 O(n!), 가지치기로 실제는 훨씬 적음.</li>
+      <li>해의 개수: n=1 → 1, n=4 → 2, n=8 → 92, n=12 → 14200 (OEIS A000170).</li>
+      <li><code>is_safe</code>가 O(n)이므로 노드당 O(n²). 다음 섹션에서 O(1)로.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 07. 비트마스크 ==================== -->
+<section id="n-queens-opt">
+  <h2>07 — 비트마스크 최적화</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">충돌 체크를 O(1)로</h3>
+    </div>
+    <p>
+      <code>is_safe</code>가 행마다 O(n)이라 전체 O(n·n!). 세 개 비트마스크로 <strong>O(1) 충돌 체크</strong>:
+    </p>
+    <ul>
+      <li><code>cols</code>: 사용된 열 비트마스크.</li>
+      <li><code>diag1</code>: "↘ 대각선"(row−col 동일) 비트마스크.</li>
+      <li><code>diag2</code>: "↙ 대각선"(row+col 동일) 비트마스크.</li>
+    </ul>
+    <p>
+      여왕 하나 놓을 때: 세 마스크 OR의 NOT = 안전한 열들. <code>~mask &amp; ((1 &lt;&lt; n) − 1)</code>.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">n_queens_bitmask.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">solve_n_queens_fast</span>(n):
+    <span class="hl-kw">def</span> <span class="hl-bi">backtrack</span>(row, cols, d1, d2):
+        <span class="hl-kw">if</span> row == n:
+            <span class="hl-kw">nonlocal</span> count
+            count += <span class="hl-num">1</span>
+            <span class="hl-kw">return</span>
+        available = ~(cols | d1 | d2) &amp; ((<span class="hl-num">1</span> &lt;&lt; n) - <span class="hl-num">1</span>)
+        <span class="hl-kw">while</span> available:
+            bit = available &amp; -available    <span class="hl-cmt"># 최하위 1 비트</span>
+            available ^= bit                 <span class="hl-cmt"># 제거</span>
+            backtrack(row + <span class="hl-num">1</span>,
+                      cols | bit,
+                      (d1 | bit) &lt;&lt; <span class="hl-num">1</span>,
+                      (d2 | bit) &gt;&gt; <span class="hl-num">1</span>)
+
+    count = <span class="hl-num">0</span>
+    backtrack(<span class="hl-num">0</span>, <span class="hl-num">0</span>, <span class="hl-num">0</span>, <span class="hl-num">0</span>)
+    <span class="hl-kw">return</span> count
+
+
+<span class="hl-bi">print</span>(solve_n_queens_fast(<span class="hl-num">8</span>))    <span class="hl-cmt"># 92</span>
+<span class="hl-bi">print</span>(solve_n_queens_fast(<span class="hl-num">15</span>))    <span class="hl-cmt"># 2279184 (수 초)</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>복잡도</strong>: O(n!) (가지치기 고려한 실제).</li>
+      <li>n=14까지 즉시, n=18까지 몇 시간 가능.</li>
+      <li><code>available &amp; -available</code>: 최하위 1 비트만 추출 (2's complement 트릭).</li>
+      <li>대각선 이동 시 <code>d1 &lt;&lt; 1</code>, <code>d2 &gt;&gt; 1</code>로 한 행 내려갈 때 대각선 충돌 영역 이동.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 08. 스도쿠 ==================== -->
+<section id="sudoku">
+  <h2>08 — 스도쿠 해법</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">9×9 백트래킹</h3>
+    </div>
+    <p>
+      스도쿠: 9×9 격자에 1-9를 채움. 각 행, 열, 3×3 박스에 중복 없음. 빈 칸을 백트래킹으로 하나씩 시도.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">sudoku.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">solve_sudoku</span>(board):
+    <span class="hl-cmt">"""board: 9x9 list of lists, 0 = 빈 칸."""</span>
+    <span class="hl-kw">def</span> <span class="hl-bi">is_valid</span>(row, col, num):
+        <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">9</span>):
+            <span class="hl-kw">if</span> board[row][i] == num <span class="hl-kw">or</span> board[i][col] == num:
+                <span class="hl-kw">return</span> <span class="hl-kw">False</span>
+        br, bc = <span class="hl-num">3</span> * (row // <span class="hl-num">3</span>), <span class="hl-num">3</span> * (col // <span class="hl-num">3</span>)
+        <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(br, br + <span class="hl-num">3</span>):
+            <span class="hl-kw">for</span> j <span class="hl-kw">in</span> <span class="hl-bi">range</span>(bc, bc + <span class="hl-num">3</span>):
+                <span class="hl-kw">if</span> board[i][j] == num: <span class="hl-kw">return</span> <span class="hl-kw">False</span>
+        <span class="hl-kw">return</span> <span class="hl-kw">True</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">backtrack</span>():
+        <span class="hl-kw">for</span> row <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">9</span>):
+            <span class="hl-kw">for</span> col <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">9</span>):
+                <span class="hl-kw">if</span> board[row][col] == <span class="hl-num">0</span>:
+                    <span class="hl-kw">for</span> num <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, <span class="hl-num">10</span>):
+                        <span class="hl-kw">if</span> is_valid(row, col, num):
+                            board[row][col] = num
+                            <span class="hl-kw">if</span> backtrack(): <span class="hl-kw">return</span> <span class="hl-kw">True</span>
+                            board[row][col] = <span class="hl-num">0</span>    <span class="hl-cmt"># 되돌림</span>
+                    <span class="hl-kw">return</span> <span class="hl-kw">False</span>    <span class="hl-cmt"># 이 칸에 아무것도 안 됨</span>
+        <span class="hl-kw">return</span> <span class="hl-kw">True</span>    <span class="hl-cmt"># 모든 칸 채움</span>
+
+    backtrack()
+    <span class="hl-kw">return</span> board</code></pre>
+    </div>
+    <ul>
+      <li><strong>복잡도</strong>: 최악 O(9<sup>k</sup>) (k=빈 칸 수). 가지치기와 제약 전파로 실제는 훨씬 빠름.</li>
+      <li>평범한 스도쿠 ~0.01초, 최악 케이스("17-clue" 스도쿠)에도 몇 초 이내.</li>
+      <li>고수준 구현: <strong>DLX (Dancing Links)</strong> — Knuth 2000, Exact Cover를 O(1) 제거/복원으로.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 09. 제약 전파 ==================== -->
+<section id="constraint-prop">
+  <h2>09 — 제약 전파 (Constraint Propagation)</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">"아직 배치 전"에 가지를 잘라내기</h3>
+    </div>
+    <p>
+      스도쿠에서 빈 칸에 "가능한 숫자 집합"을 유지. 어떤 숫자를 배치하면 같은 행/열/박스의 가능성 집합에서 그 숫자 제거. 어떤 칸의 가능성이 <em>1개</em>면 자동 결정, <em>0개</em>면 즉시 실패.
+    </p>
+    <ul>
+      <li><strong>Arc Consistency (AC-3, Mackworth 1977)</strong>: 모든 제약쌍을 반복 검사해 불가능한 값 제거. 초기 단순화에 유용.</li>
+      <li><strong>Forward Checking</strong>: 배치할 때 이웃 칸의 가능성만 업데이트. 가볍지만 효과적.</li>
+      <li><strong>Look-Ahead</strong>: 배치 후 제약 전파 + 다음 결정 미리보기.</li>
+    </ul>
+    <p>
+      <strong>핵심 효과</strong>: 빈 칸을 고를 때 "가능성이 가장 적은 칸(MRV heuristic)"부터 시도 → 실패 조기 발견. <em>많은 CSP solver의 표준</em>.
+    </p>
+    <p>
+      <strong>Peter Norvig의 스도쿠 에세이 (2006)</strong>: <em>"Solving Every Sudoku Puzzle"</em>. 제약 전파 + 백트래킹 결합으로 모든 스도쿠를 밀리초 내에 해결. Python 100줄 미만. 알고리즘 교육의 고전.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. 가지치기 ==================== -->
+<section id="pruning">
+  <h2>10 — 가지치기 기법</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">네 가지 가지치기 패턴</h3>
+    </div>
+    <ol>
+      <li><strong>Feasibility Pruning (실현성)</strong>: "이 선택이 규칙을 위반하는가?" — N-Queens의 is_safe.</li>
+      <li><strong>Optimality Pruning (최적성)</strong>: "이 경로로 가면 지금까지 best보다 나을 수 있는가?" — 부분합 배낭 B&amp;B.</li>
+      <li><strong>Symmetry Breaking (대칭 깨기)</strong>: "이미 본 구조의 대칭형인가?" — N-Queens의 첫 행을 n/2로 제한(회전/반사 중복 제거).</li>
+      <li><strong>Dominance Pruning (지배)</strong>: "이 부분해가 다른 것에 의해 지배되는가?" — 임의의 완성이 항상 더 나쁜 경우.</li>
+    </ol>
+    <p>
+      <strong>효과</strong>: 8-Queens 순진 완전 탐색은 8<sup>8</sup> = 1677만 시도. 각 여왕이 서로 다른 행에 있다는 제약 추가 시 8! = 40320. 대각선 가지치기 추가 시 <em>~2천 노드</em>로 감소. <strong>지수적 → 실무 가능</strong>.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="가지치기 효과 비교">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🌳 8-Queens 탐색 공간 — 가지치기 효과</text>
+
+      <!-- Bar chart -->
+      <g transform="translate(80, 60)" font-family="JetBrains Mono, monospace" font-size="12">
+        <!-- 순진 -->
+        <rect x="0" y="30" width="580" height="30" rx="3" fill="#f5c6c6" stroke="#c23b5e" stroke-width="1.5"/>
+        <text x="10" y="50" class="viz-label-small" font-weight="700" fill="white">순진 탐색: 8⁸ ≈ 16,777,216</text>
+
+        <text x="0" y="80" class="viz-label-small" fill="var(--text-muted)">"매 행에 1 여왕" 제약 추가 ↓</text>
+
+        <rect x="0" y="90" width="220" height="30" rx="3" fill="#fde6a6" stroke="#d4930c" stroke-width="1.5"/>
+        <text x="10" y="110" class="viz-label-small" font-weight="700">순열만: 8! = 40,320</text>
+
+        <text x="0" y="140" class="viz-label-small" fill="var(--text-muted)">열/대각선 가지치기 추가 ↓</text>
+
+        <rect x="0" y="150" width="50" height="30" rx="3" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="10" y="170" class="viz-label-small" font-weight="700">백트래킹: ~2,057 노드</text>
+
+        <text x="0" y="200" class="viz-label-small" fill="var(--text-muted)">+ 대칭 깨기 (첫 행 &lt; n/2) ↓</text>
+
+        <rect x="0" y="210" width="15" height="30" rx="3" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5"/>
+        <text x="25" y="230" class="viz-label-small" font-weight="700" fill="#3b9b6e">대칭 깨기: ~500 노드. 해: 12 (unique)</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>가지치기의 위력</strong>: 8-Queens에서 8⁸ = 1677만 → 백트래킹으로 ~2000 노드 → 대칭 깨기로 ~500 노드. <em>지수적 공간을 실무 가능한 수로 축소</em>.</div>
+  </div>
+</section>
+
+<!-- ==================== 11. 복잡도 ==================== -->
+<section id="complexity">
+  <h2>11 — 복잡도 — 최악 vs 실제</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">이론과 실무의 간극</h3>
+    </div>
+    <ul>
+      <li><strong>부분집합</strong>: Θ(2<sup>n</sup>). 모든 부분집합을 실제로 생성해야 하니 하한도 상한도 이 값.</li>
+      <li><strong>순열</strong>: Θ(n!). 마찬가지.</li>
+      <li><strong>N-Queens</strong>: 최악 O(n!). 실제는 훨씬 적음 (정확한 점근식은 미제).</li>
+      <li><strong>스도쿠</strong>: 최악 NP-hard (9×9의 일반화). 9×9 고정이면 상수 시간 (~ms).</li>
+      <li><strong>SAT (CNF 만족가능성)</strong>: NP-complete. 이론상 2<sup>n</sup>이지만 현대 SAT solver는 수만 변수 문제도 해결 (휴리스틱 + 학습).</li>
+    </ul>
+    <p>
+      <strong>실무 관점</strong>: "최악 지수"가 "실제 느림"을 의미하지 않음. 가지치기가 훌륭하면 평균이 극적으로 개선. 반면 "평균 다항"이라도 최악 지수 입력을 보면 멈춤 — 백트래킹의 본질적 불확실성.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 12. DP vs 백트래킹 ==================== -->
+<section id="dp-vs-backtrack">
+  <h2>12 — DP vs 백트래킹</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">언제 무엇을</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>측면</th><th>DP</th><th>백트래킹</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>목표</td><td>최적값 계산</td><td>모든 해 / 존재 확인</td></tr>
+        <tr><td>핵심 조건</td><td>Optimal Substructure + Overlap</td><td>상태가 트리 구조 / 독립</td></tr>
+        <tr><td>재귀 방식</td><td>캐시 활용, 동일 호출 1회</td><td>매번 새 상태, 되돌림</td></tr>
+        <tr><td>공간</td><td>O(상태 수)</td><td>O(깊이)</td></tr>
+        <tr><td>시간</td><td>O(상태 × 전이)</td><td>최악 지수, 실제는 가지치기</td></tr>
+        <tr><td>예시</td><td>Fibonacci, 배낭, LCS</td><td>N-Queens, 스도쿠, 순열</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>언제 혼합</strong>:
+    </p>
+    <ul>
+      <li><strong>Branch &amp; Bound</strong>: 백트래킹 + 하한 계산(DP 또는 LP)으로 가지치기. TSP exact solver.</li>
+      <li><strong>Memoized backtracking</strong>: 같은 부분 문제가 나오면 캐시 (사실상 DP).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 13. 응용 ==================== -->
+<section id="applications">
+  <h2>13 — 응용 — SAT, 게임 AI, 증명</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">SAT Solver — DPLL</h3>
+    </div>
+    <p>
+      <strong>DPLL (Davis-Putnam-Logemann-Loveland, 1962)</strong>: CNF 만족가능성을 결정하는 백트래킹 알고리즘. 변수를 하나 고르고 True/False 시도, unit propagation과 pure literal로 가지치기.
+    </p>
+    <ul>
+      <li>현대 SAT solver(MiniSat, Glucose, Kissat)는 DPLL + CDCL(Conflict-Driven Clause Learning) + 휴리스틱.</li>
+      <li>응용: 하드웨어 검증, 소프트웨어 검증, 자동 정리 증명, 암호 해독.</li>
+      <li>수만 변수 문제도 해결 — 2000년대 "SAT revolution".</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">게임 AI — Minimax + Alpha-Beta</h3>
+    </div>
+    <p>
+      체스, 바둑, 틱택토 등 2인 영합 게임. 각 수에 대해 상대의 최선 반응을 가정한 게임 트리 탐색. 백트래킹의 최적화 버전.
+    </p>
+    <ul>
+      <li><strong>Minimax</strong>: 최대(내 차례), 최소(상대 차례) 교대. 전수 탐색 O(b<sup>d</sup>).</li>
+      <li><strong>Alpha-Beta Pruning</strong>: "이미 나온 최선보다 나쁠 수 없는" 분기 제거. 평균 O(b<sup>d/2</sup>) — 탐색 깊이 2배 증가와 동등!</li>
+      <li><strong>DeepBlue(1997)</strong>가 Kasparov를 이긴 알고리즘 핵심. AlphaGo는 MCTS + 신경망이지만 minimax 트리 탐색도 혼합.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Knuth의 Dancing Links (DLX)</h3>
+    </div>
+    <p>
+      Donald Knuth 2000 <em>"Dancing Links"</em>. Exact Cover 문제(부분집합으로 전체를 정확히 덮기)에 최적화된 자료구조. 제거/복원이 <strong>O(1)</strong>인 양방향 원형 연결 리스트 기법.
+    </p>
+    <ul>
+      <li>스도쿠, 폴리오미노 배치, 8-Queens 모두 Exact Cover로 환원.</li>
+      <li>백트래킹의 unchoose 비용이 0에 가까워 극도로 빠름.</li>
+      <li>Knuth 본인이 "가장 아름다운 알고리즘" 중 하나로 꼽음.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">AI가 백트래킹을 잘못 쓰는 패턴</h3>
+    </div>
+    <ul>
+      <li><strong>unchoose 누락</strong>: <code>used[i] = False</code>를 빼먹어 상태 오염. 디버깅 가장 흔한 버그.</li>
+      <li><strong>가지치기 없는 완전 탐색</strong>: "N-Queens DFS로 풀라" → 가지치기 없으면 n=10도 불가능.</li>
+      <li><strong>DP로 풀 수 있는 걸 백트래킹으로</strong>: 중복 부분문제를 보고도 캐싱 안 함. 반대로 백트래킹 문제에 "DP 점화식이 뭐냐" 헛물켜기.</li>
+      <li><strong>결과 복사 누락</strong>: <code>result.append(path)</code> (참조 저장) → 나중에 pop으로 path가 바뀜 → 결과가 모두 빈 리스트. <code>result.append(path.copy())</code>가 정답.</li>
+    </ul>
+    <p>
+      <strong>교정 질문</strong>: "unchoose 한 줄이 있나?", "가지치기가 있나?", "최종 경로를 copy()로 저장했나?"
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">백트래킹 코드에서 <code>result.append(path)</code>와 <code>result.append(path.copy())</code>의 차이는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>앞의 코드는 <em>참조</em>만 저장. 이후 path.pop()이 result 안의 리스트도 바꿈 → 모두 빈 리스트 결과. copy()는 <em>현재 스냅샷</em>을 복사 → 독립적으로 보존. 백트래킹 실수 TOP 1.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">8-Queens의 해는 총 몇 개?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>92개 (회전/반사 포함). 고유 해 12개(대칭 제외). OEIS A000170 수열. n=10은 724, n=11은 2680, n=12는 14200. n=27은 234,907,967,154,122,528개 (GPU로 2016년 계산).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"부분집합 합 문제" 백트래킹: target에 합이 딱 맞는 부분집합 찾기.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><code>backtrack(idx, remaining)</code>: remaining=0이면 성공, idx==len 또는 remaining&lt;0이면 실패. 각 idx에서 "포함" 또는 "미포함" 시도 + <em>가지치기</em>: nums[idx] &gt; remaining이면 정렬된 경우 이후 모두 실패.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">순열 생성에서 <code>used</code> 배열 없이 풀 수 있나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>스왑 기법</strong>: 현재 위치의 원소와 뒤쪽 원소를 스왑, 재귀, 다시 스왑으로 복구. O(1) 추가 공간. 단 "중복 원소 시 중복 순열" 조심.</p>
+            <pre><code>def permute(nums, start=0):
+    if start == len(nums): print(nums); return
+    for i in range(start, len(nums)):
+        nums[start], nums[i] = nums[i], nums[start]
+        permute(nums, start+1)
+        nums[start], nums[i] = nums[i], nums[start]</code></pre>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">N-Queens에서 "첫 여왕을 [0, n/2) 열에만" 두면 왜 해의 개수가 반으로?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>세로축 반사 대칭. 첫 여왕이 col c인 해와 col (n-1-c)인 해는 서로 반사된 짝. c가 [0, n/2)일 때 해를 찾고 2배 → 전체 해. 시간 절반. (n이 홀수일 때 중앙 칸은 특별 처리 필요 — 대칭 짝이 자기 자신일 수 있음.)</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">스도쿠에서 "MRV(가능성 최소인 칸)" 선택 휴리스틱 구현.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>각 빈 칸의 가능한 숫자 집합 (candidates)을 유지. 백트래킹 때 <em>candidates가 가장 적은 빈 칸</em>을 먼저 선택. 실패를 조기에 감지 → 가지치기 효과 극대화. Peter Norvig의 2006 에세이가 이 기법의 고전적 데모.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">SAT 문제가 NP-complete인데 SAT solver가 수만 변수 문제를 푸는 이유?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>실제 문제들은 "구조"가 있음: 제약이 국소적이고, 짧은 경로로 충돌 발견 가능. DPLL + CDCL(충돌 학습) + VSIDS(변수 선택) + 재시작(restart) 등의 휴리스틱이 실무 사례에서 극도로 효과적. 이론 최악은 여전히 2<sup>n</sup>이지만, 현대 SAT 벤치마크의 많은 실제 문제는 다항 시간에 해결.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Alpha-Beta Pruning이 Minimax의 O(b<sup>d</sup>)을 O(b<sup>d/2</sup>)로 줄이는 직관.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>"상대가 이미 더 나쁜 선택을 강요할 수 있다면, 이 가지는 더 볼 필요 없음"의 반복. 최적 수순으로 탐색하면 각 노드에서 1개만 완전 확장, 나머지는 첫 자식만 확인. 결과적으로 √b<sup>d</sup> = b<sup>d/2</sup>. 같은 시간에 2배 깊이까지 탐색 가능 → 체스 엔진의 기본.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">괄호 쌍 생성 (LeetCode 22): "((()))", "(()())", ...</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>백트래킹 + 두 가지 가지치기: (1) 여는 괄호 수 ≤ n, (2) 닫는 괄호 수 ≤ 여는 괄호 수. 총 n쌍 달성 시 결과에 추가. 카탈란 수 C(n)개 해.</p>
+            <pre><code>def gen(n):
+    res = []
+    def bt(path, open_n, close_n):
+        if len(path) == 2*n: res.append(path); return
+        if open_n < n: bt(path+'(', open_n+1, close_n)
+        if close_n < open_n: bt(path+')', open_n, close_n+1)
+    bt('', 0, 0)
+    return res</code></pre>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">백트래킹과 DFS의 차이.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>DFS는 그래프 순회, 백트래킹은 "상태 공간 트리"의 DFS + 가지치기 + 되돌림. 관계: <em>백트래킹 ⊂ DFS의 일반화</em>. DFS는 보통 전수 순회, 백트래킹은 불가능한 부분을 조기 포기.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "16-Queens 해의 개수를 계산하라"고 요청. 어떻게 접근?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">질문</div>
+            <ol>
+              <li>"n=16은 해 14,772,512개 (OEIS A000170). 순진 구현은 느릴 수 있음."</li>
+              <li>"비트마스크 최적화로 O(1) 충돌 체크 — 몇 초로 가능."</li>
+              <li>"대칭 깨기로 추가 2배 속도업 (첫 행 &lt; n/2)."</li>
+              <li>"n ≥ 20이면 GPU 병렬화 또는 분산 컴퓨팅 고려."</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Dijkstra가 8-Queens로 "구조적 프로그래밍"을 설명한 이유.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>N-Queens는 (1) 단순 명확한 목표, (2) 재귀의 전형, (3) 불변식(여왕 안전성)이 자연스러움, (4) 정확성 증명 가능. goto 없이 재귀로 우아하게 표현되는 문제로 "구조적 프로그래밍"의 미덕 (추상화, 단계적 정제, 불변식) 홍보에 완벽. 1972년 에세이는 알고리즘 교육의 고전.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">♛</div>
+      <h3>Bezzel 1848</h3>
+      <p>체스 퍼즐에서 태어난 N-Queens. 170년 후 현대 SAT solver로.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔄</div>
+      <h3>프레임워크</h3>
+      <p>Choose → Explore → Unchoose. unchoose가 본질.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">✂️</div>
+      <h3>가지치기</h3>
+      <p>지수를 실무 가능으로. Feasibility/Optimality/Symmetry/Dominance.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🎯</div>
+      <h3>제약 전파</h3>
+      <p>"가능성 집합" 유지. MRV 휴리스틱. CSP solver 핵심.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">⚡</div>
+      <h3>비트마스크</h3>
+      <p>O(n) 충돌 체크를 O(1)로. N-Queens n=15까지 수 초.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">♟️</div>
+      <h3>응용</h3>
+      <p>SAT/CSP solver, 게임 AI, DLX, 자동 증명, 퍼즐 해법.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Backtracking</div><div class="glossary-def">상태 공간 트리를 DFS하며 실패 시 되돌림.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Max Bezzel</div><div class="glossary-def">1824-1871. 독일 체스 문제 출제자. 1848 8-Queens.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Franz Nauck</div><div class="glossary-def">1850 첫 해법 발표 + n-Queens 일반화.</div></div>
+    <div class="glossary-item"><div class="glossary-term">D. H. Lehmer</div><div class="glossary-def">1905-1991. 1950s "backtrack" 용어 명명.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Walker 1960</div><div class="glossary-def">Robert Walker. 첫 일반 백트래킹 프레임워크.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Golomb-Baumert 1965</div><div class="glossary-def">"Backtrack Programming" J. ACM. 정식 CS화.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Dijkstra 1972</div><div class="glossary-def">"Notes on Structured Programming"에 8-Queens 예제.</div></div>
+    <div class="glossary-item"><div class="glossary-term">State Space Tree</div><div class="glossary-def">모든 부분해를 노드로 하는 트리.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Choose / Unchoose</div><div class="glossary-def">선택 + 되돌림. 백트래킹의 두 필수 연산.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Pruning</div><div class="glossary-def">살릴 수 없는 가지 조기 포기. 백트래킹 실용성의 핵심.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Feasibility Pruning</div><div class="glossary-def">제약 위반 체크. N-Queens is_safe.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Optimality Pruning</div><div class="glossary-def">상한/하한으로 best 초과 가능성 체크. B&amp;B.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Symmetry Breaking</div><div class="glossary-def">대칭 해를 하나로 압축. 탐색 공간 반감.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Constraint Propagation</div><div class="glossary-def">결정이 다른 변수의 가능성 집합 축소. AC-3.</div></div>
+    <div class="glossary-item"><div class="glossary-term">MRV (Minimum Remaining Values)</div><div class="glossary-def">도메인에 남은 가능 값이 가장 적은 변수부터 선택. CSP 휴리스틱의 표준.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Forward Checking</div><div class="glossary-def">배치 시 이웃 변수 가능성 업데이트.</div></div>
+    <div class="glossary-item"><div class="glossary-term">AC-3 (Mackworth 1977)</div><div class="glossary-def">Arc Consistency 알고리즘.</div></div>
+    <div class="glossary-item"><div class="glossary-term">DPLL</div><div class="glossary-def">Davis-Putnam-Logemann-Loveland 1962. SAT 백트래킹.</div></div>
+    <div class="glossary-item"><div class="glossary-term">CDCL</div><div class="glossary-def">Conflict-Driven Clause Learning. 현대 SAT solver 핵심.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Minimax</div><div class="glossary-def">2인 영합 게임 트리 탐색. 백트래킹 변형.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Alpha-Beta Pruning</div><div class="glossary-def">Minimax 가지치기. O(b<sup>d/2</sup>).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Dancing Links (DLX)</div><div class="glossary-def">Knuth 2000. Exact Cover용 연결 리스트.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Exact Cover</div><div class="glossary-def">부분집합 선택으로 전체를 정확히 덮기. 스도쿠/N-Queens 환원.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Peter Norvig</div><div class="glossary-def">2006 스도쿠 에세이. 제약 전파 + 백트래킹 교과서.</div></div>
+    <div class="glossary-item"><div class="glossary-term">OEIS A000170</div><div class="glossary-def">n-Queens 해의 개수 수열. 1,0,0,2,10,4,40,92,...</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 23</div>
+    <h3>분기 한정 (Branch and Bound)</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      백트래킹에 "상한/하한 가지치기"를 더한 최적화 탐색 — NP-hard 정확 풀이의 표준.
+    </p>
+    <ul>
+      <li><strong>TSP Branch &amp; Bound</strong> — Little et al. 1963. 정수계획.</li>
+      <li><strong>0/1 배낭 B&amp;B</strong> — LP relaxation으로 상한 추정.</li>
+      <li><strong>Best-first vs Depth-first</strong> — 우선순위 큐 vs 스택.</li>
+      <li><strong>CPLEX, Gurobi</strong> — 상용 정수계획 solver 원리.</li>
+      <li><strong>MIP (Mixed Integer Programming)</strong> — 제조, 물류, 금융 최적화의 기반.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo21.html">&larr; Algo 21 — DP II</a>
+  <a href="algo23.html">Algo 23 — Branch &amp; Bound &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">Bezzel 1848 (Schachzeitung), Nauck 1850, Walker 1960 (Enumerative Technique), Golomb-Baumert 1965 (J. ACM 12:516-524), Dijkstra 1972 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

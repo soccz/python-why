@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 19주차: 그리디 알고리즘 총정리 — Activity Selection, Huffman, Matroid | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="Greedy — Huffman 1952 MIT 기말과제부터 Matroid 이론까지. 매 순간 최선이 전역 최선인 조건. CLRS 4판 §15.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 19주차: Greedy | PyWhy">
+  <meta property="og:description" content="언제 그리디가 최적인가 — Greedy-Choice Property, Exchange Argument, Matroid">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo19.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A19">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo18.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo20.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 19</div>
+  <h1 class="week-title">그리디 알고리즘 총정리<br>매 순간 최선이 언제 전역 최선이 되는가</h1>
+  <p class="week-subtitle">
+    1951년 MIT, 정보이론 수업의 기말과제. 학생 <strong>David Huffman</strong>은 기말시험 대신 교수 Fano가 낸 "최적 prefix code" 문제를 택합니다. 증명을 포기하려던 순간 <em>"빈도순 이진 트리"</em>를 떠올리고 — 지금도 ZIP, JPEG, MP3에 들어가는 알고리즘이 태어남.<br>
+    그리디는 단순해 보이지만 <em>"언제 작동하는가"</em>는 수학의 아름다운 질문. <strong>Greedy-Choice Property + Optimal Substructure</strong>가 만나는 곳, <strong>Matroid</strong>라는 우아한 이론.<br>
+    핵심 질문: <em>"왜 활동 선택과 Huffman은 그리디가 최적인데, 0/1 배낭은 안 되는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — Huffman의 MIT 기말과제</a>
+    </div>
+    <div class="toc-section">
+      <a href="#what-is-greedy" class="toc-section-link"><span class="toc-num">02</span>그리디란 — 매 순간 최선</a>
+      <div class="toc-levels"><span class="toc-level-dot elem">초</span><span class="toc-level-dot inter">중</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#activity-selection" class="toc-section-link"><span class="toc-num">03</span>활동 선택 문제 (CLRS §15.1)</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#as-python" class="toc-section-link"><span class="toc-num">04</span>활동 선택 Python 구현</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#greedy-choice" class="toc-section-link"><span class="toc-num">05</span>Greedy-Choice Property — 언제 성립하는가</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#huffman-idea" class="toc-section-link"><span class="toc-num">06</span>Huffman 코딩 — 아이디어</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#huffman-python" class="toc-section-link"><span class="toc-num">07</span>Huffman Python 구현 (heapq)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#huffman-correctness" class="toc-section-link"><span class="toc-num">08</span>Huffman 최적성 증명</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#fractional-knapsack" class="toc-section-link"><span class="toc-num">09</span>분수 배낭 — 그리디 OK</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#why-01-fails" class="toc-section-link"><span class="toc-num">10</span>0/1 배낭 — 왜 그리디 실패</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#matroid" class="toc-section-link"><span class="toc-num">11</span>Matroid — 그리디가 정답인 구조</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exchange-argument" class="toc-section-link"><span class="toc-num">12</span>Exchange Argument — 증명 템플릿</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#approximation" class="toc-section-link"><span class="toc-num">13</span>근사 알고리즘 — NP-hard 탈출구</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: Huffman의 MIT 기말과제</h2>
+
+  <blockquote>
+    <em>"The basic idea of the Huffman method came to me as I was walking home from class. I had been thinking about what Fano had told us, but I really wanted to find my own approach."</em>
+    <br>— David A. Huffman, 회고 (Scientific American, 1991)
+  </blockquote>
+
+  <div class="story-block">
+    <h3>1951 — MIT, Robert M. Fano의 정보이론 수업</h3>
+    <p>
+      Fano 교수가 학생들에게 선택권을 줌 — <em>기말시험을 보거나, 아니면 "최소 redundancy prefix code 찾기" 문제를 term paper로</em>. 당시 MIT 대학원생이던 David Huffman은 term paper를 선택.
+    </p>
+    <p>
+      사실 Fano 자신은 <strong>Shannon-Fano coding</strong>(1949)이라는 기법을 이미 만들었지만 최적은 아님. Huffman도 몇 달간 실패했다가, 포기하고 시험 공부로 돌아가기 직전 "빈도순 이진 트리 상향식 병합"을 떠올림.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1952 — "A Method for the Construction of Minimum-Redundancy Codes"</h3>
+    <p>
+      발표 논문: <strong>Proc. IRE 40:1098-1102 (Sept 1952)</strong>. 4페이지짜리 짧은 논문이지만 <em>최적성 증명 포함</em>. Huffman의 방법은 Shannon-Fano를 능가했고, 그 후 데이터 압축의 표준이 됨.
+    </p>
+    <p>
+      응용 범위: <strong>ZIP, gzip, PKZIP, JPEG, MP3, PNG, HTTP/2 HPACK</strong> — 모두 Huffman 또는 변형 사용. 70년이 넘도록 현역.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>그리디의 철학 — 매 순간 최선</h3>
+    <p>
+      그리디(greedy) 알고리즘의 공통 구조:
+    </p>
+    <ol>
+      <li>현재 상태에서 <em>지역적으로 가장 좋아 보이는</em> 선택.</li>
+      <li>그 선택을 확정, 되돌아보지 않음.</li>
+      <li>반복.</li>
+    </ol>
+    <p>
+      놀랍게도 이게 <em>전역 최적</em>이 되는 경우가 많음: Dijkstra(Algo 15), Prim·Kruskal(Algo 17), Huffman, 활동 선택. 하지만 0/1 배낭엔 안 됨. <strong>언제 작동하는가?</strong> — 이번 주의 핵심 질문.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="그리디 알고리즘 역사 타임라인">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📜 그리디 알고리즘 역사 — 이미 배운 그리디들</text>
+
+      <!-- 타임라인 축 -->
+      <line x1="60" y1="130" x2="680" y2="130" stroke="var(--text-muted)" stroke-width="2"/>
+      <polygon points="680,130 670,126 670,134" fill="var(--text-muted)"/>
+
+      <g font-family="JetBrains Mono, monospace" font-size="11">
+        <!-- 1926 Borůvka MST -->
+        <circle cx="80" cy="130" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="80" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Borůvka</text>
+        <text x="80" y="155" text-anchor="middle" class="viz-label-small">1926</text>
+        <text x="80" y="173" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">MST</text>
+
+        <!-- 1952 Huffman -->
+        <circle cx="220" cy="130" r="8" fill="#d4930c" stroke="var(--accent)" stroke-width="2"/>
+        <line x1="220" y1="122" x2="220" y2="70" stroke="#d4930c" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="155" y="40" width="135" height="32" rx="4" fill="rgba(212,147,12,0.1)" stroke="#d4930c" stroke-width="1"/>
+        <text x="222" y="57" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Huffman 1952</text>
+        <text x="222" y="68" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">최적 prefix 코드</text>
+        <text x="220" y="155" text-anchor="middle" class="viz-label-small">1952</text>
+
+        <!-- 1956 Kruskal -->
+        <circle cx="290" cy="130" r="7" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="290" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Kruskal</text>
+        <text x="290" y="155" text-anchor="middle" class="viz-label-small">1956</text>
+
+        <!-- 1957 Prim -->
+        <circle cx="340" cy="130" r="7" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <line x1="340" y1="138" x2="340" y2="200" stroke="#3b9b6e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="275" y="200" width="135" height="32" rx="4" fill="rgba(59,155,110,0.1)" stroke="#3b9b6e" stroke-width="1"/>
+        <text x="342" y="218" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Prim 1957</text>
+        <text x="342" y="229" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">MST (그리디)</text>
+        <text x="340" y="155" text-anchor="middle" class="viz-label-small">1957</text>
+
+        <!-- 1959 Dijkstra -->
+        <circle cx="400" cy="130" r="7" fill="#196aa1" stroke="#196aa1" stroke-width="2"/>
+        <text x="400" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Dijkstra</text>
+        <text x="400" y="155" text-anchor="middle" class="viz-label-small">1959</text>
+
+        <!-- Matroid 1935 Whitney - backward to left -->
+        <circle cx="50" cy="130" r="5" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1"/>
+        <text x="50" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="10">Whitney</text>
+        <text x="50" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1935</text>
+        <text x="50" y="173" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">Matroid 이론</text>
+
+        <!-- 1971 Edmonds-Rado theorem -->
+        <circle cx="520" cy="130" r="7" fill="#c23b5e" stroke="#c23b5e" stroke-width="2"/>
+        <line x1="520" y1="122" x2="520" y2="80" stroke="#c23b5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="455" y="50" width="135" height="32" rx="4" fill="rgba(194,59,94,0.1)" stroke="#c23b5e" stroke-width="1"/>
+        <text x="522" y="67" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Rado-Edmonds</text>
+        <text x="522" y="78" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">Matroid ⟺ Greedy</text>
+        <text x="520" y="155" text-anchor="middle" class="viz-label-small">1971</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>그리디의 계보</strong> — Whitney 1935 Matroid 이론, Borůvka 1926부터 시작된 MST 그리디, Huffman 1952 최적 압축, 그리고 1971년 Rado-Edmonds 정리가 "그리디가 최적인 구조 = Matroid"를 증명.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. 그리디란 ==================== -->
+<section id="what-is-greedy">
+  <h2>02 — 그리디란 — 매 순간 최선</h2>
+
+  <div class="level-section elementary">
+    <div class="level-section-header">
+      <span class="level-badge level-elem">초급</span>
+      <h3 class="level-section-title">동전 거스름돈 비유</h3>
+    </div>
+    <p>
+      1300원을 거슬러줘야 한다. 한국 동전 {500, 100, 50, 10}. 어떻게?
+    </p>
+    <ul>
+      <li>가장 큰 동전(500)부터 쓰기: 500·2 = 1000 → 남은 300.</li>
+      <li>다음 큰 동전(100): 100·3 = 300 → 남은 0. 끝.</li>
+      <li>총 5개 동전. <em>매 순간 "가장 큰" 동전을 욕심내는 전략 = 그리디</em>.</li>
+    </ul>
+    <p>
+      한국/미국 동전 체계에선 그리디가 항상 최적. 하지만 <em>동전이 {1, 3, 4}라면</em>? 6원 거슬러주기:
+    </p>
+    <ul>
+      <li>그리디: 4 + 1 + 1 = 3개.</li>
+      <li>최적: 3 + 3 = 2개.</li>
+    </ul>
+    <p>
+      → <strong>그리디는 항상 작동하지 않는다</strong>. 언제 작동하느냐가 이번 주의 핵심.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">그리디 알고리즘의 형식</h3>
+    </div>
+    <ol>
+      <li><strong>최적화 문제</strong>: 집합에서 특정 조건을 만족하는 부분집합(또는 순열)을 골라 목적함수 극대/극소.</li>
+      <li><strong>지역적 선택 규칙</strong>: 현재 상태에서 "가장 좋아 보이는" 요소를 고르는 기준.</li>
+      <li><strong>반복</strong>: 선택 후 문제가 작아지도록. 되돌아가지 않음(irrevocable).</li>
+    </ol>
+    <p>
+      핵심 조건 두 가지:
+    </p>
+    <ul>
+      <li><strong>Greedy-Choice Property</strong>: "첫 번째 선택은 어떤 최적해에 포함됨". (전역 최적이 지역 선택과 호환)</li>
+      <li><strong>Optimal Substructure</strong>: "선택 후 남은 부분 문제도 같은 형태 + 그 최적해가 전체 최적의 일부". (DP와 공유)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 03. 활동 선택 ==================== -->
+<section id="activity-selection">
+  <h2>03 — 활동 선택 문제 (CLRS §15.1)</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">문제 — 겹치지 않는 최대 회의 예약</h3>
+    </div>
+    <p>
+      회의실 하나. N개의 회의 요청 — 각각 시작 시각 s<sub>i</sub>, 종료 시각 f<sub>i</sub>. 서로 겹치지 않게(한 번에 하나) <em>최대 몇 개</em>를 잡을 수 있는가?
+    </p>
+    <ul>
+      <li>활동 i와 j가 호환: <code>f<sub>i</sub> ≤ s<sub>j</sub></code> 또는 <code>f<sub>j</sub> ≤ s<sub>i</sub></code>.</li>
+      <li>목표: 호환되는 활동 부분집합의 최대 크기.</li>
+      <li>Brute force: 2<sup>N</sup> 부분집합 → 불가능.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">그리디 전략 — "가장 일찍 끝나는 것"</h3>
+    </div>
+    <p>
+      직관: 회의를 <em>일찍 끝내면</em> 남은 시간이 많다 → 더 많은 회의 여유.
+    </p>
+    <ol>
+      <li>활동을 <strong>종료 시각 오름차순</strong>으로 정렬.</li>
+      <li>가장 먼저 끝나는 활동 선택.</li>
+      <li>선택한 활동의 종료 이후 시작하는 활동들 중 가장 먼저 끝나는 것 선택.</li>
+      <li>반복.</li>
+    </ol>
+    <p>
+      <strong>왜 "일찍 끝나는" 기준이 정답인가</strong>: 어떤 최적해 O가 있을 때, O의 첫 활동을 "가장 일찍 끝나는" 활동으로 교체해도 여전히 |O|개 호환. <em>Exchange argument</em>.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a19act-show { 0%,2%{opacity:0} 4%,14%{opacity:1} 16%,100%{opacity:0} }
+      .a19act-S0{animation:a19act-show 12s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a19act-S1{animation:a19act-show 12s linear infinite;animation-delay:2.4s;animation-fill-mode:backwards}
+      .a19act-S2{animation:a19act-show 12s linear infinite;animation-delay:4.8s;animation-fill-mode:backwards}
+      .a19act-S3{animation:a19act-show 12s linear infinite;animation-delay:7.2s;animation-fill-mode:backwards}
+      .a19act-S4{animation:a19act-show 12s linear infinite;animation-delay:9.6s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="활동 선택 애니메이션">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📅 활동 선택 — 종료 시각 순으로 정렬 후 그리디 선택</text>
+
+      <!-- 시간축 -->
+      <line x1="50" y1="270" x2="680" y2="270" stroke="var(--text-muted)" stroke-width="1.5"/>
+      <g font-family="JetBrains Mono, monospace" font-size="11" fill="var(--text-muted)">
+        <text x="50" y="290" text-anchor="middle">0</text>
+        <text x="113" y="290" text-anchor="middle">2</text>
+        <text x="176" y="290" text-anchor="middle">4</text>
+        <text x="239" y="290" text-anchor="middle">6</text>
+        <text x="302" y="290" text-anchor="middle">8</text>
+        <text x="365" y="290" text-anchor="middle">10</text>
+        <text x="428" y="290" text-anchor="middle">12</text>
+      </g>
+
+      <!-- 활동 막대 (종료 시각 순) -->
+      <!-- a1 [1,4] -->
+      <g class="a19act-S0">
+        <rect x="82" y="55" width="94" height="20" rx="3" fill="rgba(25,106,161,0.3)" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="129" y="70" text-anchor="middle" class="viz-label-small">a1 [1,4]</text>
+      </g>
+      <g class="a19act-S1 a19act-S2 a19act-S3 a19act-S4">
+        <rect x="82" y="55" width="94" height="20" rx="3" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="129" y="70" text-anchor="middle" class="viz-label-small" fill="white" font-weight="700">a1 ✓</text>
+      </g>
+
+      <!-- a2 [3,5] f=5 -->
+      <g class="a19act-S0">
+        <rect x="145" y="85" width="63" height="20" rx="3" fill="rgba(25,106,161,0.3)" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="176" y="100" text-anchor="middle" class="viz-label-small">a2 [3,5]</text>
+      </g>
+      <g class="a19act-S2 a19act-S3 a19act-S4">
+        <rect x="145" y="85" width="63" height="20" rx="3" fill="#f5c6c6" stroke="#c23b5e" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="176" y="100" text-anchor="middle" class="viz-label-small" fill="#c23b5e" font-weight="700">a2 ✗</text>
+      </g>
+
+      <!-- a3 [0,6] f=6 -->
+      <g class="a19act-S0">
+        <rect x="50" y="115" width="189" height="20" rx="3" fill="rgba(25,106,161,0.3)" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="144" y="130" text-anchor="middle" class="viz-label-small">a3 [0,6]</text>
+      </g>
+      <g class="a19act-S2 a19act-S3 a19act-S4">
+        <rect x="50" y="115" width="189" height="20" rx="3" fill="#f5c6c6" stroke="#c23b5e" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="144" y="130" text-anchor="middle" class="viz-label-small" fill="#c23b5e" font-weight="700">a3 ✗ (시작 0 &lt; 끝난 시각 4)</text>
+      </g>
+
+      <!-- a4 [5,7] f=7 -->
+      <g class="a19act-S0">
+        <rect x="208" y="145" width="63" height="20" rx="3" fill="rgba(25,106,161,0.3)" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="239" y="160" text-anchor="middle" class="viz-label-small">a4 [5,7]</text>
+      </g>
+      <g class="a19act-S2">
+        <rect x="208" y="145" width="63" height="20" rx="3" fill="#fddfa6" stroke="var(--accent)" stroke-width="2.5"/>
+        <text x="239" y="160" text-anchor="middle" class="viz-label-small" fill="var(--accent)" font-weight="700">a4 고려</text>
+      </g>
+      <g class="a19act-S3 a19act-S4">
+        <rect x="208" y="145" width="63" height="20" rx="3" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="239" y="160" text-anchor="middle" class="viz-label-small" fill="white" font-weight="700">a4 ✓</text>
+      </g>
+
+      <!-- a5 [6,10] f=10 -->
+      <g class="a19act-S0">
+        <rect x="239" y="175" width="126" height="20" rx="3" fill="rgba(25,106,161,0.3)" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="302" y="190" text-anchor="middle" class="viz-label-small">a5 [6,10]</text>
+      </g>
+      <g class="a19act-S3 a19act-S4">
+        <rect x="239" y="175" width="126" height="20" rx="3" fill="#f5c6c6" stroke="#c23b5e" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <text x="302" y="190" text-anchor="middle" class="viz-label-small" fill="#c23b5e" font-weight="700">a5 ✗ (시작 6 &lt; 7)</text>
+      </g>
+
+      <!-- a6 [8,11] f=11 -->
+      <g class="a19act-S0">
+        <rect x="302" y="205" width="94" height="20" rx="3" fill="rgba(25,106,161,0.3)" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="349" y="220" text-anchor="middle" class="viz-label-small">a6 [8,11]</text>
+      </g>
+      <g class="a19act-S3">
+        <rect x="302" y="205" width="94" height="20" rx="3" fill="#fddfa6" stroke="var(--accent)" stroke-width="2.5"/>
+        <text x="349" y="220" text-anchor="middle" class="viz-label-small" fill="var(--accent)" font-weight="700">a6 고려</text>
+      </g>
+      <g class="a19act-S4">
+        <rect x="302" y="205" width="94" height="20" rx="3" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="349" y="220" text-anchor="middle" class="viz-label-small" fill="white" font-weight="700">a6 ✓</text>
+      </g>
+
+      <!-- 단계별 설명 -->
+      <g transform="translate(480, 60)" font-size="11" font-family="JetBrains Mono, monospace">
+        <g class="a19act-S0">
+          <text x="0" y="0" class="viz-label" font-weight="700">단계 0: 정렬됨</text>
+          <text x="0" y="20" class="viz-label-small">종료 시각 순:</text>
+          <text x="0" y="36" class="viz-label-small">a1(4),a2(5),a3(6),</text>
+          <text x="0" y="52" class="viz-label-small">a4(7),a5(10),a6(11)</text>
+        </g>
+        <g class="a19act-S1">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 1: a1 선택</text>
+          <text x="0" y="20" class="viz-label-small">가장 일찍 끝남 (f=4)</text>
+          <text x="0" y="40" class="viz-label-small">선택: {a1}</text>
+          <text x="0" y="60" class="viz-label-small" fill="var(--text-muted)">마지막 끝: 4</text>
+        </g>
+        <g class="a19act-S2">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="var(--accent)">단계 2: a4 선택</text>
+          <text x="0" y="20" class="viz-label-small" fill="var(--text-muted)">a2(s=3)? 3&lt;4 ✗</text>
+          <text x="0" y="40" class="viz-label-small" fill="var(--text-muted)">a3(s=0)? 0&lt;4 ✗</text>
+          <text x="0" y="60" class="viz-label-small" fill="#3b9b6e">a4(s=5)? 5≥4 ✓</text>
+          <text x="0" y="80" class="viz-label-small">선택: {a1, a4}</text>
+        </g>
+        <g class="a19act-S3">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="var(--accent)">단계 3: a6 선택</text>
+          <text x="0" y="20" class="viz-label-small" fill="var(--text-muted)">a5(s=6)? 6&lt;7 ✗</text>
+          <text x="0" y="40" class="viz-label-small" fill="#3b9b6e">a6(s=8)? 8≥7 ✓</text>
+          <text x="0" y="60" class="viz-label-small">선택: {a1, a4, a6}</text>
+        </g>
+        <g class="a19act-S4">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 4: 완료 ✓</text>
+          <text x="0" y="20" class="viz-label-small">최대 3개 활동</text>
+          <text x="0" y="40" class="viz-label-small">{a1, a4, a6}</text>
+          <text x="0" y="60" class="viz-label-small" fill="var(--text-muted)">O(n log n) (정렬)</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>5단계 활동 선택 애니메이션</strong>: 종료 시각 순으로 정렬 → 가장 일찍 끝나는 a1 선택 → 4 이후 시작하는 것 중 가장 일찍 끝나는 a4 → 반복. 최종 {a1, a4, a6} = 3개. <em>Exchange argument로 최적성 증명</em>.</div>
+  </div>
+</section>
+
+<!-- ==================== 04. AS Python ==================== -->
+<section id="as-python">
+  <h2>04 — 활동 선택 Python 구현</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">정렬 + 한 번 순회</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">activity_selection.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">activity_selection</span>(activities):
+    <span class="hl-cmt">"""activities: [(start, finish, name), ...]. 반환: 선택된 활동 리스트."""</span>
+    <span class="hl-cmt"># 종료 시각 오름차순 정렬</span>
+    acts = <span class="hl-bi">sorted</span>(activities, key=<span class="hl-kw">lambda</span> x: x[<span class="hl-num">1</span>])
+
+    selected = [acts[<span class="hl-num">0</span>]]
+    last_finish = acts[<span class="hl-num">0</span>][<span class="hl-num">1</span>]
+
+    <span class="hl-kw">for</span> s, f, name <span class="hl-kw">in</span> acts[<span class="hl-num">1</span>:]:
+        <span class="hl-kw">if</span> s &gt;= last_finish:
+            selected.append((s, f, name))
+            last_finish = f
+
+    <span class="hl-kw">return</span> selected
+
+
+<span class="hl-cmt"># 테스트</span>
+activities = [
+    (<span class="hl-num">1</span>, <span class="hl-num">4</span>, <span class="hl-str">'a1'</span>), (<span class="hl-num">3</span>, <span class="hl-num">5</span>, <span class="hl-str">'a2'</span>),
+    (<span class="hl-num">0</span>, <span class="hl-num">6</span>, <span class="hl-str">'a3'</span>), (<span class="hl-num">5</span>, <span class="hl-num">7</span>, <span class="hl-str">'a4'</span>),
+    (<span class="hl-num">6</span>, <span class="hl-num">10</span>, <span class="hl-str">'a5'</span>), (<span class="hl-num">8</span>, <span class="hl-num">11</span>, <span class="hl-str">'a6'</span>),
+]
+<span class="hl-bi">print</span>(activity_selection(activities))
+<span class="hl-cmt"># [(1, 4, 'a1'), (5, 7, 'a4'), (8, 11, 'a6')]</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>복잡도</strong>: 정렬 O(n log n) + 순회 O(n) = <strong>O(n log n)</strong>.</li>
+      <li><strong>정렬 이후에는 DP 없이 단 한 번 순회</strong>. DP로 풀면 O(n²) — 그리디가 훨씬 효율적.</li>
+      <li>변형:
+        <ul>
+          <li><em>가장 먼저 시작하는 것</em> 기준? ✗ (a3처럼 긴 활동 하나만 차지할 수 있음).</li>
+          <li><em>가장 짧은 것</em> 기준? ✗ (짧지만 양쪽 긴 활동 2개를 쪼개는 경우 반례 가능).</li>
+          <li><em>겹치는 활동이 가장 적은 것</em> 기준? ✗ (반례 만들기 가능).</li>
+          <li>오직 <strong>"가장 일찍 끝나는 것"</strong>만 정답.</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원서 인용 — CLRS 4판, §15.1 "An activity-selection problem"</div>
+    <p>
+      <em>"Activities are sorted in monotonically increasing order of finish time... The greedy choice is always to pick the activity with the earliest finish time. Why? Because it leaves the resource available for as many of the activities that follow it as possible."</em>
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 05. Greedy-Choice ==================== -->
+<section id="greedy-choice">
+  <h2>05 — Greedy-Choice Property — 언제 성립하는가</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">두 조건</h3>
+    </div>
+    <p>
+      그리디가 최적인 문제는 일반적으로 두 속성을 모두 가짐:
+    </p>
+    <ol>
+      <li><strong>Greedy-Choice Property (그리디 선택 속성)</strong>: 전역 최적해가 지역적 최선 선택을 <em>포함</em>. 즉 "첫 선택을 그리디로 해도 최적을 놓치지 않음".</li>
+      <li><strong>Optimal Substructure (최적 부분구조)</strong>: 선택 후 남은 부분 문제의 최적해가 전체 최적해의 일부. (DP와 공유되는 속성)</li>
+    </ol>
+    <p>
+      <strong>DP vs 그리디</strong>:
+    </p>
+    <ul>
+      <li>DP: 모든 선택지를 보고 그중 최선.</li>
+      <li>그리디: <em>탐색 없이</em> 현재 최선만 확정.</li>
+      <li>그리디는 DP의 특수 케이스 — "탐색이 불필요한 경우".</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Greedy-Choice 증명 — Exchange Argument의 표준 템플릿</h3>
+    </div>
+    <ol>
+      <li>임의 최적해 O를 가정.</li>
+      <li>그리디 선택 g가 O에 포함되지 않는다면, O의 어떤 요소 x를 g로 <em>교환</em>.</li>
+      <li>교환 후에도 O'는 여전히 valid이고 (제약 조건 유지) 목적함수 값이 더 나빠지지 않음.</li>
+      <li>→ O' 또한 최적. 그리디 선택 g가 최적해의 일부. □</li>
+    </ol>
+    <p>
+      활동 선택에서의 적용: O의 첫 활동 x를 그리디 선택 g<sub>1</sub>(가장 일찍 끝나는)로 교체. f(g<sub>1</sub>) ≤ f(x)라 뒤따르는 활동들이 여전히 호환. O' = (O − {x}) ∪ {g<sub>1</sub>}도 동일 크기, 유효.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 06. Huffman 아이디어 ==================== -->
+<section id="huffman-idea">
+  <h2>06 — Huffman 코딩 — 아이디어</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">문제 — 가변 길이 prefix code</h3>
+    </div>
+    <p>
+      문자열을 이진으로 압축. 문자마다 비트 코드를 할당:
+    </p>
+    <ul>
+      <li><strong>고정 길이 코드</strong>: 예) ASCII 8비트. 빈도와 무관하게 모두 같은 길이.</li>
+      <li><strong>가변 길이 코드</strong>: 자주 쓰는 문자엔 짧은 코드. 평균 길이가 짧아짐.</li>
+      <li><strong>Prefix code</strong>: 어떤 코드도 다른 코드의 prefix가 아님 — 그래야 유일 해독 가능.</li>
+    </ul>
+    <p>
+      목표: <em>문자 빈도가 주어질 때 평균 비트 수를 최소화하는 prefix code</em>.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Huffman의 아이디어 — 상향식 트리 합성</h3>
+    </div>
+    <ol>
+      <li>각 문자를 빈도를 가진 leaf 노드로 시작.</li>
+      <li>최소 빈도 두 노드 x, y를 합쳐 새 내부 노드 z. <code>freq(z) = freq(x) + freq(y)</code>. z의 왼쪽=x, 오른쪽=y.</li>
+      <li>z를 힙에 다시 넣고 반복.</li>
+      <li>하나만 남을 때까지 → 이것이 Huffman 트리. leaf까지의 경로(0/1)가 각 문자의 코드.</li>
+    </ol>
+    <p>
+      <strong>왜 "가장 적게 나오는 두 개를 합치는 것"이 최적인가</strong>: 빈도가 낮은 문자가 트리에서 <em>더 깊이</em> 있어야 총 비트 수가 최소. 합치면 둘 다 같은 내부 노드의 자식이 되어 코드 길이가 같아짐. Exchange argument로 증명.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a19huff-show { 0%,2%{opacity:0} 4%,14%{opacity:1} 16%,100%{opacity:0} }
+      .a19huff-S0{animation:a19huff-show 12s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a19huff-S1{animation:a19huff-show 12s linear infinite;animation-delay:2.4s;animation-fill-mode:backwards}
+      .a19huff-S2{animation:a19huff-show 12s linear infinite;animation-delay:4.8s;animation-fill-mode:backwards}
+      .a19huff-S3{animation:a19huff-show 12s linear infinite;animation-delay:7.2s;animation-fill-mode:backwards}
+      .a19huff-S4{animation:a19huff-show 12s linear infinite;animation-delay:9.6s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Huffman 트리 구축 애니메이션">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🌳 Huffman 트리 구축 — 빈도 {A:5, B:9, C:12, D:13, E:16, F:45}</text>
+
+      <!-- 단계 0: 초기 leaf들 -->
+      <g class="a19huff-S0">
+        <g transform="translate(60, 200)" font-family="JetBrains Mono, monospace" font-size="11">
+          <circle cx="0" cy="0" r="20" fill="#fdf3de" stroke="#d4930c" stroke-width="2"/>
+          <text x="0" y="5" text-anchor="middle" class="viz-label" font-weight="700">A:5</text>
+          <circle cx="85" cy="0" r="20" fill="#fdf3de" stroke="#d4930c" stroke-width="2"/>
+          <text x="85" y="5" text-anchor="middle" class="viz-label" font-weight="700">B:9</text>
+          <circle cx="170" cy="0" r="22" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+          <text x="170" y="5" text-anchor="middle" class="viz-label" font-weight="700">C:12</text>
+          <circle cx="255" cy="0" r="22" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+          <text x="255" y="5" text-anchor="middle" class="viz-label" font-weight="700">D:13</text>
+          <circle cx="340" cy="0" r="22" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+          <text x="340" y="5" text-anchor="middle" class="viz-label" font-weight="700">E:16</text>
+          <circle cx="425" cy="0" r="26" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+          <text x="425" y="5" text-anchor="middle" class="viz-label" font-weight="700">F:45</text>
+
+          <text x="212" y="50" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">6개 leaf, min-heap으로 관리</text>
+        </g>
+      </g>
+
+      <!-- 단계 1: A+B 병합 -->
+      <g class="a19huff-S1">
+        <g transform="translate(60, 180)" font-family="JetBrains Mono, monospace" font-size="11">
+          <!-- AB 내부 노드 -->
+          <circle cx="42" cy="-30" r="20" fill="rgba(194,59,94,0.15)" stroke="#c23b5e" stroke-width="2"/>
+          <text x="42" y="-25" text-anchor="middle" class="viz-label" font-weight="700" fill="#c23b5e">14</text>
+          <line x1="30" y1="-14" x2="10" y2="5" stroke="#c23b5e" stroke-width="1.5"/>
+          <text x="10" y="-8" class="viz-label-small" fill="#c23b5e">0</text>
+          <line x1="54" y1="-14" x2="75" y2="5" stroke="#c23b5e" stroke-width="1.5"/>
+          <text x="70" y="-8" class="viz-label-small" fill="#c23b5e">1</text>
+
+          <circle cx="0" cy="20" r="18" fill="#fdf3de" stroke="#d4930c" stroke-width="1.5"/>
+          <text x="0" y="25" text-anchor="middle" class="viz-label" font-weight="700">A:5</text>
+          <circle cx="85" cy="20" r="18" fill="#fdf3de" stroke="#d4930c" stroke-width="1.5"/>
+          <text x="85" y="25" text-anchor="middle" class="viz-label" font-weight="700">B:9</text>
+
+          <circle cx="170" cy="20" r="20" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+          <text x="170" y="25" text-anchor="middle" class="viz-label" font-weight="700">C:12</text>
+          <circle cx="255" cy="20" r="20" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+          <text x="255" y="25" text-anchor="middle" class="viz-label" font-weight="700">D:13</text>
+          <circle cx="340" cy="20" r="20" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+          <text x="340" y="25" text-anchor="middle" class="viz-label" font-weight="700">E:16</text>
+          <circle cx="425" cy="20" r="24" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="425" y="25" text-anchor="middle" class="viz-label" font-weight="700">F:45</text>
+
+          <text x="212" y="80" text-anchor="middle" class="viz-label-small" fill="#c23b5e" font-weight="700">① A(5) + B(9) = 14 병합</text>
+        </g>
+      </g>
+
+      <!-- 단계 2: C+D 병합 -->
+      <g class="a19huff-S2">
+        <g transform="translate(60, 180)" font-family="JetBrains Mono, monospace" font-size="11">
+          <circle cx="42" cy="-30" r="18" fill="rgba(194,59,94,0.1)" stroke="#c23b5e" stroke-width="1.5"/>
+          <text x="42" y="-25" text-anchor="middle" class="viz-label" font-weight="700" fill="#c23b5e">14</text>
+          <line x1="32" y1="-16" x2="10" y2="5" stroke="#c23b5e" stroke-width="1"/>
+          <line x1="52" y1="-16" x2="75" y2="5" stroke="#c23b5e" stroke-width="1"/>
+          <circle cx="0" cy="20" r="16" fill="#fdf3de" stroke="#d4930c" stroke-width="1"/>
+          <text x="0" y="25" text-anchor="middle" class="viz-label-small" font-weight="700">A:5</text>
+          <circle cx="85" cy="20" r="16" fill="#fdf3de" stroke="#d4930c" stroke-width="1"/>
+          <text x="85" y="25" text-anchor="middle" class="viz-label-small" font-weight="700">B:9</text>
+
+          <!-- CD 병합 -->
+          <circle cx="212" cy="-30" r="20" fill="rgba(194,59,94,0.15)" stroke="#c23b5e" stroke-width="2"/>
+          <text x="212" y="-25" text-anchor="middle" class="viz-label" font-weight="700" fill="#c23b5e">25</text>
+          <line x1="200" y1="-14" x2="180" y2="5" stroke="#c23b5e" stroke-width="1.5"/>
+          <text x="180" y="-8" class="viz-label-small" fill="#c23b5e">0</text>
+          <line x1="224" y1="-14" x2="245" y2="5" stroke="#c23b5e" stroke-width="1.5"/>
+          <text x="240" y="-8" class="viz-label-small" fill="#c23b5e">1</text>
+
+          <circle cx="170" cy="20" r="18" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1.5"/>
+          <text x="170" y="25" text-anchor="middle" class="viz-label" font-weight="700">C:12</text>
+          <circle cx="255" cy="20" r="18" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1.5"/>
+          <text x="255" y="25" text-anchor="middle" class="viz-label" font-weight="700">D:13</text>
+
+          <circle cx="340" cy="20" r="20" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+          <text x="340" y="25" text-anchor="middle" class="viz-label" font-weight="700">E:16</text>
+          <circle cx="425" cy="20" r="24" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="425" y="25" text-anchor="middle" class="viz-label" font-weight="700">F:45</text>
+
+          <text x="212" y="80" text-anchor="middle" class="viz-label-small" fill="#c23b5e" font-weight="700">② C(12) + D(13) = 25 병합</text>
+        </g>
+      </g>
+
+      <!-- 단계 3: AB + E = 30 -->
+      <g class="a19huff-S3">
+        <g transform="translate(80, 170)" font-family="JetBrains Mono, monospace" font-size="11">
+          <!-- ABE 병합 (30) -->
+          <circle cx="130" cy="-70" r="20" fill="rgba(194,59,94,0.15)" stroke="#c23b5e" stroke-width="2"/>
+          <text x="130" y="-65" text-anchor="middle" class="viz-label" font-weight="700" fill="#c23b5e">30</text>
+          <line x1="115" y1="-55" x2="50" y2="-20" stroke="#c23b5e" stroke-width="1.5"/>
+          <line x1="145" y1="-55" x2="310" y2="5" stroke="#c23b5e" stroke-width="1.5"/>
+
+          <!-- AB 남아있음 -->
+          <circle cx="35" cy="-10" r="15" fill="rgba(194,59,94,0.08)" stroke="#c23b5e" stroke-width="1"/>
+          <text x="35" y="-6" text-anchor="middle" class="viz-label-small" fill="#c23b5e">14</text>
+          <circle cx="15" cy="25" r="14" fill="#fdf3de" stroke="#d4930c" stroke-width="1"/>
+          <text x="15" y="30" text-anchor="middle" class="viz-label-small">A</text>
+          <circle cx="60" cy="25" r="14" fill="#fdf3de" stroke="#d4930c" stroke-width="1"/>
+          <text x="60" y="30" text-anchor="middle" class="viz-label-small">B</text>
+
+          <!-- CD 남아있음 -->
+          <circle cx="195" cy="-10" r="16" fill="rgba(194,59,94,0.08)" stroke="#c23b5e" stroke-width="1"/>
+          <text x="195" y="-6" text-anchor="middle" class="viz-label-small" fill="#c23b5e">25</text>
+          <circle cx="170" cy="25" r="14" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="170" y="30" text-anchor="middle" class="viz-label-small">C</text>
+          <circle cx="220" cy="25" r="14" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="220" y="30" text-anchor="middle" class="viz-label-small">D</text>
+
+          <!-- E moved into ABE -->
+          <circle cx="310" cy="20" r="18" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+          <text x="310" y="25" text-anchor="middle" class="viz-label" font-weight="700">E:16</text>
+          <circle cx="405" cy="20" r="22" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="405" y="25" text-anchor="middle" class="viz-label" font-weight="700">F:45</text>
+
+          <text x="200" y="80" text-anchor="middle" class="viz-label-small" fill="#c23b5e" font-weight="700">③ AB(14) + E(16) = 30. 힙: [CD:25, ABE:30, F:45]</text>
+        </g>
+      </g>
+
+      <!-- 단계 4: 최종 Huffman 트리 -->
+      <g class="a19huff-S4">
+        <g transform="translate(80, 150)" font-family="JetBrains Mono, monospace" font-size="10">
+          <!-- root 100 -->
+          <circle cx="280" cy="-20" r="22" fill="#fde6a6" stroke="#d4930c" stroke-width="2.5"/>
+          <text x="280" y="-15" text-anchor="middle" class="viz-label" font-weight="700">100</text>
+
+          <line x1="265" y1="-8" x2="200" y2="35" stroke="var(--text-muted)" stroke-width="1.5"/>
+          <text x="228" y="10" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">0</text>
+          <line x1="295" y1="-8" x2="400" y2="35" stroke="var(--text-muted)" stroke-width="1.5"/>
+          <text x="355" y="10" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1</text>
+
+          <!-- F leaf -->
+          <circle cx="400" cy="50" r="18" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="400" y="55" text-anchor="middle" class="viz-label" font-weight="700">F</text>
+          <text x="435" y="55" class="viz-label-small">코드: <tspan font-weight="700">1</tspan> (1bit)</text>
+
+          <!-- 55 -->
+          <circle cx="200" cy="50" r="18" fill="rgba(212,147,12,0.15)" stroke="#d4930c" stroke-width="2"/>
+          <text x="200" y="55" text-anchor="middle" class="viz-label" font-weight="700">55</text>
+
+          <line x1="188" y1="63" x2="130" y2="110" stroke="var(--text-muted)" stroke-width="1"/>
+          <text x="155" y="82" class="viz-label-small" fill="var(--text-muted)">0</text>
+          <line x1="212" y1="63" x2="270" y2="110" stroke="var(--text-muted)" stroke-width="1"/>
+          <text x="250" y="82" class="viz-label-small" fill="var(--text-muted)">1</text>
+
+          <!-- CD 25 -->
+          <circle cx="130" cy="125" r="15" fill="rgba(212,147,12,0.1)" stroke="#d4930c" stroke-width="1.5"/>
+          <text x="130" y="130" text-anchor="middle" class="viz-label-small" font-weight="700">25</text>
+          <line x1="122" y1="135" x2="100" y2="160" stroke="var(--text-muted)" stroke-width="1"/>
+          <line x1="138" y1="135" x2="160" y2="160" stroke="var(--text-muted)" stroke-width="1"/>
+          <circle cx="95" cy="172" r="14" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="95" y="177" text-anchor="middle" class="viz-label-small">C</text>
+          <circle cx="165" cy="172" r="14" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="165" y="177" text-anchor="middle" class="viz-label-small">D</text>
+
+          <!-- ABE 30 -->
+          <circle cx="270" cy="125" r="15" fill="rgba(212,147,12,0.1)" stroke="#d4930c" stroke-width="1.5"/>
+          <text x="270" y="130" text-anchor="middle" class="viz-label-small" font-weight="700">30</text>
+          <line x1="262" y1="135" x2="240" y2="160" stroke="var(--text-muted)" stroke-width="1"/>
+          <line x1="278" y1="135" x2="300" y2="160" stroke="var(--text-muted)" stroke-width="1"/>
+          <!-- AB 14 -->
+          <circle cx="235" cy="172" r="12" fill="rgba(212,147,12,0.08)" stroke="#d4930c" stroke-width="1"/>
+          <text x="235" y="177" text-anchor="middle" class="viz-label-small">14</text>
+          <circle cx="305" cy="172" r="14" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="305" y="177" text-anchor="middle" class="viz-label-small">E</text>
+
+          <text x="240" y="200" class="viz-label-small" fill="#3b9b6e" font-weight="700">F:0 (1b), C:100 (3b), D:101 (3b), E:111 (3b), A:1100 (4b), B:1101 (4b)</text>
+          <text x="240" y="216" class="viz-label-small" fill="var(--text-muted)">평균 = (45·1 + 12·3 + 13·3 + 16·3 + 5·4 + 9·4) / 100 = 2.24 비트</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>5단계 Huffman 트리 구축</strong>: heap의 <em>최소 두 노드를 반복 병합</em>. 자주 나오는 F가 root 근처(1비트), 드문 A/B가 가장 깊은 leaf(4비트). 평균 2.24비트 — 고정 3비트 대비 25% 압축.</div>
+  </div>
+</section>
+
+<!-- ==================== 07. Huffman Python ==================== -->
+<section id="huffman-python">
+  <h2>07 — Huffman Python 구현 (heapq)</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">힙 기반 구현</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">huffman.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">import</span> heapq
+<span class="hl-kw">from</span> collections <span class="hl-kw">import</span> Counter
+
+<span class="hl-kw">class</span> <span class="hl-bi">Node</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(<span class="hl-kw">self</span>, freq, char=<span class="hl-kw">None</span>, left=<span class="hl-kw">None</span>, right=<span class="hl-kw">None</span>):
+        <span class="hl-kw">self</span>.freq = freq
+        <span class="hl-kw">self</span>.char = char
+        <span class="hl-kw">self</span>.left = left
+        <span class="hl-kw">self</span>.right = right
+
+    <span class="hl-kw">def</span> <span class="hl-bi">__lt__</span>(<span class="hl-kw">self</span>, other):
+        <span class="hl-kw">return</span> <span class="hl-kw">self</span>.freq &lt; other.freq    <span class="hl-cmt"># heap 비교 기준</span>
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">huffman</span>(text):
+    <span class="hl-cmt">"""문자열 → Huffman 코드 딕셔너리."""</span>
+    <span class="hl-kw">if</span> <span class="hl-kw">not</span> text: <span class="hl-kw">return</span> {}
+    freq = Counter(text)
+
+    <span class="hl-cmt"># 모든 문자를 leaf로 heap에 삽입</span>
+    heap = [Node(f, c) <span class="hl-kw">for</span> c, f <span class="hl-kw">in</span> freq.items()]
+    heapq.heapify(heap)
+
+    <span class="hl-cmt"># 트리 구축: n-1번 병합</span>
+    <span class="hl-kw">while</span> <span class="hl-bi">len</span>(heap) &gt; <span class="hl-num">1</span>:
+        left = heapq.heappop(heap)
+        right = heapq.heappop(heap)
+        merged = Node(left.freq + right.freq, left=left, right=right)
+        heapq.heappush(heap, merged)
+
+    root = heap[<span class="hl-num">0</span>]
+
+    <span class="hl-cmt"># DFS로 코드 추출</span>
+    codes = {}
+    <span class="hl-kw">def</span> <span class="hl-bi">walk</span>(node, code):
+        <span class="hl-kw">if</span> node.char <span class="hl-kw">is</span> <span class="hl-kw">not</span> <span class="hl-kw">None</span>:    <span class="hl-cmt"># leaf</span>
+            codes[node.char] = code <span class="hl-kw">or</span> <span class="hl-str">"0"</span>    <span class="hl-cmt"># 단일 문자 엣지케이스</span>
+            <span class="hl-kw">return</span>
+        walk(node.left, code + <span class="hl-str">"0"</span>)
+        walk(node.right, code + <span class="hl-str">"1"</span>)
+
+    walk(root, <span class="hl-str">""</span>)
+    <span class="hl-kw">return</span> codes
+
+
+<span class="hl-cmt"># 테스트</span>
+text = <span class="hl-str">"ABRACADABRA"</span>
+codes = huffman(text)
+<span class="hl-bi">print</span>(codes)
+<span class="hl-cmt"># 예: {'A': '0', 'B': '100', 'R': '101', 'C': '110', 'D': '111'}</span>
+encoded = <span class="hl-str">""</span>.join(codes[c] <span class="hl-kw">for</span> c <span class="hl-kw">in</span> text)
+<span class="hl-bi">print</span>(<span class="hl-bi">len</span>(encoded), <span class="hl-str">"bits"</span>)    <span class="hl-cmt"># 23 bits (11자 × 약 2.09비트 평균, 고정 3비트=33비트 대비 30% 압축)</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>heapq + Node(__lt__)</strong>: 힙이 freq 기준 비교하도록 <code>__lt__</code> 정의. 동률이면 삽입 순서 유지 (Python heapq가 안정적).</li>
+      <li><strong>복잡도</strong>: 힙 초기화 O(n), 병합 n-1번 × O(log n) = <strong>O(n log n)</strong>.</li>
+      <li><strong>단일 문자 케이스</strong>: <code>codes[c] = code or "0"</code> — 텍스트에 문자가 하나뿐이면 코드 길이 0이 되므로 강제로 "0".</li>
+      <li><strong>디코딩</strong>: 인코딩된 비트열을 root부터 따라가며 leaf에 도달하면 문자 출력, root로 돌아가 반복. prefix code라 고유 해독.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 08. Huffman 정확성 ==================== -->
+<section id="huffman-correctness">
+  <h2>08 — Huffman 최적성 증명</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Lemma 1 — Greedy-Choice Property</h3>
+    </div>
+    <p>
+      <strong>Claim</strong>: 알파벳 C에서 빈도가 가장 적은 두 문자 x, y는 <em>어떤 최적 prefix code 트리의 최대 깊이에서 형제</em>로 있을 수 있다.
+    </p>
+    <p>
+      <strong>증명 스케치</strong>: 임의 최적 트리 T에서 가장 깊은 두 형제 leaf를 a, b라 하자. WLOG freq(a) ≤ freq(b) 그리고 freq(x) ≤ freq(y).
+    </p>
+    <ol>
+      <li>x와 a를 교환해 T'를 얻음. 비용 변화: (freq(x) − freq(a)) × (depth(a) − depth(x)). freq(x) ≤ freq(a), depth(a) ≥ depth(x)이므로 ≤ 0. T'는 여전히 최적.</li>
+      <li>마찬가지로 T'에서 y와 b를 교환해 T''. T''도 최적이고, 이제 x, y가 가장 깊은 형제. □</li>
+    </ol>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Lemma 2 — Optimal Substructure</h3>
+    </div>
+    <p>
+      x, y를 합친 새 문자 z (freq(z) = freq(x) + freq(y))를 도입해 C' = C − {x, y} ∪ {z}. T'가 C'의 최적 트리이면, T' 속 z를 x, y의 부모로 대체한 T는 C의 최적 트리.
+    </p>
+    <p>
+      증명 스케치: |T| = |T'| + freq(x) + freq(y) (z의 깊이가 1 증가하는 비용). 최적성 유지.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Theorem — Huffman 알고리즘은 최적</h3>
+    </div>
+    <p>
+      Lemma 1(Greedy-Choice) + Lemma 2(Optimal Substructure) → 귀납법. Huffman의 매 병합 선택이 최적 트리의 일부. □
+    </p>
+    <div class="reading-box">
+      <div class="box-header">📖 원서 인용 — CLRS 4판, Theorem 15.5 (Huffman 최적성)</div>
+      <p>
+        <em>"Procedure HUFFMAN produces an optimal prefix code."</em>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 09. Fractional Knapsack ==================== -->
+<section id="fractional-knapsack">
+  <h2>09 — 분수 배낭 — 그리디 OK</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">문제</h3>
+    </div>
+    <p>
+      배낭 용량 W, 아이템 n개 — 각 아이템 i는 가치 v<sub>i</sub>, 무게 w<sub>i</sub>. <strong>아이템을 쪼갤 수 있음</strong>(fractional). 총 무게 ≤ W이면서 총 가치 최대화.
+    </p>
+    <p>
+      그리디: <em>단위 무게당 가치 v<sub>i</sub>/w<sub>i</sub></em> 내림차순 정렬 → 차례로 담기 → 마지막에 용량 초과하면 부분 담기.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a19frac-show { 0%,2%{opacity:0} 4%,20%{opacity:1} 22%,100%{opacity:0} }
+      .a19frac-S0{animation:a19frac-show 9s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a19frac-S1{animation:a19frac-show 9s linear infinite;animation-delay:3s;animation-fill-mode:backwards}
+      .a19frac-S2{animation:a19frac-show 9s linear infinite;animation-delay:6s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="분수 배낭 애니메이션">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🎒 분수 배낭 — 용량 W=50, 3 아이템</text>
+
+      <!-- 아이템 박스들 (왼쪽) -->
+      <g transform="translate(40, 60)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="150" y="0" text-anchor="middle" class="viz-label" font-weight="700">아이템 (v/w 내림차순)</text>
+
+        <!-- A: v=60, w=10, v/w=6 -->
+        <rect x="0" y="20" width="60" height="60" rx="6" fill="#fde6a6" stroke="#d4930c" stroke-width="2"/>
+        <text x="30" y="42" text-anchor="middle" class="viz-label" font-weight="700">A</text>
+        <text x="30" y="58" text-anchor="middle" class="viz-label-small">v=60</text>
+        <text x="30" y="72" text-anchor="middle" class="viz-label-small">w=10</text>
+        <text x="30" y="98" text-anchor="middle" class="viz-label-small" fill="#3b9b6e" font-weight="700">v/w=6</text>
+
+        <!-- B: v=100, w=20, v/w=5 -->
+        <rect x="100" y="20" width="80" height="60" rx="6" fill="#cfe3ed" stroke="#196aa1" stroke-width="2"/>
+        <text x="140" y="42" text-anchor="middle" class="viz-label" font-weight="700">B</text>
+        <text x="140" y="58" text-anchor="middle" class="viz-label-small">v=100</text>
+        <text x="140" y="72" text-anchor="middle" class="viz-label-small">w=20</text>
+        <text x="140" y="98" text-anchor="middle" class="viz-label-small" fill="#3b9b6e" font-weight="700">v/w=5</text>
+
+        <!-- C: v=120, w=30, v/w=4 -->
+        <rect x="220" y="20" width="90" height="60" rx="6" fill="#f5c6c6" stroke="#c23b5e" stroke-width="2"/>
+        <text x="265" y="42" text-anchor="middle" class="viz-label" font-weight="700">C</text>
+        <text x="265" y="58" text-anchor="middle" class="viz-label-small">v=120</text>
+        <text x="265" y="72" text-anchor="middle" class="viz-label-small">w=30</text>
+        <text x="265" y="98" text-anchor="middle" class="viz-label-small" fill="#3b9b6e" font-weight="700">v/w=4</text>
+      </g>
+
+      <!-- 배낭 (오른쪽) -->
+      <g transform="translate(430, 60)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="130" y="0" text-anchor="middle" class="viz-label" font-weight="700">배낭 (W=50)</text>
+        <rect x="30" y="20" width="200" height="170" rx="8" fill="none" stroke="var(--text-muted)" stroke-width="2"/>
+
+        <g class="a19frac-S1 a19frac-S2">
+          <!-- A 전체 (무게 10) -->
+          <rect x="35" y="160" width="190" height="25" rx="4" fill="#fde6a6" stroke="#d4930c" stroke-width="1.5"/>
+          <text x="130" y="177" text-anchor="middle" class="viz-label-small" font-weight="700">A 전체 (v=60, w=10)</text>
+        </g>
+        <g class="a19frac-S1 a19frac-S2">
+          <!-- B 전체 (무게 20) -->
+          <rect x="35" y="105" width="190" height="50" rx="4" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+          <text x="130" y="133" text-anchor="middle" class="viz-label-small" font-weight="700">B 전체 (v=100, w=20)</text>
+        </g>
+        <g class="a19frac-S2">
+          <!-- C 2/3 (무게 20) -->
+          <rect x="35" y="50" width="190" height="50" rx="4" fill="#f5c6c6" stroke="#c23b5e" stroke-width="1.5"/>
+          <text x="130" y="70" text-anchor="middle" class="viz-label-small" font-weight="700">C의 2/3 (v=80, w=20)</text>
+          <text x="130" y="88" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">분수: 마지막에 잘라 넣음</text>
+        </g>
+      </g>
+
+      <!-- 단계별 텍스트 -->
+      <g transform="translate(40, 220)" font-size="12" font-family="JetBrains Mono, monospace">
+        <g class="a19frac-S0">
+          <text x="0" y="0" class="viz-label" font-weight="700">단계 0: 시작</text>
+          <text x="0" y="20" class="viz-label-small">배낭 비어있음 (용량 50)</text>
+          <text x="0" y="40" class="viz-label-small" fill="var(--text-muted)">v/w 순 정렬: A(6) > B(5) > C(4)</text>
+        </g>
+        <g class="a19frac-S1">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 1: A, B 전체 담기</text>
+          <text x="0" y="20" class="viz-label-small">A(w=10) + B(w=20) = 30 ≤ 50</text>
+          <text x="0" y="40" class="viz-label-small" fill="#3b9b6e">v = 60 + 100 = 160</text>
+          <text x="0" y="60" class="viz-label-small" fill="var(--text-muted)">남은 용량: 20</text>
+        </g>
+        <g class="a19frac-S2">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 2: C의 2/3 담기</text>
+          <text x="0" y="20" class="viz-label-small">C 전체는 w=30, 남은 용량은 20</text>
+          <text x="0" y="40" class="viz-label-small">→ 2/3 = 20/30만 담기</text>
+          <text x="0" y="60" class="viz-label-small" fill="#3b9b6e" font-weight="700">최종: v = 160 + 80 = 240</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>3단계 분수 배낭</strong>: v/w 큰 순서(A→B→C)로 담기. 용량 남으면 전체, 초과하면 분수(C는 20/30=2/3). 최종 가치 <strong>240</strong>. 분수 허용 덕에 그리디가 최적 — 교환 논증으로 증명.</div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Python 구현</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">fractional_knapsack.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">fractional_knapsack</span>(items, W):
+    <span class="hl-cmt">"""items: [(value, weight, name), ...]. 반환: 총 가치."""</span>
+    items = <span class="hl-bi">sorted</span>(items, key=<span class="hl-kw">lambda</span> x: x[<span class="hl-num">0</span>] / x[<span class="hl-num">1</span>], reverse=<span class="hl-kw">True</span>)
+    total_value = <span class="hl-num">0</span>
+    <span class="hl-kw">for</span> v, w, name <span class="hl-kw">in</span> items:
+        <span class="hl-kw">if</span> W &gt;= w:
+            total_value += v
+            W -= w
+        <span class="hl-kw">else</span>:
+            total_value += v * (W / w)    <span class="hl-cmt"># 부분 담기</span>
+            <span class="hl-kw">break</span>
+    <span class="hl-kw">return</span> total_value
+
+
+<span class="hl-bi">print</span>(fractional_knapsack([(<span class="hl-num">60</span>,<span class="hl-num">10</span>,<span class="hl-str">'A'</span>),(<span class="hl-num">100</span>,<span class="hl-num">20</span>,<span class="hl-str">'B'</span>),(<span class="hl-num">120</span>,<span class="hl-num">30</span>,<span class="hl-str">'C'</span>)], <span class="hl-num">50</span>))
+<span class="hl-cmt"># 240.0</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 10. 0/1 배낭 ==================== -->
+<section id="why-01-fails">
+  <h2>10 — 0/1 배낭 — 왜 그리디 실패</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">같은 예제, 다른 결과</h3>
+    </div>
+    <p>
+      같은 아이템 A(60/10), B(100/20), C(120/30), 용량 50. <strong>아이템을 쪼갤 수 없음</strong>(0 또는 1).
+    </p>
+    <ul>
+      <li><strong>v/w 그리디</strong>: A(w=10, 잔여 40) + B(w=20, 잔여 20) + C는 w=30 &gt; 20 → 못 담음. v = 160.</li>
+      <li><strong>최적</strong>: B + C = 220 (w=50 정확히).</li>
+      <li>그리디 160 &lt; 최적 220 → <strong>그리디 실패</strong>.</li>
+    </ul>
+    <p>
+      <strong>왜?</strong> 0/1 배낭은 <em>greedy-choice property가 없음</em>. "v/w 가장 큰 A를 반드시 포함"이 최적해를 보장하지 않음. A를 포기하고 B+C를 통째로 담는 게 나음.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="0/1 배낭 그리디 실패 시각화">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">⚖️ 0/1 배낭 — 같은 아이템, 쪼갤 수 없을 때</text>
+
+      <!-- 왼쪽: 그리디 결과 -->
+      <g transform="translate(40, 55)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="150" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="var(--accent)">그리디 (v/w 순): 160</text>
+        <rect x="30" y="20" width="240" height="150" rx="8" fill="none" stroke="var(--text-muted)" stroke-width="2"/>
+
+        <rect x="35" y="135" width="230" height="30" rx="4" fill="#fde6a6" stroke="#d4930c" stroke-width="1.5"/>
+        <text x="150" y="154" text-anchor="middle" class="viz-label-small" font-weight="700">A (v=60, w=10)</text>
+
+        <rect x="35" y="80" width="230" height="50" rx="4" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+        <text x="150" y="108" text-anchor="middle" class="viz-label-small" font-weight="700">B (v=100, w=20)</text>
+
+        <rect x="35" y="50" width="230" height="25" rx="4" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="150" y="67" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">C는 들어갈 공간 없음</text>
+
+        <text x="150" y="195" text-anchor="middle" class="viz-label" fill="var(--accent)" font-weight="700">w=30, v=160 (잔여 20)</text>
+      </g>
+
+      <!-- 오른쪽: 최적 -->
+      <g transform="translate(400, 55)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="150" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">최적 (B + C): 220</text>
+        <rect x="30" y="20" width="240" height="150" rx="8" fill="none" stroke="var(--text-muted)" stroke-width="2"/>
+
+        <rect x="35" y="95" width="230" height="70" rx="4" fill="#f5c6c6" stroke="#c23b5e" stroke-width="2"/>
+        <text x="150" y="135" text-anchor="middle" class="viz-label-small" font-weight="700">C (v=120, w=30)</text>
+
+        <rect x="35" y="40" width="230" height="50" rx="4" fill="#cfe3ed" stroke="#196aa1" stroke-width="2"/>
+        <text x="150" y="68" text-anchor="middle" class="viz-label-small" font-weight="700">B (v=100, w=20)</text>
+
+        <text x="150" y="195" text-anchor="middle" class="viz-label" fill="#3b9b6e" font-weight="700">w=50 (꽉 참), v=220</text>
+      </g>
+
+      <text x="360" y="245" text-anchor="middle" class="viz-label" fill="var(--accent)" font-weight="700">그리디 160 vs 최적 220 — 그리디 실패!</text>
+    </svg>
+    <div class="viz-caption"><strong>같은 문제, 결과 다름</strong>. 분수 배낭은 A를 담는 게 최적이지만, 0/1에선 A를 버리고 B+C가 더 나음. <em>0/1 배낭 = NP-hard(약), DP로 O(nW) 의사다항</em>. 그리디는 틀림.</div>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">0/1 배낭의 복잡도</h3>
+    </div>
+    <ul>
+      <li>의사 다항(pseudo-polynomial) DP: O(nW). 무게 W가 작으면 빠름.</li>
+      <li>정확한 의미의 "다항 시간 알고리즘"은 <em>존재하지 않음</em> (NP-hard, 엄밀히는 weakly NP-hard).</li>
+      <li>FPTAS 존재: (1-ε)-근사를 O(n²/ε) 시간.</li>
+    </ul>
+    <p>
+      "v/w 그리디 + 남은 아이템 중 최대 가치 하나" 휴리스틱은 <strong>2-근사</strong>. 완벽한 답은 아니지만 많은 경우 빠르고 그럭저럭 좋음.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 11. Matroid ==================== -->
+<section id="matroid">
+  <h2>11 — Matroid — 그리디가 정답인 구조</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Hassler Whitney 1935 — 선형 독립의 추상화</h3>
+    </div>
+    <p>
+      매트로이드 M = (S, I)는 유한 집합 S와 <em>독립 집합족</em> I ⊆ 2<sup>S</sup>를 가진 구조. 세 공리:
+    </p>
+    <ol>
+      <li><strong>비어있지 않음</strong>: ∅ ∈ I.</li>
+      <li><strong>유전적(hereditary)</strong>: A ∈ I, B ⊆ A ⟹ B ∈ I. (독립 집합의 부분집합도 독립)</li>
+      <li><strong>교환 속성(exchange property)</strong>: A, B ∈ I, |A| &lt; |B| ⟹ ∃ x ∈ B − A, A ∪ {x} ∈ I. (더 큰 독립 집합의 요소 하나를 작은 집합에 추가해도 독립)</li>
+    </ol>
+    <p>
+      예:
+    </p>
+    <ul>
+      <li><strong>Graphic Matroid</strong>: S = 그래프의 간선, I = 사이클 없는 부분집합(포레스트). → MST 문제.</li>
+      <li><strong>Linear Matroid</strong>: S = 벡터들, I = 선형 독립 부분집합.</li>
+      <li><strong>Uniform Matroid</strong>: S = 임의 집합, I = |A| ≤ k인 모든 A.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Rado-Edmonds 정리 (Rado 1957 / Edmonds 1971)</h3>
+    </div>
+    <p>
+      <strong>정리</strong>: 가중 매트로이드 M = (S, I, w)에서 "가장 가중치 큰 것부터 추가(가능하면)" 그리디가 항상 <em>최대 가중치 독립 집합</em>을 찾는다. <strong>역도 성립</strong> — 그리디가 항상 최적인 유전적 구조는 반드시 매트로이드.
+    </p>
+    <p>
+      이게 Kruskal이 MST에 작동하는 <em>진짜 이유</em>: 간선이 Graphic Matroid를 이루므로 Rado-Edmonds 보장.
+    </p>
+    <div class="caution-box">
+      <div class="box-header">💡 매트로이드의 의미</div>
+      <p>
+        "그리디가 옳은가?"라는 질문은 매트로이드 검사로 환원됨. 활동 선택, Huffman은 매트로이드가 아니지만 유사한 구조(greedoid, scheduling matroid)를 가짐. 매트로이드 이론은 조합 최적화(combinatorial optimization)의 기둥.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 12. Exchange Argument ==================== -->
+<section id="exchange-argument">
+  <h2>12 — Exchange Argument — 증명 템플릿</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">표준 템플릿</h3>
+    </div>
+    <p>
+      그리디 알고리즘 G가 반환하는 해 S<sub>G</sub>가 최적임을 증명하려면:
+    </p>
+    <ol>
+      <li>임의 최적해 S<sub>O</sub>를 가정.</li>
+      <li>S<sub>G</sub>와 S<sub>O</sub>가 다르다면, <em>첫 번째 다른 지점</em>을 찾음.</li>
+      <li>그 지점에서 S<sub>O</sub>의 선택을 G의 선택으로 <strong>교환</strong>.</li>
+      <li>교환 후 해 S<sub>O</sub>'가 여전히 유효하고(제약 만족), 목적함수가 더 나빠지지 않음.</li>
+      <li>→ S<sub>O</sub>'도 최적. 귀납/반복으로 S<sub>G</sub>가 최적. □</li>
+    </ol>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">적용 예제들</h3>
+    </div>
+    <ul>
+      <li><strong>Kruskal/Prim MST</strong>: Cut Property (Algo 17 §3) — 두 간선 교환이 MST 깨지 않음.</li>
+      <li><strong>Dijkstra</strong>: "pop된 노드의 dist 최적" — 더 짧은 경로가 있었다면 모순.</li>
+      <li><strong>활동 선택</strong>: 최적해의 첫 활동을 "가장 일찍 끝나는 것"으로 교체.</li>
+      <li><strong>Huffman</strong>: 최적 트리의 깊은 형제를 "최소 빈도 두 문자"로 교체.</li>
+      <li><strong>Task Scheduling (EDF)</strong>: Earliest Deadline First. 마감일 지연 최소화.</li>
+    </ul>
+    <p>
+      핵심: <em>"교환해도 손해 없음"</em>을 보이면 그리디 선택이 최적해에 반드시 포함됨. 이 논증 패턴은 그리디 정당성 증명의 <strong>사실상 유일한 방법</strong>.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 13. 근사 알고리즘 ==================== -->
+<section id="approximation">
+  <h2>13 — 근사 알고리즘 — NP-hard 탈출구</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">그리디로 NP-hard 문제 근사</h3>
+    </div>
+    <p>
+      최적은 못 찾아도 "최악 케이스 보장된 비율" 이내로 찾는 것이 근사 알고리즘. 많은 경우 그리디가 표준 도구.
+    </p>
+    <ul>
+      <li><strong>Vertex Cover (그래프의 최소 정점 덮개)</strong>: 간선을 하나 잡고 양 끝점 모두 추가 → <strong>2-근사</strong>.</li>
+      <li><strong>Set Cover (집합 덮개)</strong>: 가장 많은 미덮인 요소를 덮는 집합 추가 → <strong>ln(n)-근사</strong> (Johnson 1974).</li>
+      <li><strong>Metric TSP</strong>: MST 기반 DFS 순회 → <strong>2-근사</strong>. Christofides 1976로 1.5-근사.</li>
+      <li><strong>Scheduling (Makespan)</strong>: 가장 빨리 끝나는 기계에 다음 작업 → <strong>2-근사</strong> (List scheduling).</li>
+      <li><strong>0/1 Knapsack FPTAS</strong>: 그리디 + DP scaling → (1-ε) 근사 in O(n²/ε).</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">왜 그리디가 근사에 특히 어울리나</h3>
+    </div>
+    <ul>
+      <li>구현이 단순해 실무에 쓰기 쉬움.</li>
+      <li>"2-근사" 같은 형식 보장을 증명하기 쉬움 (exchange argument와 유사).</li>
+      <li>많은 NP-hard 문제는 LP relaxation의 그리디 rounding으로 좋은 근사율 달성.</li>
+    </ul>
+    <p>
+      현대 알고리즘 교과서의 근사 챕터(CLRS §35, Vazirani 2001)는 대부분 그리디 기법을 중심으로 구성.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">AI가 그리디를 잘못 쓰는 패턴</h3>
+    </div>
+    <ul>
+      <li><strong>"그리디가 항상 작동한다"</strong>: 0/1 배낭, 동전 교환(특정 체계) 등에 그리디 제안 → 오답.</li>
+      <li><strong>그리디 기준 선택 실수</strong>: 활동 선택에 "가장 먼저 시작" 기준 → 반례 가능.</li>
+      <li><strong>증명 없이 신뢰</strong>: 새 문제에 "대충 그리디"로 제안, exchange argument 확인 안 함.</li>
+      <li><strong>근사율 과장</strong>: 2-근사를 "거의 최적"으로 표현. 2배 차이는 실무에선 크다.</li>
+    </ul>
+    <p>
+      <strong>교정 질문</strong>: "exchange argument로 증명 가능한가?", "반례 만들어보자", "이 문제는 매트로이드 구조인가?"
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">활동 선택에서 "가장 먼저 시작하는 것" 기준이 왜 틀리나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>반례: 활동 A[0,100], B[1,2], C[3,4], D[5,6]. "가장 먼저" 기준: A 선택 → 뒤에 아무것도 못 들어감 (1개). "가장 일찍 끝나는" 기준: B, C, D 모두 가능 (3개). 일찍 시작하는 게 길 수 있음.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">동전 {1, 5, 10, 25} (미국)에서 그리디가 항상 최적인가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>예</strong>. 이 특정 동전 체계에선 그리디 최적. 증명: 모든 금액에 대해 큰 동전이 많이 들어가는 해가 적은 동전 수. 하지만 {1, 3, 4}는 아님 (6 = 4+1+1 vs 3+3). 미국 동전은 "canonical" — Pearson 2005가 다항 시간에 canonical 여부 판정 알고리즘 제시.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Huffman 코드의 평균 비트 수가 <em>엔트로피 H(X)</em>와 같은 관계?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Huffman 평균 길이 L 만족: <strong>H(X) ≤ L &lt; H(X) + 1</strong>. 즉 엔트로피 이론 하한에서 1비트 이내. 대체 방법:
+            <ul>
+              <li>Arithmetic coding: 더 H(X)에 근접 (분수 비트 가능).</li>
+              <li>범위 코딩(range coding): 비슷한 효과.</li>
+            </ul>
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Exchange argument로 "활동 선택 그리디" 최적성 증명.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>임의 최적해 O = {o<sub>1</sub>, o<sub>2</sub>, ..., o<sub>k</sub>}를 종료 시각 순으로 정렬. 그리디 선택 g<sub>1</sub>은 가장 일찍 끝나는 활동, f(g<sub>1</sub>) ≤ f(o<sub>1</sub>). O' = {g<sub>1</sub>, o<sub>2</sub>, ..., o<sub>k</sub>}을 생각. o<sub>2</sub>, ...은 f(o<sub>1</sub>) 이후 시작 → f(g<sub>1</sub>) 이후 시작 → 여전히 호환. |O'| = |O|. O'도 최적. 귀납 적용.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">0/1 배낭에 그리디가 실패하는 근본 이유는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Greedy-Choice Property 부재. "v/w 가장 큰 아이템을 포함"이 반드시 최적의 일부가 아님. A=(60,10), B=(100,20), C=(120,30), W=50에서 A 포기 → B+C=220이 나음. 분수 배낭은 "쪼갤 수 있음" 덕에 교환 논증이 작동하지만, 0/1에선 쪼갤 수 없어 깨짐. 매트로이드 구조가 아님.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Task Scheduling (마감일 지연 최소화) 그리디 설계.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>Earliest Deadline First (EDF)</strong>: 마감일 오름차순 정렬, 순서대로 처리. 지연(lateness) 최대값을 최소화. Exchange argument: 두 작업 i, j (d<sub>i</sub> &lt; d<sub>j</sub>)가 뒤바뀐 순서면 교환해도 지연 안 늘어남 → EDF가 최적. CLRS Ex. 15.2-2.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Huffman 트리에서 문자 N개면 내부 노드 수는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>N - 1개</strong>. Huffman 트리는 full binary tree (모든 내부 노드가 자식 2개) + N개 leaf. 수학적으로 full 이진 트리의 정리: 내부 노드 수 = leaf 수 - 1. Huffman 알고리즘이 N-1번 병합하므로 직접 셀 수도 있음.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Matroid의 "교환 속성"이 왜 그리디의 정당성과 연결되나.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>교환 속성: 작은 독립 집합 A에 큰 독립 집합 B의 요소를 추가해도 독립 유지. Rado-Edmonds 증명: 그리디 선택 S와 임의 최적 O를 비교, 크기 차가 있으면 교환 속성으로 S에 O의 요소 추가 가능 → S가 최대라는 가정 모순. 즉 교환 속성이 exchange argument 성공의 충분 조건.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">그리디 vs DP — 언제 어느 쪽?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>공통: Optimal Substructure 필요. 차이점:
+            <ul>
+              <li>그리디: "지금 최선 선택" 검증 없이 확정 → Greedy-Choice Property 필수. O(n log n) 정도.</li>
+              <li>DP: 모든 선택지 탐색, 메모이제이션. Greedy-Choice Property 불필요. 일반적으로 O(n²) 또는 O(nW).</li>
+            </ul>
+            <br>확신 없으면 DP가 안전. 그리디가 되면 훨씬 빠름.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Vertex Cover의 2-근사 그리디.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>임의 간선 (u,v) 선택 → C에 u, v 둘 다 추가 → (u,v) 인접 간선 모두 제거 → 반복. 정당성: 선택된 간선들은 서로 disjoint → 모든 최적 vertex cover는 각 간선의 끝점 하나는 포함. 그리디는 두 끝점 모두 → 2배. 따라서 |C| ≤ 2 · OPT. CLRS §35.1.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "동전 교환 문제에 그리디" 제안. 언제 OK, 언제 위험?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">질문</div>
+            <ol>
+              <li>"동전 체계가 canonical인지 확인했나?" (예: {1,5,10,25}는 OK)</li>
+              <li>"{1,3,4}로 6 만들기 예제는 테스트했나?"</li>
+              <li>"임의 동전 체계면 DP (O(nV))로 안전하게 풀라."</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Huffman이 "최적"이라는 말의 의미 — 뭐에 대한 최적?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>평균 비트 수가 가장 짧은 prefix code</strong>. 중요한 제약:
+            <ul>
+              <li>각 문자가 <em>독립적으로</em> 빈도에 따라 코드됨 (문맥 무시).</li>
+              <li>prefix code 조건.</li>
+              <li>정수 비트 길이.</li>
+            </ul>
+            <br>더 좋은 압축(문맥, 분수 비트)은 arithmetic coding, LZ77/LZ78 등 다른 기법.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">🎓</div>
+      <h3>Huffman 1952</h3>
+      <p>MIT 기말과제에서 탄생. Shannon-Fano를 넘은 최적 prefix code.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🎯</div>
+      <h3>Greedy-Choice Property</h3>
+      <p>지역 최선이 전역 최적의 일부. 그리디 필수 조건.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔁</div>
+      <h3>Exchange Argument</h3>
+      <p>그리디 정당성 증명의 표준 템플릿. "교환해도 손해 없음".</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🎒</div>
+      <h3>배낭의 교훈</h3>
+      <p>분수 OK, 0/1 실패. 쪼갤 수 있는지가 그리디 가능성 결정.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🧮</div>
+      <h3>Matroid (Whitney 1935)</h3>
+      <p>그리디가 항상 작동하는 구조. Rado-Edmonds 1971.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">📏</div>
+      <h3>근사 알고리즘</h3>
+      <p>NP-hard의 현실적 탈출구. 2-근사 vertex cover, log-근사 set cover.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Greedy Algorithm</div><div class="glossary-def">매 단계 지역 최선 선택, 되돌아보지 않음.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Greedy-Choice Property</div><div class="glossary-def">첫 그리디 선택이 어떤 최적해에 포함됨.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Optimal Substructure</div><div class="glossary-def">최적해가 부분 문제의 최적해를 포함. DP와 공유.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Exchange Argument</div><div class="glossary-def">그리디 정당성 증명 기법. O의 요소 하나를 그리디 선택으로 교체.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Activity Selection</div><div class="glossary-def">겹치지 않는 최대 활동 선택. 종료 시각 오름차순.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Earliest Finish Time (EFT)</div><div class="glossary-def">활동 선택의 그리디 기준.</div></div>
+    <div class="glossary-item"><div class="glossary-term">David A. Huffman</div><div class="glossary-def">1925-1999. MIT 대학원생 (당시 석사 과정, 1951년 term paper). 1952 Huffman coding.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Robert M. Fano</div><div class="glossary-def">1917-2016. Huffman의 지도교수. Shannon-Fano coding.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Prefix Code</div><div class="glossary-def">어떤 코드도 다른 코드의 prefix 아님. 고유 해독 가능.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Huffman Tree</div><div class="glossary-def">최소 빈도 두 노드 반복 병합으로 만드는 최적 prefix 트리.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Entropy H(X)</div><div class="glossary-def">정보 이론 하한. Huffman L 만족: H ≤ L &lt; H+1.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Shannon-Fano Coding</div><div class="glossary-def">Huffman 이전 prefix code. 최적이 아님.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Arithmetic Coding</div><div class="glossary-def">Huffman의 분수 비트 대안. 엔트로피에 더 근접.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Fractional Knapsack</div><div class="glossary-def">분수 담기 허용. v/w 그리디로 최적. O(n log n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">0/1 Knapsack</div><div class="glossary-def">쪼갤 수 없음. (약)NP-hard. DP O(nW).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Matroid</div><div class="glossary-def">Whitney 1935. 독립 집합 공리 3개. 그리디가 작동하는 구조.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Hassler Whitney</div><div class="glossary-def">1907-1989. 미국 수학자. 1935년 matroid 도입.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Rado-Edmonds Theorem</div><div class="glossary-def">1971. 그리디 ⟺ matroid. 그리디의 이론적 기반.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Graphic Matroid</div><div class="glossary-def">그래프 간선 집합 + 포레스트 = 독립. MST가 여기서 도출.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Approximation Algorithm</div><div class="glossary-def">보장된 비율(예: 2-근사)로 NP-hard 문제 해결.</div></div>
+    <div class="glossary-item"><div class="glossary-term">FPTAS</div><div class="glossary-def">Fully Polynomial-Time Approximation Scheme. (1-ε) 근사 O(n^c / ε^k).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Vertex Cover</div><div class="glossary-def">모든 간선의 끝점을 덮는 최소 정점 집합. NP-hard.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Set Cover</div><div class="glossary-def">전체 원소를 덮는 최소 부분집합. ln(n)-근사 그리디.</div></div>
+    <div class="glossary-item"><div class="glossary-term">EDF (Earliest Deadline First)</div><div class="glossary-def">마감일 순 스케줄링. 최대 지연 최소화.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Canonical Coin System</div><div class="glossary-def">그리디가 항상 최적인 동전 체계. {1,5,10,25} OK, {1,3,4} NO.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 20</div>
+    <h3>동적 계획법 (DP) — 부분 문제의 재사용</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      그리디가 안 되면 대부분 DP. Bellman의 "Dynamic Programming" 원래 뜻, memoization의 수학.
+    </p>
+    <ul>
+      <li><strong>피보나치</strong> — 지수에서 선형으로. DP의 hello world.</li>
+      <li><strong>0/1 배낭</strong> — 그리디 실패 문제의 DP 해법.</li>
+      <li><strong>LCS</strong> — 편집 거리, diff 도구의 기반.</li>
+      <li><strong>Matrix Chain Multiplication</strong> — 괄호 최적 배치.</li>
+      <li><strong>Top-down vs Bottom-up</strong> — memoization vs tabulation.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo18.html">&larr; Algo 18 — Network Flow</a>
+  <a href="algo20.html">Algo 20 — 동적 계획법 &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">CLRS 4판 §15, Huffman 1952 (Proc. IRE 40:1098-1102), Whitney 1935 (Am. J. Math. 57:509-533), Rado 1957 / Edmonds 1971 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

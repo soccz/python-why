@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 10주차: 해시 테이블 (Python dict) | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="CPython dict의 실체 — open addressing + perturbation probing, SipHash-1-3, Raymond Hettinger의 compact dict 혁신.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 10주차: 해시 테이블 (Python dict) | PyWhy">
+  <meta property="og:description" content="해시 함수, 충돌 해결, SipHash DoS 방어, Python 3.6 compact dict의 설계 천재성">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo10.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A10">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo09.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo11.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 10</div>
+  <h1 class="week-title">해시 테이블 (Python dict)<br>평균 O(1)의 마법과 그 대가</h1>
+  <p class="week-subtitle">
+    <code>d = {}; d["key"] = 42; d["key"]</code> — 세 줄로 끝나는 해시 테이블 사용법.
+    그 단순함 뒤에는 <strong>해시 함수, 충돌 해결, 동적 리사이징, DoS 방어, 삽입 순서 유지</strong>가 얽혀 있습니다.<br>
+    이번 주는 Python dict가 어떻게 <em>평균 O(1)</em>을 달성하는지, 그리고 <strong>Raymond Hettinger의 compact dict 혁신</strong>(3.6)으로 어떻게 메모리를 30-95% 줄였는지 봅니다.<br>
+    핵심 질문: <em>"해시 테이블은 어떻게 평균 O(1)을 보장하는가? 그리고 최악 O(n)은 어떻게 피하는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 전화번호부의 한계</a>
+    </div>
+    <div class="toc-section">
+      <a href="#hash-function" class="toc-section-link"><span class="toc-num">02</span>해시 함수 — 무엇이 좋은 해시인가</a>
+      <div class="toc-levels"><span class="toc-level-dot elem">초</span><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#collision-basic" class="toc-section-link"><span class="toc-num">03</span>충돌과 해결 전략 — Chaining vs Open Addressing</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#open-addressing" class="toc-section-link"><span class="toc-num">04</span>Open Addressing 상세 — 3가지 probing</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#cpython-perturbation" class="toc-section-link"><span class="toc-num">05</span>CPython의 Perturbation Probing (CLRS에 없는 기법)</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#siphash" class="toc-section-link"><span class="toc-num">06</span>SipHash-1-3과 해시 랜덤화 — DoS 방어</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#load-factor" class="toc-section-link"><span class="toc-num">07</span>Load Factor와 Rehashing</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#compact-dict" class="toc-section-link"><span class="toc-num">08</span>Compact Dict — Raymond Hettinger의 혁신 (Python 3.6)</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#dict-operations" class="toc-section-link"><span class="toc-num">09</span>dict 연산 복잡도</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#hashable-objects" class="toc-section-link"><span class="toc-num">10</span>Hashable 객체 — <code>__hash__</code>와 <code>__eq__</code></a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#dict-vs-set" class="toc-section-link"><span class="toc-num">11</span>dict vs set — 공통점과 차이</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#ai-hash" class="toc-section-link"><span class="toc-num">12</span>AI가 흔히 놓치는 hash 함정</a>
+    </div>
+    <div class="toc-section">
+      <a href="#practice" class="toc-section-link"><span class="toc-num">13</span>실습 — 해시 테이블 직접 구현 + 충돌 시각화</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 전화번호부의 한계</h2>
+  <blockquote>
+    1990년대 전화번호부. 홍길동의 번호를 찾으려면? — 가, 가, 가... ㅎ, 호, 홍. 수천 페이지를 넘기며 이진 탐색. O(log n).<br>
+    그런데 <em>홍길동의 번호를 1밀리초에 찾고 싶다면?</em>
+  </blockquote>
+
+  <div class="story-block">
+    <h3>아이디어 — "이름을 숫자로 바꾸고, 그 숫자 칸에 저장하자"</h3>
+    <p>
+      "홍길동" → 숫자 137. 137번 페이지에 번호 저장. 찾을 때도 "홍길동" → 137 → 즉시 찾음. <strong>O(1)</strong>.
+    </p>
+    <p>
+      이 "이름 → 숫자" 변환이 <strong>해시 함수(hash function)</strong>. 그리고 그 숫자를 인덱스로 쓰는 배열이 <strong>해시 테이블(hash table)</strong>.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>문제 — "김길동"도 137이 되면?</h3>
+    <p>
+      두 이름이 <em>같은 숫자로 매핑</em>되는 걸 <strong>충돌(collision)</strong>이라 부릅니다.
+      해시 테이블 설계의 90%는 <em>"충돌을 어떻게 우아하게 처리할 것인가"</em>에 관한 것.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>더 큰 문제 — "공격자가 일부러 모든 이름이 137이 되게 만든다면?"</h3>
+    <p>
+      2011년부터 알려진 알고리즘 공격: 공격자가 해시 함수를 예측해 모든 입력이 충돌하게 만듦. 해시 테이블이 <strong>O(n) 연결 리스트</strong>로 degradation, 웹 서버가 DoS.
+      Python·Java·PHP 모두 취약했습니다.
+    </p>
+    <p>
+      해법은 2013년 Python 3.4의 <strong>SipHash 도입</strong>과 <strong>hash randomization</strong>. 매 프로세스마다 무작위 seed로 해시 — 공격자가 예측 불가.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — Python dict는 이 모든 것을 숨기고 단순해 보인다</div>
+    <p>
+      <code>d = {}; d["홍길동"] = "010-..."</code>. 두 줄 뒤에는:
+    </p>
+    <ul>
+      <li>SipHash-1-3으로 키 해시 계산 (DoS 방어).</li>
+      <li>해시값으로 테이블 인덱스 계산 (& (size − 1), power of 2 트릭).</li>
+      <li>충돌하면 perturbation probing으로 다음 슬롯 탐색.</li>
+      <li>load factor가 2/3 초과하면 테이블 리사이징 (O(n) 한 번, 하지만 amortized O(1)).</li>
+      <li>Python 3.6+에서는 compact dict 구조로 삽입 순서 유지 + 메모리 30~95% 절약.</li>
+    </ul>
+    <p>
+      이 모든 디테일을 이해하고 나면 — <em>dict의 평균 O(1)이 당연한 게 아니라 <strong>한 세대에 걸친 공학의 결과</strong></em>임을 알게 됩니다.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="해시 테이블의 충돌과 open addressing">
+      <text x="300" y="20" class="viz-label" text-anchor="middle">d["홍길동"] = "010-..." → hash() → 인덱스 → 슬롯</text>
+      <!-- 해시 함수 흐름 -->
+      <g transform="translate(40, 50)">
+        <rect x="0" y="0" width="80" height="32" rx="4" class="viz-node-alt"/>
+        <text x="40" y="20" class="viz-label-small" text-anchor="middle">"홍길동"</text>
+        <text x="92" y="20" class="viz-label-small">→</text>
+        <rect x="108" y="0" width="80" height="32" rx="4" class="viz-node"/>
+        <text x="148" y="14" class="viz-label-small" text-anchor="middle">SipHash-1-3</text>
+        <text x="148" y="27" class="viz-label-small" text-anchor="middle">→ 0x1A3F9...</text>
+        <text x="195" y="20" class="viz-label-small">&amp; mask</text>
+        <text x="240" y="20" class="viz-label-small">→</text>
+        <rect x="258" y="0" width="50" height="32" rx="4" class="viz-node"/>
+        <text x="283" y="20" class="viz-label" text-anchor="middle">i=3</text>
+        <text x="320" y="20" class="viz-label-small">→ 슬롯 [3]</text>
+      </g>
+      <!-- 해시 테이블 (8 슬롯) -->
+      <text x="40" y="105" class="viz-label">테이블 (size=8, mask=7)</text>
+      <g transform="translate(40, 115)" font-family="JetBrains Mono, monospace" font-size="12">
+        <rect x="0" y="0" width="60" height="32" class="viz-node-alt"/><text x="30" y="20" text-anchor="middle">[0] ∅</text>
+        <rect x="60" y="0" width="60" height="32" class="viz-node-alt"/><text x="90" y="20" text-anchor="middle">[1] ∅</text>
+        <rect x="120" y="0" width="60" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/><text x="150" y="20" text-anchor="middle">[2] 김</text>
+        <rect x="180" y="0" width="60" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="210" y="20" text-anchor="middle">[3] 홍</text>
+        <rect x="240" y="0" width="60" height="32" class="viz-node-alt"/><text x="270" y="20" text-anchor="middle">[4] ∅</text>
+        <rect x="300" y="0" width="60" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/><text x="330" y="20" text-anchor="middle">[5] 박</text>
+        <rect x="360" y="0" width="60" height="32" class="viz-node-alt"/><text x="390" y="20" text-anchor="middle">[6] ∅</text>
+        <rect x="420" y="0" width="60" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/><text x="450" y="20" text-anchor="middle">[7] 이</text>
+      </g>
+
+      <!-- 충돌 + perturbation -->
+      <text x="40" y="180" class="viz-label">충돌 시: perturbation probing</text>
+      <g transform="translate(40, 195)">
+        <text x="0" y="14" class="viz-label-small">새 키 "최"가 [3]에 충돌 →</text>
+      </g>
+      <!-- probe sequence 시각화 -->
+      <g transform="translate(40, 215)" font-family="JetBrains Mono, monospace" font-size="11">
+        <rect x="0" y="0" width="60" height="28" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/><text x="30" y="18" text-anchor="middle">[3] 홍</text>
+        <text x="65" y="18">→</text>
+        <text x="80" y="14" class="viz-label-small">probe 2</text>
+        <rect x="80" y="20" width="60" height="28" class="viz-node-alt"/><text x="110" y="38" text-anchor="middle">[4] ∅?</text>
+        <text x="80" y="62" class="viz-label-small">i = (3·5+perturb&gt;&gt;5+1)&amp;7</text>
+      </g>
+      <!-- 공식 -->
+      <g transform="translate(330, 200)">
+        <text x="0" y="0" class="viz-label-small" font-weight="700">CPython perturbation:</text>
+        <text x="0" y="20" class="viz-label-small" font-family="JetBrains Mono, monospace">i = hash &amp; mask</text>
+        <text x="0" y="38" class="viz-label-small" font-family="JetBrains Mono, monospace">while collision:</text>
+        <text x="0" y="56" class="viz-label-small" font-family="JetBrains Mono, monospace">  perturb &gt;&gt;= 5</text>
+        <text x="0" y="74" class="viz-label-small" font-family="JetBrains Mono, monospace">  i = (5i + perturb + 1) &amp; mask</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>dict의 마법: 해시로 슬롯 직행 O(1).</strong> 충돌 시 perturbation으로 상위 비트를 점진 활용해 새 슬롯 탐색 (CPython 고유 기법, CLRS에 없음).</div>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a10-show { 0%,2%{opacity:0} 4%,15%{opacity:1} 17%,100%{opacity:0} }
+      .a10-S0{animation:a10-show 12s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a10-S1{animation:a10-show 12s linear infinite;animation-delay:2s;animation-fill-mode:backwards}
+      .a10-S2{animation:a10-show 12s linear infinite;animation-delay:4s;animation-fill-mode:backwards}
+      .a10-S3{animation:a10-show 12s linear infinite;animation-delay:6s;animation-fill-mode:backwards}
+      .a10-S4{animation:a10-show 12s linear infinite;animation-delay:8s;animation-fill-mode:backwards}
+      .a10-S5{animation:a10-show 12s linear infinite;animation-delay:10s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="해시 테이블 5개 키 차례 삽입">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📦 dict에 키 5개 차례로 넣기 — 충돌이 발생할 때</text>
+
+      <g font-family="JetBrains Mono, monospace" font-size="13">
+        <!-- 8개 슬롯, 각 단계마다 다른 상태 -->
+        <!-- Step 0: 초기 -->
+        <text class="a10-S0" x="40" y="60" font-weight="700">d = {} (빈 dict, 8개 슬롯)</text>
+        <g class="a10-S0" transform="translate(150, 75)">
+          <rect x="0" y="0" width="60" height="32" class="viz-node-alt"/><text x="30" y="20" text-anchor="middle">[0]</text>
+          <rect x="60" y="0" width="60" height="32" class="viz-node-alt"/><text x="90" y="20" text-anchor="middle">[1]</text>
+          <rect x="120" y="0" width="60" height="32" class="viz-node-alt"/><text x="150" y="20" text-anchor="middle">[2]</text>
+          <rect x="180" y="0" width="60" height="32" class="viz-node-alt"/><text x="210" y="20" text-anchor="middle">[3]</text>
+          <rect x="240" y="0" width="60" height="32" class="viz-node-alt"/><text x="270" y="20" text-anchor="middle">[4]</text>
+          <rect x="300" y="0" width="60" height="32" class="viz-node-alt"/><text x="330" y="20" text-anchor="middle">[5]</text>
+          <rect x="360" y="0" width="60" height="32" class="viz-node-alt"/><text x="390" y="20" text-anchor="middle">[6]</text>
+          <rect x="420" y="0" width="60" height="32" class="viz-node-alt"/><text x="450" y="20" text-anchor="middle">[7]</text>
+        </g>
+
+        <!-- Step 1: d["A"] = ... → hash 3 -->
+        <text class="a10-S1" x="40" y="60" font-weight="700">d["A"] = 1 → hash 3 ✓</text>
+        <g class="a10-S1" transform="translate(150, 75)">
+          <rect x="0" y="0" width="60" height="32" class="viz-node-alt"/><text x="30" y="20" text-anchor="middle">[0]</text>
+          <rect x="60" y="0" width="60" height="32" class="viz-node-alt"/><text x="90" y="20" text-anchor="middle">[1]</text>
+          <rect x="120" y="0" width="60" height="32" class="viz-node-alt"/><text x="150" y="20" text-anchor="middle">[2]</text>
+          <rect x="180" y="0" width="60" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="210" y="20" text-anchor="middle" font-weight="700">A</text>
+          <rect x="240" y="0" width="60" height="32" class="viz-node-alt"/><text x="270" y="20" text-anchor="middle">[4]</text>
+          <rect x="300" y="0" width="60" height="32" class="viz-node-alt"/><text x="330" y="20" text-anchor="middle">[5]</text>
+          <rect x="360" y="0" width="60" height="32" class="viz-node-alt"/><text x="390" y="20" text-anchor="middle">[6]</text>
+          <rect x="420" y="0" width="60" height="32" class="viz-node-alt"/><text x="450" y="20" text-anchor="middle">[7]</text>
+        </g>
+
+        <!-- Step 2: d["B"] = 2 → hash 6 -->
+        <text class="a10-S2" x="40" y="60" font-weight="700">d["B"] = 2 → hash 6 ✓</text>
+        <g class="a10-S2" transform="translate(150, 75)">
+          <rect x="0" y="0" width="60" height="32" class="viz-node-alt"/><text x="30" y="20" text-anchor="middle">[0]</text>
+          <rect x="60" y="0" width="60" height="32" class="viz-node-alt"/><text x="90" y="20" text-anchor="middle">[1]</text>
+          <rect x="120" y="0" width="60" height="32" class="viz-node-alt"/><text x="150" y="20" text-anchor="middle">[2]</text>
+          <rect x="180" y="0" width="60" height="32" class="viz-node"/><text x="210" y="20" text-anchor="middle">A</text>
+          <rect x="240" y="0" width="60" height="32" class="viz-node-alt"/><text x="270" y="20" text-anchor="middle">[4]</text>
+          <rect x="300" y="0" width="60" height="32" class="viz-node-alt"/><text x="330" y="20" text-anchor="middle">[5]</text>
+          <rect x="360" y="0" width="60" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="390" y="20" text-anchor="middle" font-weight="700">B</text>
+          <rect x="420" y="0" width="60" height="32" class="viz-node-alt"/><text x="450" y="20" text-anchor="middle">[7]</text>
+        </g>
+
+        <!-- Step 3: d["C"] = 3 → hash 6 충돌! → probe 2 → 7 -->
+        <text class="a10-S3" x="40" y="60" font-weight="700" fill="#d4930c">d["C"] = 3 → hash 6 ⚠️ 충돌! probe → 7</text>
+        <g class="a10-S3" transform="translate(150, 75)">
+          <rect x="0" y="0" width="60" height="32" class="viz-node-alt"/><text x="30" y="20" text-anchor="middle">[0]</text>
+          <rect x="60" y="0" width="60" height="32" class="viz-node-alt"/><text x="90" y="20" text-anchor="middle">[1]</text>
+          <rect x="120" y="0" width="60" height="32" class="viz-node-alt"/><text x="150" y="20" text-anchor="middle">[2]</text>
+          <rect x="180" y="0" width="60" height="32" class="viz-node"/><text x="210" y="20" text-anchor="middle">A</text>
+          <rect x="240" y="0" width="60" height="32" class="viz-node-alt"/><text x="270" y="20" text-anchor="middle">[4]</text>
+          <rect x="300" y="0" width="60" height="32" class="viz-node-alt"/><text x="330" y="20" text-anchor="middle">[5]</text>
+          <rect x="360" y="0" width="60" height="32" fill="rgba(212,147,12,0.3)" stroke="#d4930c" stroke-width="2"/><text x="390" y="20" text-anchor="middle">B</text>
+          <rect x="420" y="0" width="60" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="450" y="20" text-anchor="middle" font-weight="700">C</text>
+          <text x="390" y="-5" text-anchor="middle" font-size="14" fill="#d4930c">⚠️</text>
+          <text x="450" y="-5" text-anchor="middle" font-size="14" fill="#3b9b6e">→</text>
+        </g>
+
+        <!-- Step 4: d["D"] = 4 → hash 1 -->
+        <text class="a10-S4" x="40" y="60" font-weight="700">d["D"] = 4 → hash 1 ✓</text>
+        <g class="a10-S4" transform="translate(150, 75)">
+          <rect x="0" y="0" width="60" height="32" class="viz-node-alt"/><text x="30" y="20" text-anchor="middle">[0]</text>
+          <rect x="60" y="0" width="60" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="90" y="20" text-anchor="middle" font-weight="700">D</text>
+          <rect x="120" y="0" width="60" height="32" class="viz-node-alt"/><text x="150" y="20" text-anchor="middle">[2]</text>
+          <rect x="180" y="0" width="60" height="32" class="viz-node"/><text x="210" y="20" text-anchor="middle">A</text>
+          <rect x="240" y="0" width="60" height="32" class="viz-node-alt"/><text x="270" y="20" text-anchor="middle">[4]</text>
+          <rect x="300" y="0" width="60" height="32" class="viz-node-alt"/><text x="330" y="20" text-anchor="middle">[5]</text>
+          <rect x="360" y="0" width="60" height="32" class="viz-node"/><text x="390" y="20" text-anchor="middle">B</text>
+          <rect x="420" y="0" width="60" height="32" class="viz-node"/><text x="450" y="20" text-anchor="middle">C</text>
+        </g>
+
+        <!-- Step 5: d.get("C") -->
+        <text class="a10-S5" x="40" y="60" font-weight="700" fill="#3b9b6e">d.get("C") → hash 6 → [6]은 B → probe → [7]에서 C 발견 ✓</text>
+        <g class="a10-S5" transform="translate(150, 75)">
+          <rect x="0" y="0" width="60" height="32" class="viz-node-alt"/><text x="30" y="20" text-anchor="middle">[0]</text>
+          <rect x="60" y="0" width="60" height="32" class="viz-node"/><text x="90" y="20" text-anchor="middle">D</text>
+          <rect x="120" y="0" width="60" height="32" class="viz-node-alt"/><text x="150" y="20" text-anchor="middle">[2]</text>
+          <rect x="180" y="0" width="60" height="32" class="viz-node"/><text x="210" y="20" text-anchor="middle">A</text>
+          <rect x="240" y="0" width="60" height="32" class="viz-node-alt"/><text x="270" y="20" text-anchor="middle">[4]</text>
+          <rect x="300" y="0" width="60" height="32" class="viz-node-alt"/><text x="330" y="20" text-anchor="middle">[5]</text>
+          <rect x="360" y="0" width="60" height="32" fill="rgba(212,147,12,0.2)" stroke="#d4930c" stroke-width="1.5"/><text x="390" y="20" text-anchor="middle">B</text>
+          <rect x="420" y="0" width="60" height="32" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2.5"/><text x="450" y="20" text-anchor="middle" font-weight="700">C</text>
+          <text x="450" y="-5" text-anchor="middle" font-size="14" fill="#3b9b6e">🎯</text>
+        </g>
+      </g>
+
+      <!-- 메시지 -->
+      <g transform="translate(40, 165)">
+        <rect x="0" y="0" width="640" height="60" rx="6" fill="rgba(196,114,78,0.06)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="320" y="22" text-anchor="middle" class="viz-label" font-weight="700">📦 keep:hash → slot. 충돌하면 다음 빈 자리 찾기 (probing).</text>
+        <text x="320" y="42" text-anchor="middle" class="viz-label-small">조회 시에도 같은 probe 순서로 따라감 → 키를 정확히 찾아냄</text>
+      </g>
+
+      <text x="360" y="265" class="viz-label-small" text-anchor="middle">애니메이션 12초 주기 (2초씩 6단계) — 충돌 1번에도 평균 O(1) 유지</text>
+    </svg>
+    <div class="viz-caption"><strong>해시 테이블 = 우편함.</strong> hash가 슬롯 번호를 알려줌 → 직행 O(1). 우연히 같은 슬롯을 받으면(충돌) 다음 빈 자리로 이동 → 조회도 같은 순서로 따라감 → 정확히 발견.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. 해시 함수 ==================== -->
+<section id="hash-function">
+  <h2>02 — 해시 함수: 무엇이 좋은 해시인가</h2>
+
+  <div class="level-section elementary">
+    <div class="level-section-header">
+      <span class="level-badge level-elem">초급</span>
+      <h3 class="level-section-title">해시 함수의 정의</h3>
+    </div>
+    <p>
+      <strong>해시 함수 h(x)</strong>: 임의의 데이터 x를 <em>고정 크기 정수</em>로 변환하는 함수.
+    </p>
+    <div class="formula-box">
+      h: 임의 데이터 → ℤ ∩ [0, m)   &nbsp;(m = 테이블 크기)
+    </div>
+    <p>
+      예: "홍길동" → 137, "abc" → 42, 42 → 42. 같은 입력은 항상 같은 출력.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">좋은 해시 함수의 4가지 속성</h3>
+    </div>
+    <ol>
+      <li>
+        <strong>결정론적 (Deterministic)</strong>: 같은 입력 → 같은 출력. 무작위가 아님.
+        (단, <em>다른 프로세스 간</em>에는 다를 수 있음 — 해시 랜덤화.)
+      </li>
+      <li>
+        <strong>균등성 (Uniformity)</strong>: 출력이 [0, m) 범위에 <em>고르게 분포</em>. 어떤 슬롯도 편향되지 않음.
+      </li>
+      <li>
+        <strong>빠름</strong>: O(key 크기). 키 하나 해싱에 O(1) 정도 바라야 dict 전체가 O(1).
+      </li>
+      <li>
+        <strong>Avalanche effect (눈사태 효과)</strong>: 입력 1비트 변화 → 출력의 약 절반 비트 변화. 연관된 입력들이 같은 슬롯에 뭉치지 않도록.
+      </li>
+    </ol>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Python의 <code>hash()</code> — 어떻게 작동하는가</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">python_hash_examples.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-bi">hash</span>(<span class="hl-num">42</span>)              <span class="hl-cmt"># 42 (작은 int는 자기 자신)</span>
+<span class="hl-bi">hash</span>(-<span class="hl-num">1</span>)              <span class="hl-cmt"># -2 (Python 내부적으로 -1은 예약값)</span>
+<span class="hl-bi">hash</span>(<span class="hl-num">2</span>**<span class="hl-num">100</span>)          <span class="hl-cmt"># Python은 큰 int도 해시 가능 (정수 나머지 연산)</span>
+<span class="hl-bi">hash</span>(<span class="hl-str">"hello"</span>)         <span class="hl-cmt"># 프로세스마다 다름! (SipHash randomization)</span>
+<span class="hl-bi">hash</span>((<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>))       <span class="hl-cmt"># tuple — 원소들 해시 조합</span>
+
+<span class="hl-bi">hash</span>([<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>])       <span class="hl-cmt"># TypeError: unhashable type: 'list'</span>
+                      <span class="hl-cmt"># list는 mutable → hashable 아님</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>int</strong>: 작은 값은 자기 자신, 큰 값은 <code>x mod (2^61 − 1)</code> (Mersenne prime).</li>
+      <li><strong>str, bytes</strong>: SipHash (Python 3.4: SipHash-2-4 → 3.12: SipHash-1-3). 프로세스마다 seed 다름.</li>
+      <li><strong>tuple, frozenset</strong>: 원소 해시들을 XOR·combine. 재귀적.</li>
+      <li><strong>float</strong>: 정수와 일관되게 처리 — <code>hash(3.0) == hash(3)</code>.</li>
+    </ul>
+  </div>
+
+  <div class="caution-box">
+    <div class="box-header">⚠️ <code>hash(-1)</code>은 왜 <code>-2</code>인가</div>
+    <p>
+      CPython 내부에서 <code>-1</code>은 <em>"해시 계산 오류"를 나타내는 sentinel 값</em>. 따라서 실제 해시값이 -1이면 -2로 바꿈. 그래서 <code>hash(-1) == hash(-2) == -2</code>.
+    </p>
+    <p>
+      이게 사용자 레벨에서 뭔가 잘못될 일은 거의 없지만, 커스텀 <code>__hash__</code>를 만들 때 -1은 절대 반환하지 말 것.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. 충돌과 해결 ==================== -->
+<section id="collision-basic">
+  <h2>03 — 충돌과 해결 전략: Chaining vs Open Addressing</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">생일 역설 — 충돌은 필연이다</h3>
+    </div>
+    <p>
+      해시 테이블 크기 m, 원소 n개. <em>모두 다른 슬롯에 들어갈 확률</em>은 생일 역설로 계산 가능:
+    </p>
+    <div class="formula-box">
+      P(충돌 없음) ≈ e^(−n²/2m)
+    </div>
+    <p>
+      n = √m만 돼도 P(충돌) &gt; 50%. 예: m=365(1년), n=23(23명)이면 P(충돌) ≈ 50% (생일 역설).
+      <strong>해시 테이블에서 충돌은 드문 일이 아니라 <em>일상</em></strong>. 대응이 필수.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">전략 1 — Chaining (CLRS §11.2)</h3>
+    </div>
+    <p>
+      각 슬롯이 <strong>linked list</strong>(또는 다른 자료구조). 충돌한 원소들이 같은 슬롯 리스트에 쌓임.
+    </p>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      Slot 0: [A] → [B] → [C]        <em>(세 개가 slot 0에 충돌)</em><br>
+      Slot 1: [D]<br>
+      Slot 2: (비어있음)<br>
+      Slot 3: [E] → [F]
+    </div>
+    <ul>
+      <li><strong>장점</strong>: 구현 단순. Load factor &gt; 1도 가능.</li>
+      <li><strong>단점</strong>: linked list overhead (포인터, malloc, 캐시 미스).</li>
+      <li><strong>사용처</strong>: Java HashMap, C++ std::unordered_map.</li>
+    </ul>
+    <p>
+      평균 lookup: O(1 + α), α = n/m (load factor). α가 O(1)이면 O(1).
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">전략 2 — Open Addressing (CLRS §11.4)</h3>
+    </div>
+    <p>
+      모든 원소를 <em>해시 테이블 자체에</em> 저장. 충돌 시 다른 슬롯을 probe(탐색).
+    </p>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      Slot 0: A                         <em>(hash → 0)</em><br>
+      Slot 1: B                         <em>(hash → 1)</em><br>
+      Slot 2: C                         <em>(hash → 0, probe 1 충돌, probe 2로)</em><br>
+      Slot 3: (비어있음)<br>
+      Slot 4: D                         <em>(hash → 4)</em>
+    </div>
+    <ul>
+      <li><strong>장점</strong>: 포인터 없음 → 캐시 친화적. Linked list 오버헤드 없음.</li>
+      <li><strong>단점</strong>: Load factor &lt; 1이어야 (꽉 차면 무한 루프). 리사이징 비용.</li>
+      <li><strong>사용처</strong>: <strong>CPython dict</strong>, Go map, Rust HashMap.</li>
+    </ul>
+    <p>
+      평균 lookup: 1/(1 − α) (α = load factor). α=0.5면 평균 2회 probe, α=0.66이면 약 3회.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 왜 CPython은 open addressing을 선택했나</div>
+    <ol>
+      <li><strong>캐시 지역성</strong>: 모든 데이터가 연속 메모리. CPU 캐시가 효율적.</li>
+      <li><strong>메모리 효율</strong>: linked list 포인터 overhead 없음.</li>
+      <li><strong>예측 가능성</strong>: malloc 호출 없음 (chaining은 매 충돌마다 malloc).</li>
+      <li><strong>단순성</strong>: 포인터 관리 코드 없음 → 버그 적음.</li>
+    </ol>
+    <p>
+      단점(리사이징 비용)은 amortized O(1)로 분산 (§07). 트레이드오프가 분명히 open addressing이 우위.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 04. Open Addressing 상세 ==================== -->
+<section id="open-addressing">
+  <h2>04 — Open Addressing 상세: 3가지 probing 기법</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Linear Probing — 가장 단순</h3>
+    </div>
+    <p>
+      충돌 시 "바로 다음 슬롯"으로 이동. 빈 슬롯 나올 때까지 선형 탐색.
+    </p>
+    <div class="formula-box">
+      probe(k, i) = (h(k) + i) mod m, &nbsp; i = 0, 1, 2, ...
+    </div>
+    <ul>
+      <li><strong>장점</strong>: 캐시 친화 (인접 슬롯 연속 접근).</li>
+      <li><strong>단점</strong>: <em>primary clustering</em> — 한 곳에서 충돌이 시작되면 인접 슬롯들이 계속 채워져 긴 "군집" 형성. 긴 군집은 더 긴 probe를 유발.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Quadratic Probing — 거리 증가</h3>
+    </div>
+    <div class="formula-box">
+      probe(k, i) = (h(k) + c₁·i + c₂·i²) mod m
+    </div>
+    <p>
+      거리가 1, 4, 9, 16, ... 점점 커짐. Primary clustering 줄임.
+    </p>
+    <p>
+      <strong>단점</strong>: <em>secondary clustering</em> — 같은 초기 해시값이면 같은 probe sequence. 일부 슬롯은 영원히 탐색 안 되기도 (m이 소수가 아니면).
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Double Hashing — 두 개의 해시 함수</h3>
+    </div>
+    <div class="formula-box">
+      probe(k, i) = (h₁(k) + i · h₂(k)) mod m
+    </div>
+    <p>
+      Probe sequence가 <em>키마다 다름</em> (h₂(k)에 의존). Primary/secondary clustering 모두 해결.
+    </p>
+    <p>
+      <strong>단점</strong>: 두 해시 함수 필요. 캐시 불친화 (멀리 점프).
+    </p>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원서 인용 — CLRS 4판, §11.4 "Open addressing"</div>
+    <p>
+      <em>"The probe sequence for a key k is the sequence of slots &lt;h(k,0), h(k,1), ..., h(k,m-1)&gt;. Every key must produce a permutation of the slot numbers, so that every slot is eventually considered."</em>
+    </p>
+    <p>
+      Probe sequence가 모든 슬롯을 결국 방문해야 한다는 조건이 핵심. Linear/quadratic은 m이 특정 조건일 때만 이 성질 만족.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 이 3가지 중 CPython은 무엇을 쓰는가</div>
+    <p>
+      <strong>셋 다 아니다</strong>. CPython은 교과서에 없는 영리한 4번째 기법을 씁니다.<br>
+      <strong>Perturbation Probing</strong> — §05에서.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 05. CPython Perturbation Probing ==================== -->
+<section id="cpython-perturbation">
+  <h2>05 — CPython의 Perturbation Probing (CLRS에 없는 기법)</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">아이디어 — 해시의 상위 비트를 "섞어" 사용</h3>
+    </div>
+    <p>
+      표준 probing은 hash(k)의 하위 비트 (<code>& (m-1)</code>)만 사용. 상위 비트 정보가 버려짐.
+      <strong>CPython의 기법</strong>: probe마다 <em>해시값 자체를 점진적으로 섞어</em> 새로운 probe 위치 생성.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">CPython dictobject.c — probe 루프 (개념 의사코드)</span><button class="copy-btn">복사</button></div>
+<pre><code>i = hash &amp; mask              <span class="hl-cmt"># 첫 probe</span>
+perturb = hash
+<span class="hl-kw">while</span> slot[i] != EMPTY <span class="hl-kw">and</span> slot[i].hash != hash:
+    perturb &gt;&gt;= PERTURB_SHIFT    <span class="hl-cmt"># PERTURB_SHIFT = 5</span>
+    i = (i * <span class="hl-num">5</span> + perturb + <span class="hl-num">1</span>) &amp; mask</code></pre>
+    </div>
+    <p>
+      <strong>핵심</strong>: <code>perturb</code>가 매 iteration마다 <em>해시의 상위 5비트를 흘려보냄</em>. 처음 probe는 하위 비트만 반영, 그 다음부터 점점 상위 비트의 정보도 포함.
+    </p>
+    <p>
+      <code>i * 5 + perturb + 1</code>: linear probing처럼 보이지만 perturb 덕에 <em>키마다 독특한 probe sequence</em>. Double hashing의 효과 + 캐시 친화.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">왜 <code>i * 5</code>인가 — Mersenne 추측의 영리함</h3>
+    </div>
+    <p>
+      테이블 크기 m은 항상 2의 거듭제곱. <code>mask = m − 1</code>이라 <code>& mask</code>가 <code>mod m</code>와 같음.
+    </p>
+    <p>
+      <code>5</code>는 2의 거듭제곱 modulo에서 <strong>특별한 속성</strong>을 가짐:
+    </p>
+    <ul>
+      <li>모든 m에 대해 <code>i → i * 5 + 1 mod m</code>은 <strong>m의 모든 값을 순회</strong>.</li>
+      <li>실제로 (5·i + c) mod 2^k의 순열 구조가 증명됨.</li>
+      <li>perturb의 non-zero 기여 덕에 clustering 최소화.</li>
+    </ul>
+    <p>
+      이게 경험적으로 매우 우수한 성능을 보여 CPython에서 채택 (Python 2.3 시대, ~2001–2002, Tim Peters 설계).
+    </p>
+
+    <div class="reading-box">
+      <div class="box-header">📖 원문 — dictobject.c 주석</div>
+      <p>
+        <em>"The probe sequence is computed by: i = (i*5 + perturb + 1) & mask. ... This gives excellent collision statistics. It's cheap (just a few operations per probe) and it guarantees that any probe can eventually reach every slot."</em>
+      </p>
+      <p style="font-size:0.84rem;color:var(--text-secondary);margin-top:8px;">
+        — CPython <code>Objects/dictobject.c</code> 주석 (Tim Peters 원 설계, Raymond Hettinger 유지).
+      </p>
+    </div>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">시각화 — 어떻게 probe 순서가 퍼지나</h3>
+    </div>
+    <p>
+      m = 8 (mask = 7)일 때 hash = 0x12345678에 대한 probe 순서:
+    </p>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      perturb = 0x12345678, i = hash &amp; 7 = 0<br>
+      probe 1: i=0<br>
+      perturb &gt;&gt;= 5 → 0x0091A2B3, i = (0*5 + 0x91A2B3 + 1) &amp; 7 = 4<br>
+      probe 2: i=4<br>
+      perturb &gt;&gt;= 5 → 0x0048D159, i = (4*5 + 0x48D159 + 1) &amp; 7 = 2<br>
+      probe 3: i=2<br>
+      ...
+    </div>
+    <p>
+      Linear probing처럼 순차적이지 않고, 전체 테이블을 <em>예측 불가 패턴</em>으로 순회. Clustering 효과적으로 깸.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 06. SipHash ==================== -->
+<section id="siphash">
+  <h2>06 — SipHash-1-3과 해시 랜덤화: DoS 방어</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">2011년의 악몽 — Hash Collision DoS</h3>
+    </div>
+    <p>
+      2011년 말, Alexander Klink와 Julian Wälde가 발표: <em>"Hash DoS"</em>.
+    </p>
+    <ul>
+      <li>Python, PHP, Java, Ruby의 해시 함수가 <strong>결정론적 + 공개</strong>.</li>
+      <li>공격자가 같은 해시값을 갖는 문자열 수천 개를 만들어 POST 요청.</li>
+      <li>서버 해시 테이블이 모두 한 슬롯에 충돌 → O(n) linked list로 전락.</li>
+      <li>Django 요청 처리가 n=1000에서 수 초 → <strong>DoS</strong>.</li>
+    </ul>
+    <p>
+      CVE-2012-1150 (Python), CVE-2011-4858 (Java) 등이 발급. 주요 언어들이 비상 대응.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">해법 1 — Hash Randomization</h3>
+    </div>
+    <p>
+      <strong>매 프로세스 시작 시 무작위 seed를 해시 함수에 주입</strong>. 공격자가 해시값을 예측 불가.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">hash_randomization_demo.sh</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-cmt"># 프로세스마다 hash("hello")가 다르다</span>
+$ python3 -c <span class="hl-str">"print(hash('hello'))"</span>
+-<span class="hl-num">8183367247218815361</span>
+
+$ python3 -c <span class="hl-str">"print(hash('hello'))"</span>
+-<span class="hl-num">2847113481593718475</span>
+
+<span class="hl-cmt"># PYTHONHASHSEED로 고정 가능 (재현 가능한 테스트용)</span>
+$ PYTHONHASHSEED=<span class="hl-num">0</span> python3 -c <span class="hl-str">"print(hash('hello'))"</span>
+<span class="hl-num">4472863470232598073</span>
+$ PYTHONHASHSEED=<span class="hl-num">0</span> python3 -c <span class="hl-str">"print(hash('hello'))"</span>
+<span class="hl-num">4472863470232598073</span></code></pre>
+    </div>
+    <p>
+      <strong>Python 3.3(2012)부터 기본 활성화</strong> (3.2에서는 <code>-R</code> 옵션으로 opt-in), Python 3.4(2014)에서 SipHash-2-4로 해시 함수 자체도 강화. 정수는 randomization 영향 X (수학적 성질 유지). 문자열·bytes만.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">해법 2 — SipHash 채택</h3>
+    </div>
+    <p>
+      Jean-Philippe Aumasson과 Daniel J. Bernstein이 2012년에 발표한 <strong>SipHash</strong>.
+      PRF(Pseudo-Random Function) 기반 — 키 없이 역산 불가능.
+    </p>
+    <ul>
+      <li><strong>SipHash-2-4</strong> (원조, Python 3.4 도입): 2 round 압축 + 4 round finalization.</li>
+      <li><strong>SipHash-1-3</strong> (Python 3.12부터): 1 round + 3 round. <em>약간 빠르고 여전히 안전</em>.</li>
+    </ul>
+    <div class="formula-box">
+      SipHash(key, data) = 128-bit key로 파라미터화된 64-bit PRF
+    </div>
+    <p>
+      Python은 프로세스 시작 시 256-bit 무작위 seed 생성 → SipHash key로 사용. str/bytes 해시에 적용. 공격자가 서버 메모리 읽지 않는 한 충돌 입력 생성 불가.
+    </p>
+
+    <div class="reading-box">
+      <div class="box-header">📖 원서 인용 — PEP 456 "Secure and interchangeable hash algorithm"</div>
+      <p>
+        <em>"This PEP proposes SipHash as default string and bytes hash algorithm to properly fix Python's hash vulnerability... SipHash is a cryptographic pseudorandom function with a 128-bit key and 64-bit output."</em>
+      </p>
+      <p style="font-size:0.84rem;color:var(--text-secondary);margin-top:8px;">
+        — PEP 456, Christian Heimes (2013). Python 3.4에서 구현.
+      </p>
+    </div>
+  </div>
+
+  <div class="caution-box">
+    <div class="box-header">⚠️ 성능과 보안의 트레이드오프</div>
+    <p>
+      SipHash는 간단한 해시(FNV, DJB2 등)보다 <strong>2~3배 느림</strong>. 그래도 안전성을 위해 쓰는 것.
+    </p>
+    <p>
+      Python 3.12에서 SipHash-2-4 → SipHash-1-3으로 전환한 이유: <em>"3회 finalization이면 여전히 공격자 저항 충분, 약 20% 빠름"</em>.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 07. Load Factor ==================== -->
+<section id="load-factor">
+  <h2>07 — Load Factor와 Rehashing</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Load Factor α = n / m</h3>
+    </div>
+    <p>
+      <strong>n</strong>: 저장된 원소 수. <strong>m</strong>: 테이블 크기. α가 너무 크면 충돌 폭증.
+    </p>
+    <table>
+      <thead>
+        <tr><th>α</th><th>평균 probe 수 (open addressing)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0.5</td><td>~2</td></tr>
+        <tr><td>0.66 (CPython threshold)</td><td>~3</td></tr>
+        <tr><td>0.75</td><td>~4</td></tr>
+        <tr><td>0.9</td><td>~10</td></tr>
+        <tr><td>0.99</td><td>~100</td></tr>
+      </tbody>
+    </table>
+    <p>
+      공식: 평균 probe ≈ 1/(1 − α). α = 0.66에서 ~3회 — 매우 빠름. α = 0.9를 넘으면 성능 저하가 급격.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">CPython의 Resize 정책</h3>
+    </div>
+    <ul>
+      <li><strong>Load factor 2/3 초과 시 resize</strong>.</li>
+      <li>작은 dict (원소 &lt; 50,000): 크기를 <strong>4배</strong>로.</li>
+      <li>큰 dict: <strong>2배</strong>로.</li>
+      <li>모든 기존 원소를 새 테이블로 rehash (해시값 자체는 저장되어 있음, 마스크만 다시 적용).</li>
+    </ul>
+    <p>
+      Resize 자체는 O(n), 하지만 <strong>amortized O(1)</strong> per operation (Algo 08의 amortized 분석 동일 논리).
+    </p>
+
+    <h4>왜 작은 dict는 4배로?</h4>
+    <p>
+      작은 dict는 빠르게 커지는 경우가 많음. 2배로 자주 resize하기보다 4배로 한 번에 resize가 효율적.
+      큰 dict는 이미 메모리를 많이 쓰고 있어 4배는 과도 → 2배.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">초기 크기 — 8에서 시작</h3>
+    </div>
+    <p>
+      <code>d = {}</code>이면 초기 테이블 크기 m = 8. <em>용량은 있지만 아직 원소는 없음</em>.
+    </p>
+    <table>
+      <thead>
+        <tr><th>원소 수 n</th><th>테이블 크기 m</th><th>상황</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0–5</td><td>8</td><td>초기</td></tr>
+        <tr><td>6</td><td>32 (4×resize)</td><td>5/8 = 0.625 &lt; 0.66 OK, 6/8 = 0.75 → resize</td></tr>
+        <tr><td>6–21</td><td>32</td><td></td></tr>
+        <tr><td>22</td><td>128 (4×resize)</td><td>21/32 = 0.656 OK, 22/32 = 0.687 → resize</td></tr>
+        <tr><td>...</td><td>...</td><td></td></tr>
+      </tbody>
+    </table>
+    <p>
+      빈 dict의 sys.getsizeof는 Python 3.12에서 64바이트. 원소 추가에 따라 증가.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 08. Compact Dict ==================== -->
+<section id="compact-dict">
+  <h2>08 — Compact Dict: Raymond Hettinger의 혁신 (Python 3.6)</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">전통 dict 구조 (~Python 3.5)</h3>
+    </div>
+    <p>
+      전통적으로 dict 테이블의 각 슬롯은 <strong>(hash, key, value)</strong> 삼중체를 직접 저장:
+    </p>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      <strong>전통 dict (Python 3.5 이하)</strong>:<br>
+      Slot 0: (hash=0x123, key="a", value=1)<br>
+      Slot 1: EMPTY<br>
+      Slot 2: EMPTY<br>
+      Slot 3: (hash=0x456, key="b", value=2)<br>
+      Slot 4: EMPTY<br>
+      ...<br>
+      <br>
+      각 슬롯 = 24바이트 (8 hash + 8 key + 8 value)<br>
+      Empty 슬롯도 24바이트 메모리 차지
+    </div>
+    <p>
+      Load factor 2/3이면 <strong>33% 메모리가 empty로 낭비</strong>됨. 큰 dict일수록 이 낭비가 큼.
+    </p>
+    <p>
+      <strong>문제 2</strong>: 삽입 순서 정보 없음. 순회 순서가 해시 순서 — 사용자 입장에서 예측 불가.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Raymond Hettinger의 혁신 (Python 3.6, 2016)</h3>
+    </div>
+    <p>
+      <strong>테이블을 두 부분으로 분리</strong>:
+    </p>
+    <ol>
+      <li>
+        <strong>Indices 배열</strong>: 작은 정수 (entries 배열로의 index). 슬롯이 많지만 각 슬롯이 1~8바이트.
+      </li>
+      <li>
+        <strong>Entries 배열</strong>: (hash, key, value) 삼중체의 조밀한 배열. <em>삽입 순서대로</em> 저장. n만큼만 공간 차지.
+      </li>
+    </ol>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      <strong>Compact dict (Python 3.6+)</strong>:<br>
+      <br>
+      Indices: [-<span class="hl-num">1</span>, -<span class="hl-num">1</span>, <span class="hl-num">0</span>, -<span class="hl-num">1</span>, -<span class="hl-num">1</span>, <span class="hl-num">1</span>, -<span class="hl-num">1</span>, -<span class="hl-num">1</span>]  &nbsp;(-1 = empty)<br>
+      Entries: [<br>
+      &nbsp;&nbsp;&nbsp;(hash=0x123, key="a", value=<span class="hl-num">1</span>),<br>
+      &nbsp;&nbsp;&nbsp;(hash=0x456, key="b", value=<span class="hl-num">2</span>)<br>
+      ]
+    </div>
+    <p>
+      <strong>Lookup 과정</strong>:
+    </p>
+    <ol>
+      <li>hash("a") 계산 → 2.</li>
+      <li>Indices[2] = 0.</li>
+      <li>Entries[0] 읽음 → ("a", 1). 키 일치 → 값 반환.</li>
+    </ol>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">이점 — 메모리 절약 30-95%</h3>
+    </div>
+    <ul>
+      <li>
+        <strong>빈 슬롯의 크기</strong>: 전통 24바이트 → compact 1~8바이트. 33% 낭비가 1.4~11%로 줄어듦.
+      </li>
+      <li>
+        <strong>Index 크기 동적 조정</strong>: 테이블 크기 &lt; 256이면 <code>int8</code>(1바이트). &lt; 65536이면 <code>int16</code>(2바이트). 더 크면 <code>int32</code> 또는 <code>int64</code>.
+      </li>
+      <li>
+        <strong>삽입 순서 유지</strong>: entries가 순서대로라 <code>for k in d</code>가 삽입 순서.
+      </li>
+    </ul>
+
+    <div class="formula-box">
+      메모리 절약 = 30% (꽉 찬 dict) ~ 95% (거의 빈 dict)
+    </div>
+
+    <p>
+      특히 작은 dict를 많이 만드는 프로그램에서 효과 큼. CPython 자체의 object __dict__, 모듈 namespace 등이 모두 dict → 인터프리터 메모리 사용량 대폭 감소.
+    </p>
+
+    <div class="reading-box">
+      <div class="box-header">📖 원문 — Raymond Hettinger, python-dev 2012</div>
+      <p>
+        <em>"The current memory layout for dictionaries is unnecessarily inefficient. It has a sparse table of 24-byte entries containing the hash value, key pointer, and value pointer. Instead, the 24-byte entries should be stored in a dense table... with the hash table of indices being much smaller. This would reduce the memory footprint of dicts significantly."</em>
+      </p>
+      <p style="font-size:0.84rem;color:var(--text-secondary);margin-top:8px;">
+        — Raymond Hettinger, "More compact dictionaries" 제안서. 2012년 제안, 2016년 Python 3.6 구현.
+      </p>
+    </div>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 부작용: Python 3.7은 "dict는 삽입 순서 유지"를 <strong>언어 스펙</strong>에 추가</div>
+    <p>
+      3.6의 compact dict는 <em>구현 상세</em>로 도입, 순서 유지는 "우연한 부수 효과".
+      커뮤니티 토론 후 3.7에서 <strong>언어 스펙에 보장</strong>하기로 결정.
+    </p>
+    <p>
+      이제 <code>OrderedDict</code>는 대부분의 용도에서 불필요 (<code>move_to_end</code>, 동등성 비교 시 순서 포함 같은 특수 기능만 남음). 다만 커뮤니티 합의 요지: <em>dict가 insertion-ordered라고 해서 list를 대체하는 건 아니다 — 키 lookup 자료구조와 시퀀스는 다르다.</em>
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 09. dict 연산 복잡도 ==================== -->
+<section id="dict-operations">
+  <h2>09 — dict 연산 복잡도</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">연산별 상세</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>연산</th><th>평균</th><th>최악</th><th>비고</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>d[k]</code></td><td>O(1)</td><td>O(n)</td><td>최악은 모든 키가 같은 슬롯에 충돌 (SipHash로 방어)</td></tr>
+        <tr><td><code>d[k] = v</code></td><td>O(1) amortized</td><td>O(n)</td><td>Resize 시 O(n)</td></tr>
+        <tr><td><code>del d[k]</code></td><td>O(1)</td><td>O(n)</td><td>dummy 슬롯 마킹 → 이후 insert/resize 시 재활용</td></tr>
+        <tr><td><code>k in d</code></td><td>O(1)</td><td>O(n)</td><td>lookup과 동일</td></tr>
+        <tr><td><code>len(d)</code></td><td>O(1)</td><td>O(1)</td><td>count 유지</td></tr>
+        <tr><td><code>d.keys()</code>, <code>values()</code>, <code>items()</code></td><td>O(1)</td><td>O(1)</td><td>view object (lazy)</td></tr>
+        <tr><td>iteration (<code>for k in d</code>)</td><td>O(n)</td><td>O(n)</td><td>entries 배열 순회 (3.6+)</td></tr>
+        <tr><td><code>d.copy()</code></td><td>O(n)</td><td>O(n)</td><td>shallow copy</td></tr>
+        <tr><td><code>d.update(d2)</code></td><td>O(len(d2))</td><td>O(len(d2))</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="caution-box">
+    <div class="box-header">⚠️ 최악 O(n)은 공격 없이는 거의 발생 안 함</div>
+    <p>
+      SipHash 랜덤화 덕에 악의적 입력이 아니면 충돌 많이 안 남. <strong>평균 O(1)이 사실상 보장</strong>.
+    </p>
+    <p>
+      하지만 <strong>예외</strong>: 사용자가 커스텀 <code>__hash__</code>를 잘못 구현해 모든 객체가 같은 해시 반환 시. 그러면 O(n). 거의 없는 실수지만 주의.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. Hashable 객체 ==================== -->
+<section id="hashable-objects">
+  <h2>10 — Hashable 객체: <code>__hash__</code>와 <code>__eq__</code></h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">Hashable의 세 조건</h3>
+    </div>
+    <ol>
+      <li><code>__hash__</code> 정의 — 정수 반환.</li>
+      <li><code>__eq__</code> 정의.</li>
+      <li><strong>불변(immutable)</strong> — 해시값이 객체 생명 동안 변하지 않아야.</li>
+    </ol>
+    <div class="formula-box">
+      <strong>규칙</strong>: a == b ⟹ hash(a) == hash(b). (역은 아님.)
+    </div>
+    <p>
+      이게 깨지면 <code>a == b</code>인데 dict에서 찾을 때 다른 슬롯을 봐서 찾지 못하는 버그 발생.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">기본 hashable / 기본 unhashable</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Hashable</th><th>Unhashable</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>int, float, bool</td><td>list</td></tr>
+        <tr><td>str, bytes</td><td>dict</td></tr>
+        <tr><td>tuple (원소들이 hashable일 때)</td><td>set</td></tr>
+        <tr><td>frozenset</td><td>bytearray</td></tr>
+        <tr><td>None, Ellipsis</td><td>numpy array</td></tr>
+        <tr><td>function, class, module</td><td>tuple (원소 중 list 있으면)</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>원리</strong>: mutable 객체는 hashable 아님. 내용이 바뀌면 해시도 바뀌어야 하는데, dict는 해시가 고정이라 가정.
+    </p>
+    <p>
+      list를 dict key로 쓰고 싶다면 — <strong>tuple로 변환</strong>.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">커스텀 클래스에 <code>__hash__</code> 구현</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">custom_hash.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">Point</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self, x, y):
+        self.x = x
+        self.y = y
+
+    <span class="hl-kw">def</span> <span class="hl-bi">__eq__</span>(self, other):
+        <span class="hl-kw">if</span> <span class="hl-kw">not</span> <span class="hl-bi">isinstance</span>(other, Point):
+            <span class="hl-kw">return</span> NotImplemented
+        <span class="hl-kw">return</span> self.x == other.x <span class="hl-kw">and</span> self.y == other.y
+
+    <span class="hl-kw">def</span> <span class="hl-bi">__hash__</span>(self):
+        <span class="hl-kw">return</span> <span class="hl-bi">hash</span>((self.x, self.y))   <span class="hl-cmt"># tuple 해시로 위임</span>
+
+
+p1 = Point(<span class="hl-num">1</span>, <span class="hl-num">2</span>)
+p2 = Point(<span class="hl-num">1</span>, <span class="hl-num">2</span>)
+d = {p1: <span class="hl-str">"hello"</span>}
+<span class="hl-bi">print</span>(d[p2])   <span class="hl-cmt"># "hello" — p1과 p2가 == 이므로 같은 슬롯</span></code></pre>
+    </div>
+    <p>
+      <strong>편의 도구</strong>: <code>@dataclass(frozen=True)</code>는 자동으로 <code>__hash__</code>와 <code>__eq__</code> 생성. 또한 frozen이라 수정 불가 (진짜 immutable 보장).
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">dataclass_hashable.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> dataclasses <span class="hl-kw">import</span> dataclass
+
+<span class="hl-dec">@dataclass</span>(frozen=<span class="hl-kw">True</span>)
+<span class="hl-kw">class</span> <span class="hl-bi">Point</span>:
+    x: <span class="hl-bi">int</span>
+    y: <span class="hl-bi">int</span>
+
+<span class="hl-cmt"># __eq__, __hash__ 자동 생성. 변경 시도 → FrozenInstanceError.</span></code></pre>
+    </div>
+  </div>
+
+  <div class="caution-box">
+    <div class="box-header">⚠️ <code>__eq__</code>만 override하면 <code>__hash__</code>가 None이 됨</div>
+    <p>
+      Python의 규칙: <code>__eq__</code> 구현 시 <code>__hash__</code>를 명시하지 않으면 <strong>자동으로 <code>None</code></strong>. → 객체가 unhashable.
+    </p>
+    <p>
+      이유: "a == b but hash(a) != hash(b)"의 버그를 사전 방지. 직접 둘 다 구현하거나, <code>@dataclass(frozen=True)</code> 또는 <code>@total_ordering</code> 사용.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 11. dict vs set ==================== -->
+<section id="dict-vs-set">
+  <h2>11 — dict vs set: 공통점과 차이</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">내부 구조 같음</h3>
+    </div>
+    <p>
+      set은 dict에서 <strong>value를 제거한 자료구조</strong>. 내부 구현 거의 동일 (<code>Objects/setobject.c</code>).
+    </p>
+    <ul>
+      <li>Open addressing + perturbation probing (dict과 같음).</li>
+      <li>Load factor threshold 2/3.</li>
+      <li>Resize 정책 유사.</li>
+      <li>SipHash 랜덤화 공유.</li>
+    </ul>
+    <p>
+      다만 set은 compact representation은 안 씀 — value가 없으니 애초에 공간 효율.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">언제 무엇을 쓰나</h3>
+    </div>
+    <ul>
+      <li><strong>dict</strong>: key → value 매핑이 필요.</li>
+      <li><strong>set</strong>: "원소가 있는지" 확인만 필요. 중복 제거.</li>
+      <li><strong>frozenset</strong>: immutable set. dict key나 다른 set의 원소로 사용 가능.</li>
+    </ul>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">set_operations.py</span><button class="copy-btn">복사</button></div>
+<pre><code>a = {<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>}
+b = {<span class="hl-num">2</span>, <span class="hl-num">3</span>, <span class="hl-num">4</span>}
+<span class="hl-bi">print</span>(a | b)    <span class="hl-cmt"># 합집합: {1, 2, 3, 4}</span>
+<span class="hl-bi">print</span>(a &amp; b)    <span class="hl-cmt"># 교집합: {2, 3}</span>
+<span class="hl-bi">print</span>(a - b)    <span class="hl-cmt"># 차집합: {1}</span>
+<span class="hl-bi">print</span>(a ^ b)    <span class="hl-cmt"># 대칭차: {1, 4}</span>
+
+<span class="hl-cmt"># 중복 제거</span>
+nums = [<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>, <span class="hl-num">3</span>, <span class="hl-num">3</span>]
+<span class="hl-bi">print</span>(<span class="hl-bi">set</span>(nums))   <span class="hl-cmt"># {1, 2, 3}</span>
+
+<span class="hl-cmt"># 멤버십 체크 O(1)</span>
+<span class="hl-kw">if</span> <span class="hl-str">"python"</span> <span class="hl-kw">in</span> {<span class="hl-str">"java"</span>, <span class="hl-str">"python"</span>, <span class="hl-str">"c"</span>}:
+    <span class="hl-bi">print</span>(<span class="hl-str">"found"</span>)</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 12. AI와 hashing ==================== -->
+<section id="ai-hash">
+  <h2>12 — AI가 흔히 놓치는 hash 함정</h2>
+
+  <div class="ai-box">
+    <div class="box-header">AI — 4가지 흔한 실수</div>
+    <ol>
+      <li>
+        <strong>list를 dict key로 쓰기</strong>: "아 왜 TypeError?" 대답만 하고 <em>왜 list가 unhashable인지</em> 설명 누락.
+      </li>
+      <li>
+        <strong><code>__eq__</code>만 오버라이드</strong>: <code>__hash__</code> 자동 None 되는 것 모름. "equals to be compared" 기능만 만들고 "hashable" 보존을 잊음.
+      </li>
+      <li>
+        <strong>해시 해로울 때 mutable 처리</strong>: dict key로 사용한 객체의 속성을 바꾸면 해시가 달라져 찾을 수 없게 됨. "왜 내 dict가 갑자기 고장났나?" 디버깅 지옥.
+      </li>
+      <li>
+        <strong>hash(x) 반환값 재현 불가 가정</strong>: 테스트에서 <code>assert hash("a") == 12345</code>처럼 쓰면 프로세스마다 실패 (SipHash 랜덤화). PYTHONHASHSEED 고정 필요.
+      </li>
+    </ol>
+  </div>
+
+  <div class="ai-comparison">
+    <div class="ai-col human">
+      <div class="ai-col-header">경험 있는 개발자</div>
+<pre><code><span class="hl-cmt"># list를 key로 → tuple로 변환</span>
+cache = {<span class="hl-bi">tuple</span>(lst): result}
+
+<span class="hl-cmt"># 커스텀 __eq__ + __hash__ 짝</span>
+<span class="hl-kw">class</span> <span class="hl-bi">Point</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__eq__</span>(self, o): ...
+    <span class="hl-kw">def</span> <span class="hl-bi">__hash__</span>(self):
+        <span class="hl-kw">return</span> <span class="hl-bi">hash</span>((self.x, self.y))
+
+<span class="hl-cmt"># frozen dataclass로 immutable 보장</span>
+<span class="hl-dec">@dataclass</span>(frozen=<span class="hl-kw">True</span>)
+<span class="hl-kw">class</span> <span class="hl-bi">Point</span>: ...</code></pre>
+    </div>
+    <div class="ai-col ai">
+      <div class="ai-col-header">LLM의 흔한 실수</div>
+<pre><code><span class="hl-cmt"># "list 를 dict key로":</span>
+d = {[<span class="hl-num">1</span>,<span class="hl-num">2</span>]: <span class="hl-str">"x"</span>}       <span class="hl-cmt"># TypeError</span>
+<span class="hl-cmt"># → "tuple로 쓰세요"만 답 (이유 설명 X)</span>
+
+<span class="hl-cmt"># __eq__만 override:</span>
+<span class="hl-kw">class</span> <span class="hl-bi">Point</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__eq__</span>(self, o): ...
+    <span class="hl-cmt"># __hash__ 누락 → unhashable</span>
+
+<span class="hl-cmt"># mutable 객체를 key로:</span>
+obj = Foo(x=<span class="hl-num">1</span>)
+d = {obj: <span class="hl-str">"v"</span>}
+obj.x = <span class="hl-num">2</span>                  <span class="hl-cmt"># 해시 바뀜</span>
+<span class="hl-bi">print</span>(d[obj])            <span class="hl-cmt"># KeyError!</span></code></pre>
+    </div>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — AI에게 dict/해시 관련 작업 시 4가지 확인</div>
+    <ol>
+      <li>"이 타입이 hashable인가? 왜/왜 아닌가?"</li>
+      <li>"커스텀 클래스면 <code>__eq__</code>와 <code>__hash__</code>가 짝지어 있나?"</li>
+      <li>"Dict key로 쓸 객체가 생명 동안 불변인가?"</li>
+      <li>"테스트에서 hash() 값을 고정 비교하나? PYTHONHASHSEED 설정 필요?"</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ==================== 13. 실습 ==================== -->
+<section id="practice">
+  <h2>13 — 실습: 해시 테이블 직접 구현 + 충돌 시각화</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">간단한 open addressing dict</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">mini_dict.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">MiniDict</span>:
+    _EMPTY = <span class="hl-bi">object</span>()
+    _DELETED = <span class="hl-bi">object</span>()
+
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self, capacity=<span class="hl-num">8</span>):
+        self._cap = capacity
+        self._slots = [(self._EMPTY, <span class="hl-kw">None</span>, <span class="hl-kw">None</span>)] * capacity
+        self._size = <span class="hl-num">0</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_probe</span>(self, key):
+        h = <span class="hl-bi">hash</span>(key)
+        mask = self._cap - <span class="hl-num">1</span>
+        i = h &amp; mask
+        perturb = h
+        <span class="hl-kw">while</span> <span class="hl-kw">True</span>:
+            k, _, slot_hash = self._slots[i]
+            <span class="hl-kw">if</span> k <span class="hl-kw">is</span> self._EMPTY <span class="hl-kw">or</span> (k <span class="hl-kw">is</span> <span class="hl-kw">not</span> self._DELETED <span class="hl-kw">and</span> slot_hash == h <span class="hl-kw">and</span> k == key):
+                <span class="hl-kw">return</span> i
+            perturb = perturb &gt;&gt; <span class="hl-num">5</span>   <span class="hl-cmt"># PERTURB_SHIFT = 5</span>
+            i = (i * <span class="hl-num">5</span> + perturb + <span class="hl-num">1</span>) &amp; mask
+
+    <span class="hl-kw">def</span> <span class="hl-bi">__setitem__</span>(self, key, value):
+        <span class="hl-kw">if</span> self._size &gt;= self._cap * <span class="hl-num">2</span> // <span class="hl-num">3</span>:
+            self._resize(self._cap * <span class="hl-num">4</span>)
+        i = self._probe(key)
+        k, _, _ = self._slots[i]
+        <span class="hl-kw">if</span> k <span class="hl-kw">is</span> self._EMPTY:
+            self._size += <span class="hl-num">1</span>
+        self._slots[i] = (key, value, <span class="hl-bi">hash</span>(key))
+
+    <span class="hl-kw">def</span> <span class="hl-bi">__getitem__</span>(self, key):
+        i = self._probe(key)
+        k, v, _ = self._slots[i]
+        <span class="hl-kw">if</span> k <span class="hl-kw">is</span> self._EMPTY:
+            <span class="hl-kw">raise</span> KeyError(key)
+        <span class="hl-kw">return</span> v
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_resize</span>(self, new_cap):
+        old = self._slots
+        self._cap = new_cap
+        self._slots = [(self._EMPTY, <span class="hl-kw">None</span>, <span class="hl-kw">None</span>)] * new_cap
+        self._size = <span class="hl-num">0</span>
+        <span class="hl-kw">for</span> k, v, _ <span class="hl-kw">in</span> old:
+            <span class="hl-kw">if</span> k <span class="hl-kw">is</span> <span class="hl-kw">not</span> self._EMPTY <span class="hl-kw">and</span> k <span class="hl-kw">is</span> <span class="hl-kw">not</span> self._DELETED:
+                self[k] = v
+
+
+<span class="hl-cmt"># 테스트</span>
+d = MiniDict()
+<span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">20</span>):
+    d[<span class="hl-str">f"key{i}"</span>] = i * <span class="hl-num">10</span>
+
+<span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">20</span>):
+    <span class="hl-kw">assert</span> d[<span class="hl-str">f"key{i}"</span>] == i * <span class="hl-num">10</span>
+<span class="hl-bi">print</span>(<span class="hl-str">"MiniDict works ✓"</span>)</code></pre>
+    </div>
+    <p>
+      200줄로 CPython dict의 핵심을 재현. 물론 진짜는 C로 구현되고 compact structure, 여러 최적화 포함.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">실습 2 — 충돌 분포 시각화</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">collision_histogram.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">import</span> collections
+
+<span class="hl-kw">def</span> <span class="hl-bi">collision_stats</span>(words, m):
+    <span class="hl-cmt">"""n개 단어를 m 크기 테이블에 해시했을 때 슬롯별 충돌 수."""</span>
+    counts = collections.Counter()
+    <span class="hl-kw">for</span> w <span class="hl-kw">in</span> words:
+        counts[<span class="hl-bi">hash</span>(w) &amp; (m - <span class="hl-num">1</span>)] += <span class="hl-num">1</span>
+    <span class="hl-kw">return</span> counts
+
+
+<span class="hl-kw">import</span> string, random
+random.seed(<span class="hl-num">42</span>)
+words = [<span class="hl-str">''</span>.join(random.choices(string.ascii_lowercase, k=<span class="hl-num">5</span>)) <span class="hl-kw">for</span> _ <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1000</span>)]
+
+m = <span class="hl-num">2048</span>   <span class="hl-cmt"># load factor ~50%</span>
+stats = collision_stats(words, m)
+<span class="hl-bi">print</span>(<span class="hl-str">f"슬롯당 평균: {<span class="hl-bi">sum</span>(stats.values()) / <span class="hl-bi">len</span>(stats):.2f}"</span>)
+<span class="hl-bi">print</span>(<span class="hl-str">f"최대 충돌: {<span class="hl-bi">max</span>(stats.values())}"</span>)
+<span class="hl-bi">print</span>(<span class="hl-str">f"빈 슬롯 수: {m - <span class="hl-bi">len</span>(stats)}"</span>)</code></pre>
+    </div>
+    <p>
+      실행하면 대부분의 슬롯이 0~2개, 최대 충돌 3~4개 정도. SipHash의 균등 분포 덕.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Load factor α = 0.5인 open addressing 테이블에서 lookup의 평균 probe 수는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>1/(1−α) = 1/0.5 = <strong>2회</strong>. 대부분 첫 probe에 성공, 가끔 두 번째.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt"><code>hash(-1)</code>이 <code>-1</code>이 아니라 <code>-2</code>인 이유는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>CPython 내부에서 <code>-1</code>은 "해시 계산 오류" sentinel. 실제 해시값이 -1이면 내부 코드가 "오류 발생"으로 오판할 수 있어, 특수 처리로 <code>-2</code>로 바꿈.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-fix">FIX</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 클래스가 dict key로 쓰일 때 버그가 있습니다. 고치시오.</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">buggy_class.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">Item</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self, name):
+        self.name = name
+    <span class="hl-kw">def</span> <span class="hl-bi">__eq__</span>(self, other):
+        <span class="hl-kw">return</span> self.name == other.name</code></pre>
+      </div>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">버그</div>
+            <p><code>__eq__</code>만 정의 → <code>__hash__</code> 자동 <code>None</code>. <code>dict[Item("a")] = 1</code>에서 <code>TypeError: unhashable type</code>.</p>
+            <p>고침: <code>__hash__</code>도 정의.</p>
+<pre style="margin-top:8px;"><code>    <span class="hl-kw">def</span> <span class="hl-bi">__hash__</span>(self):
+        <span class="hl-kw">return</span> <span class="hl-bi">hash</span>(self.name)</code></pre>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Compact dict가 전통 dict 대비 메모리 절약이 가장 큰 경우는? (load factor 관점)</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>load factor가 <strong>낮을 때</strong> (거의 빈 dict). 전통 dict는 빈 슬롯마다 24바이트 낭비. compact는 indices가 작은 int(1~2바이트). load factor 0.1이면 ~95% 절약.</p>
+            <p>load factor 0.66(꽉)이면 ~30% 절약.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">왜 CPython dict는 hash collision DoS를 SipHash로 방어하는가? "단순 해시 함수 + 랜덤 seed"만으로는 왜 부족한가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>단순 해시 함수(예: FNV)는 <em>입력과 seed의 관계가 수학적으로 역산 가능</em>할 수 있음. 공격자가 충분한 쌍을 관찰하면 seed를 추론, 충돌 입력 생성.</p>
+            <p>SipHash는 <strong>cryptographic PRF</strong> — 키 없이는 역산 불가능. 서버 메모리 유출 없이는 공격 불가.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">리스트에서 중복 제거 + 순서 유지를 <strong>O(n)</strong>에 하는 함수를 쓰시오.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="code-block"><div class="code-header"><span class="code-label">dedupe.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">dedupe</span>(items):
+    seen = <span class="hl-bi">set</span>()
+    out = []
+    <span class="hl-kw">for</span> x <span class="hl-kw">in</span> items:
+        <span class="hl-kw">if</span> x <span class="hl-kw">not</span> <span class="hl-kw">in</span> seen:
+            seen.add(x)
+            out.append(x)
+    <span class="hl-kw">return</span> out
+
+
+<span class="hl-cmt"># Python 3.7+의 더 간결한 방법 (삽입 순서 유지 보장)</span>
+<span class="hl-kw">def</span> <span class="hl-bi">dedupe_idiom</span>(items):
+    <span class="hl-kw">return</span> <span class="hl-bi">list</span>(<span class="hl-bi">dict</span>.fromkeys(items))</code></pre>
+          </div>
+          <div class="answer-why">
+            <div class="answer-why-title">복잡도</div>
+            <p>둘 다 O(n). <code>dict.fromkeys</code>는 Python 3.7+에서 순서 보장.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">dict 크기 m=16, load factor α=0.66일 때 저장된 원소 수 n은? 그 상태에서 새 원소 추가 시 resize 발생?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>n = 16 × 2/3 = 10.67 → 10. 새 원소 추가 시 n=11, 11/16 = 0.6875 &gt; 0.66 → <strong>resize 발생</strong>. 작은 dict이므로 4×resize → m = 64.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt"><code>d[key] = d.get(key, 0) + 1</code>과 <code>d[key] += 1</code>의 차이는? 둘 다 같은 결과인가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>전자는 key 없어도 안전(기본값 0). 후자는 key 없으면 KeyError.</p>
+            <p>더 우아한 방법:</p>
+            <ul>
+              <li><code>collections.defaultdict(int)</code>: key 없으면 자동 0.</li>
+              <li><code>collections.Counter</code>: 빈도 카운팅 전용, 더 빠름.</li>
+              <li><code>d[key] = d.get(key, 0) + 1</code>: 순수 dict로도 OK.</li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">mutable 객체(list, dict)를 dict key로 쓸 수 없는 이유를 한 문장으로.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>dict는 "key의 해시값이 생명 동안 고정"이라고 가정. mutable 객체는 내용 변경 → 해시 변경 → dict에서 다시 찾지 못하게 됨. 그래서 hashable 속성이 boolean 결정.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">단어 빈도 카운터를 두 가지 방법으로 구현 (defaultdict, Counter). 결과 비교.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="code-block"><div class="code-header"><span class="code-label">word_freq.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> collections <span class="hl-kw">import</span> defaultdict, Counter
+
+text = <span class="hl-str">"the quick brown fox jumps over the lazy dog the"</span>
+
+<span class="hl-cmt"># 방법 1: defaultdict</span>
+d = defaultdict(<span class="hl-bi">int</span>)
+<span class="hl-kw">for</span> w <span class="hl-kw">in</span> text.split():
+    d[w] += <span class="hl-num">1</span>
+
+<span class="hl-cmt"># 방법 2: Counter (훨씬 간결)</span>
+c = Counter(text.split())
+
+<span class="hl-bi">print</span>(<span class="hl-bi">dict</span>(d))          <span class="hl-cmt"># {'the': 3, 'quick': 1, ...}</span>
+<span class="hl-bi">print</span>(<span class="hl-bi">dict</span>(c))          <span class="hl-cmt"># 같은 결과</span>
+<span class="hl-bi">print</span>(c.most_common(<span class="hl-num">3</span>))   <span class="hl-cmt"># [('the', 3), ...]</span></code></pre>
+          </div>
+          <div class="answer-why">
+            <div class="answer-why-title">Counter의 장점</div>
+            <p><code>most_common</code>, 산술 연산(<code>+</code>, <code>-</code>), <code>elements()</code> 등 빈도 관련 편의 메서드. 대부분의 경우 Counter가 우선.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "두 dict 병합"에 <code>{**d1, **d2}</code>와 <code>d1 | d2</code>(3.9+) 중 더 최신 방법을 제안했다. 차이는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>기능적으로 동일 (둘 다 새 dict 생성, 중복 key는 오른쪽 우선). <code>|</code>가 더 읽기 쉽고 Python 3.9+ 표준.</p>
+            <p>In-place 병합은 <code>d1.update(d2)</code> 또는 <code>d1 |= d2</code>. 이건 <em>새 dict 안 만들고</em> d1 수정.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Python 3.7에서 "dict는 삽입 순서 유지"를 <strong>언어 스펙으로 보장</strong>한 영향은? (이전까지는 3.6의 구현 상세였음)</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">영향</div>
+            <ol>
+              <li><strong>OrderedDict 사용 감소</strong>: 대부분의 용도에서 그냥 dict로 충분.</li>
+              <li><strong>JSON 직렬화 순서 예측 가능</strong>: <code>json.dumps(d)</code>가 dict 순서 보존.</li>
+              <li><strong>디버깅/테스트 쉬워짐</strong>: dict 출력 순서가 재현 가능.</li>
+              <li><strong>미래 Python 구현 제약</strong>: PyPy 등 다른 구현도 원칙적으로 삽입 순서를 보장해야 함 (MicroPython은 리소스 제약으로 예외 문서화).</li>
+            </ol>
+            <p>"구현 상세"에서 "언어 스펙"으로 승격이 어떤 의미인지 보여주는 사례.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">🎯</div>
+      <h3>해시 함수의 4속성</h3>
+      <p>결정론적·균등성·빠름·avalanche. Python은 SipHash-1-3으로 DoS 방어.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">💥</div>
+      <h3>충돌 해결</h3>
+      <p>Chaining (Java) vs Open addressing (Python). 캐시 친화로 open addressing 우세.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🌀</div>
+      <h3>Perturbation Probing</h3>
+      <p>CPython 고유. <code>i = (i·5 + perturb + 1) &amp; mask</code>. 상위 비트 점진 활용.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🛡️</div>
+      <h3>SipHash 방어</h3>
+      <p>2012년 hash DoS 공격 대응. 프로세스마다 무작위 seed. str/bytes만 영향.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">📦</div>
+      <h3>Compact Dict (3.6)</h3>
+      <p>Raymond Hettinger의 혁신. Indices + Entries 분리. 30-95% 메모리 절약. 순서 유지는 부산물.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔑</div>
+      <h3>Hashable 규칙</h3>
+      <p>a==b ⟹ hash(a)==hash(b). mutable은 unhashable. __eq__ override 시 __hash__도 필요.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Hash Table</div><div class="glossary-def">해시로 인덱스 계산하는 연관 배열. 평균 O(1) lookup.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Hash Function</div><div class="glossary-def">키를 정수로 변환. 결정론적·균등성·avalanche 요구.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Collision</div><div class="glossary-def">다른 키가 같은 해시로 매핑. 생일 역설로 필연.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Chaining</div><div class="glossary-def">각 슬롯이 linked list. Java HashMap 방식.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Open Addressing</div><div class="glossary-def">테이블 자체에 저장, 충돌 시 probe. CPython dict 방식.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Linear Probing</div><div class="glossary-def">다음 슬롯으로 순차 탐색. Primary clustering 문제.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Quadratic Probing</div><div class="glossary-def">거리 i² 증가. Secondary clustering.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Double Hashing</div><div class="glossary-def">두 해시 함수로 probe sequence 개별화.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Perturbation Probing</div><div class="glossary-def">CPython 고유 기법. 해시 상위 비트를 점진 섞음. PERTURB_SHIFT=5.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Load Factor (α)</div><div class="glossary-def">n/m. 채움 비율. CPython threshold 2/3.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Rehashing</div><div class="glossary-def">테이블 확장 시 모든 원소를 새 위치로. O(n) 한 번.</div></div>
+    <div class="glossary-item"><div class="glossary-term">SipHash</div><div class="glossary-def">Aumasson·Bernstein 2012. Cryptographic PRF. DoS 방어.</div></div>
+    <div class="glossary-item"><div class="glossary-term">SipHash-1-3</div><div class="glossary-def">1 compression + 3 finalization round. Python 3.12+ 기본.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Hash Randomization</div><div class="glossary-def">프로세스마다 무작위 seed. PYTHONHASHSEED로 고정 가능.</div></div>
+    <div class="glossary-item"><div class="glossary-term">PYTHONHASHSEED</div><div class="glossary-def">해시 seed 환경변수. 테스트 재현 시 사용. =0은 랜덤화 비활성.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Compact Dict</div><div class="glossary-def">Python 3.6 (Raymond Hettinger). indices + entries 분리. 30-95% 메모리 절약.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Indices Array</div><div class="glossary-def">Compact dict의 sparse 해시 테이블. 작은 정수 저장.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Entries Array</div><div class="glossary-def">Compact dict의 dense 삽입 순서 배열. (hash, key, value).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Insertion-Ordered</div><div class="glossary-def">Python 3.7+ 언어 스펙. dict 순회 = 삽입 순서.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Hashable</div><div class="glossary-def">__hash__ 정의 + 불변. dict key, set element 가능.</div></div>
+    <div class="glossary-item"><div class="glossary-term">__hash__</div><div class="glossary-def">객체의 해시값 반환 메서드. __eq__와 짝지어야.</div></div>
+    <div class="glossary-item"><div class="glossary-term">frozenset</div><div class="glossary-def">Immutable set. dict key, set element로 사용 가능.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Counter</div><div class="glossary-def">collections.Counter. 빈도 카운팅 dict 서브클래스. most_common.</div></div>
+    <div class="glossary-item"><div class="glossary-term">defaultdict</div><div class="glossary-def">collections.defaultdict. 기본값 팩토리로 KeyError 회피.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Raymond Hettinger</div><div class="glossary-def">CPython 핵심 개발자. deque, compact dict, itertools 등 설계.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 11</div>
+    <h3>이진 탐색 트리 (BST) → AVL → Red-Black</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      dict는 O(1) 평균이지만 <strong>정렬된 순회</strong>나 <strong>범위 조회</strong>가 불가능. 이때 필요한 자료구조 — 균형 이진 탐색 트리.
+    </p>
+    <ul>
+      <li><strong>BST 기본</strong> — 삽입·삭제·조회 + 불균형 문제</li>
+      <li><strong>AVL 트리</strong> — 엄격한 균형 (높이 차 ≤ 1)</li>
+      <li><strong>Red-Black 트리</strong> — 느슨한 균형 (실전 표준, Java TreeMap, C++ std::map)</li>
+      <li><strong>왜 Python은 내장 BST가 없는가</strong> — <code>sortedcontainers</code>의 skip list 대안</li>
+      <li><strong>CLRS §12 + §13</strong> 완전 정복</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo09.html">&larr; Algo 09 — Linked List · deque</a>
+  <a href="algo11.html">Algo 11 — BST · AVL · Red-Black &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">CLRS 4판 §11, CPython dictobject.c, PEP 456, Raymond Hettinger 2012 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

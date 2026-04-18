@@ -7,3 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
     d.removeAttribute('open');
   });
 });
+
+// A11y — make scrollable <pre> keyboard-accessible (axe: scrollable-region-focusable)
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.code-block pre, pre.code-block').forEach(pre => {
+    if (!pre.hasAttribute('tabindex')) pre.setAttribute('tabindex', '0');
+  });
+});

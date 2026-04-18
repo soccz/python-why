@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 1주차: 빅오 표기법과 점근 분석 | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="빅오·세타·오메가 — 알고리즘이 입력 크기에 대해 얼마나 자라는지를 측정하는 언어">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 1주차: 빅오 표기법과 점근 분석 | PyWhy">
+  <meta property="og:description" content="시계 대신 자라남(growth)으로 알고리즘을 비교하는 방법 — O, Θ, Ω, 마스터 정리까지">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo01.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A1">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<!-- ==================== HEADER ==================== -->
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <span class="nav-btn" aria-disabled="true" style="opacity:0.3;pointer-events:none;">&larr; 이전</span>
+      <a href="algo02.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<!-- ==================== WEEK HEADER ==================== -->
+<div class="week-header">
+  <div class="week-number">ALGO 01</div>
+  <h1 class="week-title">빅오 표기법과 점근 분석<br>알고리즘이 자라는 속도를 측정하는 언어</h1>
+  <p class="week-subtitle">
+    같은 문제도 <strong>"어떻게 푸느냐"</strong>에 따라 1초가 1년이 됩니다.<br>
+    시계로 잴 수 없는 차이를 잡아내는 도구가 <strong>점근 분석(asymptotic analysis)</strong>입니다.<br>
+    이번 주의 핵심 질문: <em>"입력이 두 배가 되면, 시간은 몇 배가 되는가?"</em>
+  </p>
+</div>
+
+<!-- ==================== 목차 ==================== -->
+<details class="toc" open>
+  <summary>목차 — 알고리즘 1주차 전체 내용</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 도서관 책 찾기</a>
+    </div>
+    <div class="toc-section">
+      <a href="#why-bigo" class="toc-section-link"><span class="toc-num">02</span>왜 빅오가 필요한가? — 시계의 한계</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#what-algorithm" class="toc-section-link"><span class="toc-num">03</span>알고리즘이란 무엇인가?</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#input-size" class="toc-section-link"><span class="toc-num">04</span>입력 크기 n과 기본 연산</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#bigo" class="toc-section-link"><span class="toc-num">05</span>빅오 표기법 (O) — 상한</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#theta-omega" class="toc-section-link"><span class="toc-num">06</span>빅 세타(Θ)와 빅 오메가(Ω)</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#classes" class="toc-section-link"><span class="toc-num">07</span>흔한 복잡도 클래스 — O(1) ~ O(n!)</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#rules" class="toc-section-link"><span class="toc-num">08</span>점근 표기 계산 규칙</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#recurrence" class="toc-section-link"><span class="toc-num">09</span>점화식과 마스터 정리</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#ai-bigo" class="toc-section-link"><span class="toc-num">10</span>AI는 빅오를 어떻게 분석하는가</a>
+    </div>
+    <div class="toc-section">
+      <a href="#practice" class="toc-section-link"><span class="toc-num">11</span>실습 — timeit으로 이론 vs 측정</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">12</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary" class="toc-section-link"><span class="toc-num">13</span>이번 주 정리</a>
+    </div>
+    <div class="toc-section">
+      <a href="#glossary" class="toc-section-link"><span class="toc-num">14</span>용어 사전 (30개)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#next-week" class="toc-section-link"><span class="toc-num">15</span>다음 주 맛보기 — 정확성 증명</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이번 주 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 도서관 책 찾기</h2>
+
+  <blockquote class="quote">
+    상상해보세요. 당신은 도서관 사서입니다.<br>
+    어떤 학생이 와서 <em>"홍길동전 좀 찾아주세요"</em>라고 합니다.<br>
+    같은 도서관, 같은 책, 같은 학생. 그런데 <strong>두 가지 일하는 방식</strong>이 있습니다.
+  </blockquote>
+
+  <div class="story-block">
+    <h3>방식 A — 처음부터 한 권씩</h3>
+    <p>책장 맨 앞에서 시작해서 한 권 한 권 제목을 확인합니다. 운이 좋으면 첫 번째 책, 운이 없으면 마지막 책.</p>
+    <ul>
+      <li>책이 100권이면? 평균 50번 확인.</li>
+      <li>책이 1만 권이면? 평균 5,000번 확인.</li>
+      <li>책이 100만 권이면? 평균 50만 번 확인.</li>
+    </ul>
+
+    <h3>방식 B — 가나다순 정렬을 활용 (이분 탐색)</h3>
+    <p>책이 가나다순으로 꽂혀 있습니다. 책장의 정중앙을 펴서 "ㅎ"이 어느 쪽인지 본 다음, 절반을 버립니다. 다시 남은 절반의 정중앙. 또 절반을 버립니다.</p>
+    <ul>
+      <li>책이 100권이면? 약 7번 확인. (log₂100 ≈ 6.6)</li>
+      <li>책이 1만 권이면? 약 14번 확인.</li>
+      <li>책이 100만 권이면? 약 20번 확인.</li>
+    </ul>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 같은 문제, 25,000배 차이</div>
+    <p>
+      100만 권 도서관에서 방식 A는 <strong>50만 번</strong>, 방식 B는 <strong>20번</strong>.<br>
+      이 차이는 "사서가 더 빠르다"가 아닙니다. <strong>방법이 본질적으로 다릅니다.</strong><br>
+      알고리즘을 공부한다는 것은 — 같은 문제를 푸는 <em>본질적으로 다른 방법들</em>을 알고, <em>입력이 커질 때 어떻게 갈라지는지</em>를 예측하는 일입니다.
+    </p>
+  </div>
+
+  <p>
+    이번 주의 도구는 <strong>빅오 표기법(Big-O Notation)</strong>입니다.<br>
+    "방식 A는 O(n), 방식 B는 O(log n)" — 이 한 줄로 위의 표 전체를 요약할 수 있습니다.<br>
+    빅오는 시계가 아닙니다. <strong>"입력이 두 배가 되면 시간이 몇 배가 되는가"</strong>를 보는 안경입니다.
+  </p>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="복잡도 클래스 성장 곡선">
+      <!-- 축 -->
+      <line x1="60" y1="320" x2="570" y2="320" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+      <line x1="60" y1="320" x2="60" y2="30" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+      <!-- y 축 라벨 -->
+      <text x="30" y="35" class="viz-label-small" text-anchor="middle">시간</text>
+      <text x="60" y="340" class="viz-label-small" text-anchor="middle">0</text>
+      <text x="565" y="340" class="viz-label-small" text-anchor="middle">n</text>
+      <!-- 격자 -->
+      <line x1="60" y1="240" x2="570" y2="240" stroke="currentColor" stroke-width="0.5" opacity="0.15" stroke-dasharray="4,4"/>
+      <line x1="60" y1="160" x2="570" y2="160" stroke="currentColor" stroke-width="0.5" opacity="0.15" stroke-dasharray="4,4"/>
+      <line x1="60" y1="80" x2="570" y2="80" stroke="currentColor" stroke-width="0.5" opacity="0.15" stroke-dasharray="4,4"/>
+      <!-- 곡선들 (n=510, max y=290) -->
+      <!-- O(1) -->
+      <line x1="60" y1="315" x2="570" y2="315" stroke="#3b9b6e" stroke-width="2.5"/>
+      <text x="580" y="318" class="viz-label-small" fill="#3b9b6e">O(1)</text>
+      <!-- O(log n) -->
+      <path d="M 60 315 Q 200 285, 570 270" stroke="#2d9b6e" stroke-width="2.5" fill="none"/>
+      <text x="580" y="273" class="viz-label-small" fill="#2d9b6e">O(log n)</text>
+      <!-- O(n) -->
+      <line x1="60" y1="315" x2="570" y2="180" stroke="#3878c7" stroke-width="2.5"/>
+      <text x="580" y="183" class="viz-label-small" fill="#3878c7">O(n)</text>
+      <!-- O(n log n) -->
+      <path d="M 60 315 Q 250 200, 570 110" stroke="#7c5cbf" stroke-width="2.5" fill="none"/>
+      <text x="580" y="113" class="viz-label-small" fill="#7c5cbf">O(n log n)</text>
+      <!-- O(n²) -->
+      <path d="M 60 315 Q 380 280, 480 50" stroke="#d4930c" stroke-width="2.5" fill="none"/>
+      <text x="488" y="42" class="viz-label-small" fill="#d4930c">O(n²)</text>
+      <!-- O(2^n) -->
+      <path d="M 60 315 Q 200 310, 280 250 Q 320 200, 350 30" stroke="#d44058" stroke-width="2.5" fill="none"/>
+      <text x="358" y="25" class="viz-label-small" fill="#d44058">O(2ⁿ)</text>
+    </svg>
+    <div class="viz-caption"><strong>입력 n이 커질 때 각 복잡도가 자라는 속도.</strong> O(1)·O(log n)은 거의 평평, O(n²)·O(2ⁿ)은 폭발적. 알고리즘의 "본질적 차이"가 곡선의 모양 차이.</div>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      /* === Algo 01 애니메이션 === */
+      @keyframes a01-step {
+        0%, 1% { opacity: 0; }
+        2%, 3.3% { opacity: 1; }
+        4.5%, 100% { opacity: 0; }
+      }
+      /* Linear: 11단계 (각 카드 머무는 시간) */
+      .a01-L1 { animation: a01-step 12s linear infinite; animation-delay: 0s; animation-fill-mode: backwards; }
+      .a01-L2 { animation: a01-step 12s linear infinite; animation-delay: 0.4s; animation-fill-mode: backwards; }
+      .a01-L3 { animation: a01-step 12s linear infinite; animation-delay: 0.8s; animation-fill-mode: backwards; }
+      .a01-L4 { animation: a01-step 12s linear infinite; animation-delay: 1.2s; animation-fill-mode: backwards; }
+      .a01-L5 { animation: a01-step 12s linear infinite; animation-delay: 1.6s; animation-fill-mode: backwards; }
+      .a01-L6 { animation: a01-step 12s linear infinite; animation-delay: 2.0s; animation-fill-mode: backwards; }
+      .a01-L7 { animation: a01-step 12s linear infinite; animation-delay: 2.4s; animation-fill-mode: backwards; }
+      .a01-L8 { animation: a01-step 12s linear infinite; animation-delay: 2.8s; animation-fill-mode: backwards; }
+      .a01-L9 { animation: a01-step 12s linear infinite; animation-delay: 3.2s; animation-fill-mode: backwards; }
+      .a01-L10 { animation: a01-step 12s linear infinite; animation-delay: 3.6s; animation-fill-mode: backwards; }
+      .a01-L11 { animation: a01-step 12s linear infinite; animation-delay: 4.0s; animation-fill-mode: backwards; }
+      /* "확인됨" 색상 (점진적으로 빨갛게 변함) */
+      @keyframes a01-checked-L {
+        0% { fill: var(--surface); }
+        2%, 99% { fill: rgba(212, 64, 88, 0.15); }
+        100% { fill: var(--surface); }
+      }
+      .a01-checked-L1 { animation: a01-checked-L 12s linear infinite; animation-delay: 0s; animation-fill-mode: backwards; }
+      .a01-checked-L2 { animation: a01-checked-L 12s linear infinite; animation-delay: 0.4s; animation-fill-mode: backwards; }
+      .a01-checked-L3 { animation: a01-checked-L 12s linear infinite; animation-delay: 0.8s; animation-fill-mode: backwards; }
+      .a01-checked-L4 { animation: a01-checked-L 12s linear infinite; animation-delay: 1.2s; animation-fill-mode: backwards; }
+      .a01-checked-L5 { animation: a01-checked-L 12s linear infinite; animation-delay: 1.6s; animation-fill-mode: backwards; }
+      .a01-checked-L6 { animation: a01-checked-L 12s linear infinite; animation-delay: 2.0s; animation-fill-mode: backwards; }
+      .a01-checked-L7 { animation: a01-checked-L 12s linear infinite; animation-delay: 2.4s; animation-fill-mode: backwards; }
+      .a01-checked-L8 { animation: a01-checked-L 12s linear infinite; animation-delay: 2.8s; animation-fill-mode: backwards; }
+      .a01-checked-L9 { animation: a01-checked-L 12s linear infinite; animation-delay: 3.2s; animation-fill-mode: backwards; }
+      .a01-checked-L10 { animation: a01-checked-L 12s linear infinite; animation-delay: 3.6s; animation-fill-mode: backwards; }
+      .a01-checked-L11 { animation: a01-checked-L 12s linear infinite; animation-delay: 4.0s; fill: rgba(212, 64, 88, 0.4); animation-fill-mode: backwards; }
+
+      /* Binary: 4단계 (각 1.5초) */
+      @keyframes a01-bin {
+        0%, 2% { opacity: 0; }
+        4%, 11% { opacity: 1; }
+        13%, 100% { opacity: 0; }
+      }
+      .a01-B1 { animation: a01-bin 12s linear infinite; animation-delay: 0s; animation-fill-mode: backwards; }
+      .a01-B2 { animation: a01-bin 12s linear infinite; animation-delay: 1.5s; animation-fill-mode: backwards; }
+      .a01-B3 { animation: a01-bin 12s linear infinite; animation-delay: 3.0s; animation-fill-mode: backwards; }
+      .a01-B4 { animation: a01-bin 12s linear infinite; animation-delay: 4.5s; animation-fill-mode: backwards; }
+
+      /* 카운터 등장 */
+      @keyframes a01-result-L {
+        0%, 39% { opacity: 0; }
+        45%, 100% { opacity: 1; }
+      }
+      @keyframes a01-result-B {
+        0%, 49% { opacity: 0; }
+        55%, 100% { opacity: 1; }
+      }
+      .a01-result-L { animation: a01-result-L 12s linear infinite; animation-fill-mode: backwards; }
+      .a01-result-B { animation: a01-result-B 12s linear infinite; animation-fill-mode: backwards; }
+    </style>
+    <svg viewBox="0 0 800 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="순차 탐색 vs 이진 탐색 단계별 애니메이션">
+      <text x="400" y="22" class="viz-label" text-anchor="middle">🎯 목표: 카드 16장 중 "11번"을 찾자!</text>
+
+      <!-- ===== 위: Linear search ===== -->
+      <text x="20" y="62" class="viz-label" font-weight="700" fill="#d44058">방법 A — 1번부터 한 장씩 확인 (Linear)</text>
+      <g transform="translate(20, 75)" font-family="JetBrains Mono, monospace" font-size="13">
+        <!-- 16개 카드 (체크된 색상은 애니메이션) -->
+        <rect class="a01-checked-L1" x="0" y="0" width="46" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="23" y="20" text-anchor="middle">1</text>
+        <rect class="a01-checked-L2" x="48" y="0" width="46" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="71" y="20" text-anchor="middle">2</text>
+        <rect class="a01-checked-L3" x="96" y="0" width="46" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="119" y="20" text-anchor="middle">3</text>
+        <rect class="a01-checked-L4" x="144" y="0" width="46" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="167" y="20" text-anchor="middle">4</text>
+        <rect class="a01-checked-L5" x="192" y="0" width="46" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="215" y="20" text-anchor="middle">5</text>
+        <rect class="a01-checked-L6" x="240" y="0" width="46" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="263" y="20" text-anchor="middle">6</text>
+        <rect class="a01-checked-L7" x="288" y="0" width="46" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="311" y="20" text-anchor="middle">7</text>
+        <rect class="a01-checked-L8" x="336" y="0" width="46" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="359" y="20" text-anchor="middle">8</text>
+        <rect class="a01-checked-L9" x="384" y="0" width="46" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="407" y="20" text-anchor="middle">9</text>
+        <rect class="a01-checked-L10" x="432" y="0" width="46" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="455" y="20" text-anchor="middle">10</text>
+        <rect class="a01-checked-L11" x="480" y="0" width="46" height="32" stroke="#d44058" stroke-width="2.5"/><text x="503" y="20" text-anchor="middle" font-weight="700">11</text>
+        <rect x="528" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="551" y="20" text-anchor="middle">12</text>
+        <rect x="576" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="599" y="20" text-anchor="middle">13</text>
+        <rect x="624" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="647" y="20" text-anchor="middle">14</text>
+        <rect x="672" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="695" y="20" text-anchor="middle">15</text>
+        <rect x="720" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="743" y="20" text-anchor="middle">16</text>
+
+        <!-- 👀 마커 (현재 보고 있는 카드 위) - 각 단계마다 다른 위치 -->
+        <text class="a01-L1" x="23" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-L2" x="71" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-L3" x="119" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-L4" x="167" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-L5" x="215" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-L6" x="263" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-L7" x="311" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-L8" x="359" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-L9" x="407" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-L10" x="455" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-L11" x="503" y="-8" text-anchor="middle" font-size="18">🎯</text>
+      </g>
+      <text x="20" y="143" class="viz-label-small a01-result-L" fill="#d44058" font-weight="700">😩 11번 카드 찾는 데 11번 확인! (1→2→3→...→11)</text>
+
+      <!-- ===== 아래: Binary search ===== -->
+      <text x="20" y="190" class="viz-label" font-weight="700" fill="#3b9b6e">방법 B — 가운데부터 절반씩 점프 (Binary)</text>
+      <g transform="translate(20, 205)" font-family="JetBrains Mono, monospace" font-size="13">
+        <rect x="0" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="23" y="20" text-anchor="middle">1</text>
+        <rect x="48" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="71" y="20" text-anchor="middle">2</text>
+        <rect x="96" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="119" y="20" text-anchor="middle">3</text>
+        <rect x="144" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="167" y="20" text-anchor="middle">4</text>
+        <rect x="192" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="215" y="20" text-anchor="middle">5</text>
+        <rect x="240" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="263" y="20" text-anchor="middle">6</text>
+        <rect x="288" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="311" y="20" text-anchor="middle">7</text>
+        <rect x="336" y="0" width="46" height="32" fill="rgba(59, 155, 110, 0.15)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="359" y="20" text-anchor="middle">8</text>
+        <rect x="384" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="407" y="20" text-anchor="middle">9</text>
+        <rect x="432" y="0" width="46" height="32" fill="rgba(59, 155, 110, 0.15)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="455" y="20" text-anchor="middle">10</text>
+        <rect x="480" y="0" width="46" height="32" fill="rgba(59, 155, 110, 0.4)" stroke="#3b9b6e" stroke-width="2.5"/><text x="503" y="20" text-anchor="middle" font-weight="700">11</text>
+        <rect x="528" y="0" width="46" height="32" fill="rgba(59, 155, 110, 0.15)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="551" y="20" text-anchor="middle">12</text>
+        <rect x="576" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="599" y="20" text-anchor="middle">13</text>
+        <rect x="624" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="647" y="20" text-anchor="middle">14</text>
+        <rect x="672" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="695" y="20" text-anchor="middle">15</text>
+        <rect x="720" y="0" width="46" height="32" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/><text x="743" y="20" text-anchor="middle">16</text>
+
+        <!-- 👀 마커 -->
+        <text class="a01-B1" x="359" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-B2" x="551" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-B3" x="455" y="-8" text-anchor="middle" font-size="18">👀</text>
+        <text class="a01-B4" x="503" y="-8" text-anchor="middle" font-size="18">🎯</text>
+      </g>
+      <text x="20" y="273" class="viz-label-small a01-result-B" fill="#3b9b6e" font-weight="700">😎 4번만에 발견! (8 → 12 → 10 → 11)</text>
+
+      <!-- 결론 -->
+      <text x="400" y="320" class="viz-label" text-anchor="middle">
+        <tspan font-weight="700">n=16</tspan>: 11번 vs 4번 ▸▸ <tspan font-weight="700">n=10⁶</tspan>: 50만 번 vs <tspan font-weight="700" fill="var(--accent)">20번</tspan>
+      </text>
+      <text x="400" y="340" class="viz-label-small" text-anchor="middle" opacity="0.6">애니메이션 12초 주기로 반복</text>
+    </svg>
+    <div class="viz-caption"><strong>👀 마커가 어떤 카드를 보고 있는지 따라가보세요.</strong> 위(빨강): 한 칸씩 천천히. 아래(초록): 가운데서 절반으로 점프. 위는 11번 머물고 아래는 4번 머문 뒤 답을 찾습니다.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. 왜 빅오가 필요한가 ==================== -->
+<section id="why-bigo">
+  <h2>02 — 왜 빅오가 필요한가? 시계의 한계</h2>
+
+  <div class="level-section elementary">
+    <div class="level-badge level-elem">초급</div>
+    <h3>"내 컴퓨터에서는 0.3초인데?"</h3>
+    <p>
+      두 친구가 같은 문제를 풀었다고 합시다. 친구 A는 자기 컴퓨터에서 <strong>0.3초</strong>, 친구 B는 <strong>0.5초</strong>가 나왔습니다.<br>
+      A의 코드가 더 빠른 걸까요? <strong>알 수 없습니다.</strong>
+    </p>
+    <ul>
+      <li>A가 더 빠른 컴퓨터를 쓰고 있을 수 있습니다.</li>
+      <li>A가 입력 크기를 더 작게 했을 수 있습니다.</li>
+      <li>A의 컴퓨터가 마침 다른 일을 안 하고 있었을 수 있습니다.</li>
+    </ul>
+    <p>
+      <strong>시간(시계)으로는 알고리즘 자체를 비교할 수 없습니다.</strong> 우리는 컴퓨터·언어·운영체제·온도까지 무관한 척도가 필요합니다.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>측정의 4가지 함정</h3>
+    <ol>
+      <li><strong>하드웨어 의존</strong>: CPU 클럭, 캐시 크기, 메모리 대역폭이 다르면 같은 코드도 다른 속도가 납니다.</li>
+      <li><strong>입력 의존</strong>: 정렬된 입력 vs 무작위 vs 역순 — 같은 알고리즘이 10배씩 차이 납니다.</li>
+      <li><strong>측정 잡음</strong>: GC, OS 컨텍스트 스위치, JIT 워밍업이 들어가면 ±20% 흔들립니다.</li>
+      <li><strong>외삽 불가</strong>: n=100에서 빠르다고 n=10⁶에서도 빠르리란 보장이 없습니다.</li>
+    </ol>
+    <p>
+      그래서 우리는 <strong>두 단계의 측정</strong>을 합니다:
+    </p>
+    <ul>
+      <li><strong>이론 분석</strong> (이번 주): 입력 크기 n에 대해 연산 횟수가 어떤 함수로 자라는가? — 이게 빅오.</li>
+      <li><strong>실측</strong> (보조): <code>timeit</code>으로 실제 환경에서 검증.</li>
+    </ul>
+    <p>
+      이론이 먼저고 실측이 나중입니다. 이론 없이 측정만 하면 "내 컴퓨터에서는…"의 늪에 빠집니다.
+    </p>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원서 인용 — CLRS, <em>Introduction to Algorithms</em>, 3.1절</div>
+    <p>
+      "우리는 알고리즘의 <em>점근적 효율(asymptotic efficiency)</em>에 관심이 있다.
+      입력 크기가 한도 없이 커질 때 알고리즘의 실행 시간이 어떻게 증가하는가를 따지는 것이다.
+      보통, 점근적으로 더 효율적인 알고리즘은 — 작은 입력에서는 예외이지만 — 큰 입력에서 최선의 선택이다."
+    </p>
+    <p style="font-size:0.92em; color:var(--text-muted);">
+      출처: Cormen, Leiserson, Rivest, Stein. <em>Introduction to Algorithms</em>, 4th ed., MIT Press, Ch. 3.1.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. 알고리즘이란 ==================== -->
+<section id="what-algorithm">
+  <h2>03 — 알고리즘이란 무엇인가?</h2>
+
+  <div class="level-section elementary">
+    <div class="level-badge level-elem">초급</div>
+    <h3>요리 레시피와 같다</h3>
+    <p>
+      라면 끓이는 법도 알고리즘입니다.
+    </p>
+    <ol>
+      <li>물 550ml를 냄비에 붓는다.</li>
+      <li>물이 끓으면 면과 분말스프, 건더기를 넣는다.</li>
+      <li>4분 30초 더 끓인다.</li>
+      <li>불을 끄고 그릇에 옮긴다.</li>
+    </ol>
+    <p>
+      <strong>입력</strong>(물, 라면) → <strong>유한한 단계</strong>(1~4) → <strong>출력</strong>(끓인 라면). 이것이 알고리즘입니다.<br>
+      "알아서 잘 끓여라"는 알고리즘이 아닙니다. <strong>모호함이 없어야</strong> 합니다.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>알고리즘의 5가지 조건 (Knuth)</h3>
+    <p>
+      Donald Knuth가 <em>The Art of Computer Programming</em>, Vol.1 §1.1에서 정한 다섯 가지:
+    </p>
+    <ol>
+      <li><strong>유한성(Finiteness)</strong> — 반드시 끝나야 한다. 무한 루프는 알고리즘이 아니다.</li>
+      <li><strong>명확성(Definiteness)</strong> — 각 단계가 모호함 없이 정의되어야 한다.</li>
+      <li><strong>입력(Input)</strong> — 0개 이상의 입력을 받는다.</li>
+      <li><strong>출력(Output)</strong> — 1개 이상의 출력을 만든다.</li>
+      <li><strong>실효성(Effectiveness)</strong> — 사람이 종이와 연필로도 (원리상) 수행 가능해야 한다.</li>
+    </ol>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>계산 모델 — 무엇을 "1번"으로 셀 것인가?</h3>
+    <p>
+      "이 알고리즘은 100번 연산한다"라고 말하려면, <strong>"1번"의 단위</strong>가 정해져야 합니다.<br>
+      알고리즘 분석의 표준 모델은 <strong>RAM 모델(Random Access Machine)</strong>입니다:
+    </p>
+    <ul>
+      <li>기본 산술(+, -, ×, ÷, %), 비교(&lt;, ==), 대입, 배열 임의 접근(<code>a[i]</code>) — 모두 <strong>1단위 시간</strong>.</li>
+      <li>분기(if), 함수 호출/반환 — 1단위.</li>
+      <li>메모리는 무한, 모든 정수는 한 번에 처리.</li>
+    </ul>
+    <p>
+      <strong>현실과의 차이</strong>: 캐시 미스, 가상 메모리 페이지폴트, 큰 정수의 자릿수 등은 모두 무시합니다.<br>
+      이 단순화 덕분에 알고리즘을 <em>수학적으로</em> 분석할 수 있습니다.
+    </p>
+
+    <div class="why-box">
+      <div class="box-header">WHY — Python에서 RAM 모델이 어긋나는 순간</div>
+      <p>
+        Python의 <code>int</code>는 임의 정밀도(arbitrary precision)입니다.
+        <code>2 ** 1000</code>의 곱셈은 1단위 시간이 아닙니다 — 자릿수 d에 대해 O(d) 또는 O(d log d).<br>
+        문자열 비교 <code>s1 == s2</code>도 O(min(|s1|, |s2|))입니다.<br>
+        이번 주 분석에서 우리는 <em>"비교/연산은 O(1)"</em>이라고 가정합니다. 이 가정이 깨지는 경우는 별도 표기합니다.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 04. 입력 크기와 기본 연산 ==================== -->
+<section id="input-size">
+  <h2>04 — 입력 크기 n과 기본 연산</h2>
+
+  <div class="level-section elementary">
+    <div class="level-badge level-elem">초급</div>
+    <h3>n은 무엇인가?</h3>
+    <p>
+      알고리즘 책에서 <strong>n</strong>은 <em>"입력의 크기"</em>를 가리키는 약속된 글자입니다.<br>
+      문제마다 n이 의미하는 것이 다릅니다.
+    </p>
+    <ul>
+      <li>리스트 정렬: n = 리스트의 길이</li>
+      <li>문자열 검색: n = 문자열의 길이</li>
+      <li>그래프 탐색: n = 정점(vertex) 수, m = 간선(edge) 수</li>
+      <li>행렬 곱셈: n = 한 변의 길이 (총 원소는 n²)</li>
+    </ul>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>"기본 연산"을 세는 법</h3>
+    <p>
+      다음 코드를 봅시다.
+    </p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-label">합계 구하기</span>
+        <button class="copy-btn">복사</button>
+      </div>
+      <pre><code>def total(nums):
+    s = 0                  # ← 연산 1번
+    for x in nums:         # ← n번 반복
+        s = s + x          # ← 매 반복마다 1번
+    return s               # ← 1번</code></pre>
+    </div>
+    <p>
+      총 연산 횟수: <code>1 + n + 1 = n + 2</code>.<br>
+      n이 100이면 102번, n이 1,000,000이면 1,000,002번. <strong>n에 비례</strong>해서 자랍니다.
+    </p>
+    <p>
+      이렇게 "연산 횟수를 n의 식으로 쓴 것"을 <strong>시간 복잡도 함수 T(n)</strong>이라고 합니다.<br>
+      방금 코드는 T(n) = n + 2 입니다.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>최선·최악·평균</h3>
+    <p>
+      같은 알고리즘도 입력에 따라 시간이 다릅니다. 세 가지를 구분합니다.
+    </p>
+    <ul>
+      <li><strong>최선(best-case)</strong>: 가장 운 좋은 입력. <em>거의 의미 없음.</em></li>
+      <li><strong>최악(worst-case)</strong>: 가장 운 나쁜 입력. <strong>알고리즘 분석의 표준.</strong></li>
+      <li><strong>평균(average-case)</strong>: 입력 분포를 가정한 기댓값. 분석이 어려움.</li>
+    </ul>
+    <p>
+      <strong>왜 최악을 보는가?</strong>
+    </p>
+    <ol>
+      <li>"이 시간 안에 끝난다"는 <em>보장</em>이 된다 (상한).</li>
+      <li>실제로 자주 일어난다 — 입력은 무작위가 아니다 (예: 정렬된 입력에 quicksort).</li>
+      <li>평균은 입력 분포 가정이 필요한데, 그 가정이 틀리면 무용지물이다.</li>
+    </ol>
+
+    <div class="reading-box">
+      <div class="box-header">📖 원서 인용 — CLRS 2.2절</div>
+      <p>
+        "이 책의 나머지에서는 보통 알고리즘의 <em>최악의 경우 실행 시간</em>에 집중한다.
+        이는 임의의 입력에 대한 실행 시간의 <em>상한(upper bound)</em>을 제공하기 때문이다."
+      </p>
+      <p style="font-size:0.92em;color:var(--text-muted);">출처: CLRS 4th ed., §2.2 "Analyzing algorithms".</p>
+    </div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>예: 선형 탐색 (linear search)</h3>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">linear_search</span><button class="copy-btn">복사</button></div>
+      <pre><code>def linear_search(nums, target):
+    for i, x in enumerate(nums):
+        if x == target:
+            return i
+    return -1</code></pre>
+    </div>
+    <ul>
+      <li><strong>최선</strong>: target이 0번 인덱스 — 비교 1번 → T_best(n) = 1.</li>
+      <li><strong>최악</strong>: target이 마지막 또는 없음 — 비교 n번 → T_worst(n) = n.</li>
+      <li><strong>평균</strong>: target이 균등하게 분포 → 평균 (n+1)/2 ≈ n/2 → T_avg(n) = Θ(n).</li>
+    </ul>
+    <p>
+      세 경우 모두 "n에 비례"는 같습니다 (상수만 다름). 그래서 <strong>점근적으로</strong>는 같은 클래스 — O(n).<br>
+      이제 우리는 "T(n) = n+2", "T(n) = n", "T(n) = n/2 + 0.5"의 차이를 무시하고 <strong>O(n)</strong> 하나로 묶을 수 있습니다. 다음 절에서 그 정의를 봅니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 05. 빅오 표기법 (O) ==================== -->
+<section id="bigo">
+  <h2>05 — 빅오 표기법 (O) — 상한</h2>
+
+  <div class="level-section elementary">
+    <div class="level-badge level-elem">초급</div>
+    <h3>한 줄 요약</h3>
+    <p>
+      <strong>O(f(n))</strong>은 <em>"이 알고리즘은 n이 충분히 클 때 f(n)에 비례하는 시간보다 더 오래 걸리지 않는다"</em>는 약속입니다.
+    </p>
+    <ul>
+      <li>O(1) — n에 상관없이 늘 같은 시간</li>
+      <li>O(n) — n이 두 배면 시간도 두 배</li>
+      <li>O(n²) — n이 두 배면 시간은 네 배</li>
+      <li>O(log n) — n이 두 배여도 시간은 거의 그대로 (살짝만 늘어남)</li>
+    </ul>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>왜 "상한"인가?</h3>
+    <p>
+      위에서 본 합계 함수는 T(n) = n + 2 였습니다. 우리는 이걸 "O(n)"이라고 씁니다.<br>
+      더 구체적으로: <em>"n이 충분히 클 때, T(n) ≤ 어떤 상수 × n"</em>. 예를 들어 c=2를 잡으면, n ≥ 2부터 n + 2 ≤ 2n 이 성립합니다. ✓
+    </p>
+    <p>
+      <strong>O는 부등식</strong>입니다. "T(n) = O(n)"은 사실 "T(n)은 어떤 상수 c에 대해 cn보다 작거나 같다 (n이 충분히 큰 곳부터)"의 줄임말입니다.<br>
+      그래서 T(n) = n + 2 는 O(n)이기도 하고, O(n²)이기도 하고, O(n³)이기도 합니다 — <strong>O는 상한이지 정확한 값이 아닙니다.</strong>
+    </p>
+    <div class="why-box">
+      <div class="box-header">WHY — "O(n²)인데 왜 O(n)이라고 안 쓰면 안 돼?"</div>
+      <p>
+        됩니다. 다만 <strong>최대한 타이트하게(tight)</strong> 잡는 것이 관례입니다.
+        "이 차는 시속 1,000km 이하로 달린다"는 사실이지만 정보량이 0입니다. 정확한 클래스를 잡아야 의미가 있습니다.
+      </p>
+    </div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>형식적 정의</h3>
+    <p>
+      f(n)과 g(n)이 양의 함수일 때:
+    </p>
+    <div class="formula-box">
+      <strong>f(n) = O(g(n))</strong> ⟺ <strong>∃ c &gt; 0, ∃ n₀ &gt; 0</strong> 가 존재하여 모든 n ≥ n₀에 대해 <strong>0 ≤ f(n) ≤ c·g(n)</strong>.
+    </div>
+    <p>
+      한국어로 풀면: <em>"n이 어떤 문턱(n₀)을 넘은 후로는, f(n)이 항상 c배 이내의 g(n)을 따라간다."</em><br>
+      두 가지 자유 매개변수 — 상수 <strong>c</strong>(배수)와 <strong>n₀</strong>(시작점) — 를 자기에게 유리하게 골라도 됩니다.
+    </p>
+
+    <h4>예제 1: 3n + 5 = O(n) 증명</h4>
+    <p>
+      c = 4, n₀ = 5 를 잡습니다. n ≥ 5 일 때, 5 ≤ n 이므로:<br>
+      3n + 5 ≤ 3n + n = 4n = c·n. ✓ &nbsp; 따라서 3n + 5 = O(n).
+    </p>
+
+    <h4>예제 2: n² + 100n = O(n²) 증명</h4>
+    <p>
+      c = 2, n₀ = 100 를 잡습니다. n ≥ 100 일 때, 100n ≤ n·n = n² 이므로:<br>
+      n² + 100n ≤ n² + n² = 2n² = c·n². ✓
+    </p>
+
+    <h4>예제 3: 2ⁿ ≠ O(n^k) — 모든 다항식보다 빠르다</h4>
+    <p>
+      어떤 c, n₀, k를 잡아도 결국 2ⁿ &gt; c·n^k 인 n이 나타납니다.<br>
+      증명 스케치: lim<sub>n→∞</sub> 2ⁿ / n^k = ∞. 따라서 2ⁿ ∉ O(n^k).
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>Part A — Python에서의 빅오 계산: dis로 확인하기</h3>
+    <p>
+      Python의 시간 분석은 <em>"바이트코드 한 줄 = O(1)"</em>이 아닙니다. 중요한 예외들을 짚습니다.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">"같아 보이는" 두 합계의 바이트코드</span><button class="copy-btn">복사</button></div>
+      <pre><code>import dis
+
+def sum_loop(nums):
+    s = 0
+    for x in nums:
+        s += x
+    return s
+
+def sum_builtin(nums):
+    return sum(nums)
+
+dis.dis(sum_loop)
+print('---')
+dis.dis(sum_builtin)</code></pre>
+    </div>
+    <p>
+      <code>sum_loop</code>의 본문은 <code>FOR_ITER</code> + <code>LOAD_FAST</code> + <code>BINARY_OP</code> + <code>STORE_FAST</code> + <code>JUMP_BACKWARD</code> 가 매 반복.<br>
+      <code>sum_builtin</code>은 <code>LOAD_GLOBAL sum</code> + <code>CALL</code> — 그러나 그 <code>CALL</code> 안에서 C 레벨 루프가 같은 n번을 돕니다.<br>
+      <strong>둘 다 O(n).</strong> 다만 상수가 다릅니다 (보통 5~10배). 빅오는 같지만 "현실 시간"은 다릅니다.
+    </p>
+
+    <h4>list.append vs list 앞에 insert</h4>
+    <ul>
+      <li><code>lst.append(x)</code> — 평균 O(1) (amortized). 내부 동적 배열의 capacity가 부족할 때만 재할당.</li>
+      <li><code>lst.insert(0, x)</code> — O(n). 모든 원소를 한 칸씩 뒤로 미뤄야 함.</li>
+    </ul>
+    <p style="font-size:0.92em;color:var(--text-muted);">
+      참조: <a href="https://wiki.python.org/moin/TimeComplexity">wiki.python.org/moin/TimeComplexity</a> — 표준 컬렉션의 연산별 빅오.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>Part B — 점근의 위상학(topology): 등급(rank) 구조</h3>
+    <p>
+      함수들 사이에 "점근적으로 작다(≺)" 관계가 있습니다:
+    </p>
+    <div class="formula-box">
+      f ≺ g &nbsp; ⟺ &nbsp; lim<sub>n→∞</sub> f(n) / g(n) = 0
+    </div>
+    <p>
+      이 관계로 정렬하면:<br>
+      1 ≺ log log n ≺ log n ≺ √n ≺ n ≺ n log n ≺ n² ≺ n³ ≺ 2ⁿ ≺ n! ≺ nⁿ
+    </p>
+    <p>
+      "다항식 ≺ 지수" 가 핵심 분기점입니다 — 다항식 시간은 "현실적", 지수 시간은 "이론적으로만 가능"으로 취급됩니다 (이게 P vs NP의 출발선).
+    </p>
+    <p>
+      <strong>로그의 밑은 무관</strong>: log₂ n 과 log₁₀ n 은 상수배 차이 (log₂ n = log n / log 2). 그래서 그냥 "log n"이라고만 씁니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 06. Θ와 Ω ==================== -->
+<section id="theta-omega">
+  <h2>06 — 빅 세타(Θ)와 빅 오메가(Ω)</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>세 가지를 한 표로</h3>
+    <table class="dict-table">
+      <thead>
+        <tr><th>표기</th><th>의미</th><th>비유</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>O(g)</strong></td><td>상한 (≤)</td><td>"최대 이 정도만 걸린다"</td></tr>
+        <tr><td><strong>Ω(g)</strong></td><td>하한 (≥)</td><td>"적어도 이만큼은 걸린다"</td></tr>
+        <tr><td><strong>Θ(g)</strong></td><td>상한 = 하한 (≈)</td><td>"딱 이 정도다"</td></tr>
+      </tbody>
+    </table>
+    <p>
+      예: 선형 탐색의 최악 시간은 정확히 n에 비례 → <strong>Θ(n)</strong>. 더 빠를 수도 없고 더 느릴 수도 없음.
+    </p>
+    <p>
+      현실 코드/면접에서는 다들 <strong>O</strong>만 쓰지만, 학술적으로는 Θ가 더 정확한 표기입니다. CLRS는 정의 부분에서 Θ를 우선 도입합니다.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>형식적 정의</h3>
+    <div class="formula-box">
+      <strong>f(n) = Ω(g(n))</strong> ⟺ ∃ c &gt; 0, n₀ &gt; 0 ∀ n ≥ n₀ &nbsp; 0 ≤ c·g(n) ≤ f(n)<br><br>
+      <strong>f(n) = Θ(g(n))</strong> ⟺ ∃ c₁, c₂ &gt; 0, n₀ &gt; 0 ∀ n ≥ n₀ &nbsp; 0 ≤ c₁·g(n) ≤ f(n) ≤ c₂·g(n)
+    </div>
+    <p>
+      <strong>핵심 정리</strong>: f = Θ(g) ⟺ f = O(g) 그리고 f = Ω(g).
+    </p>
+
+    <h4>작은 o (little-o) — 엄격한 상한</h4>
+    <p>
+      <strong>f = o(g)</strong> ⟺ lim<sub>n→∞</sub> f(n)/g(n) = 0.<br>
+      "f는 g보다 <em>진짜로 느리게</em> 자란다"는 뜻. 예: n = o(n²), log n = o(n), n^99 = o(2ⁿ).
+    </p>
+
+    <h4>작은 ω (little-omega) — 엄격한 하한</h4>
+    <p>
+      <strong>f = ω(g)</strong> ⟺ lim<sub>n→∞</sub> f(n)/g(n) = ∞. o의 반대.
+    </p>
+
+    <table class="dict-table">
+      <thead><tr><th>비교</th><th>점근 표기</th><th>실수 비교 비유</th></tr></thead>
+      <tbody>
+        <tr><td>≤</td><td>O</td><td>≤</td></tr>
+        <tr><td>≥</td><td>Ω</td><td>≥</td></tr>
+        <tr><td>=</td><td>Θ</td><td>=</td></tr>
+        <tr><td>&lt;</td><td>o</td><td>&lt;</td></tr>
+        <tr><td>&gt;</td><td>ω</td><td>&gt;</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>"= O(g)"의 표기 남용</h3>
+    <p>
+      엄밀히 말하면 O(g)는 <em>함수의 집합</em>입니다. "f = O(g)"는 사실 "f ∈ O(g)"의 줄임말 (Knuth가 채택한 관행).<br>
+      그래서 "O(n) = O(n²)"는 한 방향 포함 (좌변 ⊂ 우변)만 의미하고 등호의 대칭성이 깨집니다.<br>
+      Knuth는 <em>TAOCP Vol. 1</em> §1.2.11에서 이를 "one-way equality"로 부릅니다. 글을 쓸 때는 ∈ 표기가 더 안전합니다.
+    </p>
+    <p style="font-size:0.92em;color:var(--text-muted);">
+      출처: D. E. Knuth, <em>The Art of Computer Programming</em> Vol. 1, §1.2.11 "Asymptotic Representations".
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 07. 흔한 복잡도 클래스 ==================== -->
+<section id="classes">
+  <h2>07 — 흔한 복잡도 클래스</h2>
+
+  <div class="level-section elementary">
+    <div class="level-badge level-elem">초급</div>
+    <h3>한눈에 보기 — n=10⁶에서 얼마나 걸릴까?</h3>
+    <p>
+      1초에 10⁸번 연산하는 컴퓨터를 가정합니다 (Python 기준 보수적 추정).
+    </p>
+    <table class="dict-table">
+      <thead><tr><th>클래스</th><th>이름</th><th>대표 알고리즘</th><th>n=10⁶에서 시간</th></tr></thead>
+      <tbody>
+        <tr><td><strong>O(1)</strong></td><td>상수</td><td>해시 조회, 배열 인덱싱</td><td>~10ns</td></tr>
+        <tr><td><strong>O(log n)</strong></td><td>로그</td><td>이분 탐색</td><td>~0.2μs</td></tr>
+        <tr><td><strong>O(n)</strong></td><td>선형</td><td>선형 탐색, 합계</td><td>~10ms</td></tr>
+        <tr><td><strong>O(n log n)</strong></td><td>선형로그</td><td>병합 정렬, Timsort</td><td>~200ms</td></tr>
+        <tr><td><strong>O(n²)</strong></td><td>이차</td><td>버블/선택 정렬</td><td>~3시간</td></tr>
+        <tr><td><strong>O(n³)</strong></td><td>삼차</td><td>플로이드-워셜</td><td>~317년</td></tr>
+        <tr><td><strong>O(2ⁿ)</strong></td><td>지수</td><td>부분집합 탐색</td><td>우주 나이 × ∞</td></tr>
+        <tr><td><strong>O(n!)</strong></td><td>팩토리얼</td><td>외판원 brute force</td><td>표현 불가</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>O(n²)부터 "현실적으로 못 푸는" 영역이 시작됩니다.</strong> n=10⁴이면 0.001초, n=10⁵이면 0.1초, n=10⁶이면 3시간 — 입력이 10배 커지면 시간은 100배.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>코드로 보는 각 클래스</h3>
+
+    <h4>O(1) — 상수</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">O(1)</span><button class="copy-btn">복사</button></div>
+    <pre><code>def first(nums):
+    return nums[0] if nums else None</code></pre></div>
+    <p>입력 크기와 무관하게 항상 같은 작업.</p>
+
+    <h4>O(log n) — 로그</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">O(log n)</span><button class="copy-btn">복사</button></div>
+    <pre><code>def binary_search(sorted_nums, target):
+    lo, hi = 0, len(sorted_nums) - 1
+    while lo &lt;= hi:
+        mid = (lo + hi) // 2
+        if sorted_nums[mid] == target:
+            return mid
+        elif sorted_nums[mid] &lt; target:
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return -1</code></pre></div>
+    <p>매 반복마다 탐색 범위가 절반으로 줄어들기 때문. n → n/2 → n/4 → … → 1. 횟수는 log₂ n.</p>
+
+    <h4>O(n) — 선형</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">O(n)</span><button class="copy-btn">복사</button></div>
+    <pre><code>def maximum(nums):
+    m = nums[0]
+    for x in nums[1:]:
+        if x &gt; m:
+            m = x
+    return m</code></pre></div>
+
+    <h4>O(n log n) — 선형로그</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">O(n log n)</span><button class="copy-btn">복사</button></div>
+    <pre><code>def sort_then_unique(nums):
+    nums.sort()              # O(n log n) — Timsort
+    result = []
+    for x in nums:
+        if not result or result[-1] != x:
+            result.append(x)
+    return result            # 전체 O(n log n)</code></pre></div>
+
+    <h4>O(n²) — 이차</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">O(n²)</span><button class="copy-btn">복사</button></div>
+    <pre><code>def has_duplicate_pair(nums):
+    n = len(nums)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if nums[i] == nums[j]:
+                return True
+    return False</code></pre></div>
+    <p>이중 for문 → 비교 횟수 n(n-1)/2 = Θ(n²).</p>
+
+    <h4>O(2ⁿ) — 지수</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">O(2ⁿ)</span><button class="copy-btn">복사</button></div>
+    <pre><code>def fib_naive(n):
+    if n &lt; 2:
+        return n
+    return fib_naive(n-1) + fib_naive(n-2)</code></pre></div>
+    <p>매 호출마다 두 번씩 분기 → 호출 트리 크기가 ≈ 2ⁿ. n=40만 되어도 매우 느림.</p>
+
+    <h4>O(n!) — 팩토리얼</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">O(n!)</span><button class="copy-btn">복사</button></div>
+    <pre><code>from itertools import permutations
+
+def all_orderings(items):
+    return list(permutations(items))   # n! 개</code></pre></div>
+    <p>n=12 → 약 5억. n=15 → 약 1.3조. n=20 → 우리 우주에서 처리 불가.</p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>"감각으로 외우기" — 문제 크기 한계표</h3>
+    <p>
+      약 1초 제한 시간의 코딩 테스트에서, 알고리즘 클래스별로 통과 가능한 n의 대략적 한계:
+    </p>
+    <table class="dict-table">
+      <thead><tr><th>제한 시간 1초 기준</th><th>최대 n (대략)</th></tr></thead>
+      <tbody>
+        <tr><td>O(n!)</td><td>n ≤ 11</td></tr>
+        <tr><td>O(2ⁿ × n)</td><td>n ≤ 20</td></tr>
+        <tr><td>O(n³)</td><td>n ≤ 500</td></tr>
+        <tr><td>O(n² log n)</td><td>n ≤ 3,000</td></tr>
+        <tr><td>O(n²)</td><td>n ≤ 10,000</td></tr>
+        <tr><td>O(n √n)</td><td>n ≤ 100,000</td></tr>
+        <tr><td>O(n log n)</td><td>n ≤ 5,000,000</td></tr>
+        <tr><td>O(n)</td><td>n ≤ 100,000,000</td></tr>
+      </tbody>
+    </table>
+    <p>
+      (Python은 C/C++의 ~30~100배 느리므로 위 표에서 한 단계 보수적으로 보세요.)
+    </p>
+    <p>
+      이 표를 보면 "이 문제는 n ≤ 10⁵이니까 O(n log n) 이하로 풀어야 한다" 식으로 <strong>역설계</strong>가 가능해집니다. 빅오는 그래서 알고리즘 <em>발견</em>에도 쓰입니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 08. 점근 표기 계산 규칙 ==================== -->
+<section id="rules">
+  <h2>08 — 점근 표기 계산 규칙</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>실전 5가지 규칙</h3>
+
+    <h4>규칙 1 — 상수는 무시한다</h4>
+    <p>
+      O(5n) = O(n). 상수 5는 컴퓨터 속도, 명령어 한 줄의 비용에 흡수됩니다.<br>
+      "이건 그냥 더 빠른 컴퓨터에서 돌리는 것과 같다"고 보면 됩니다.
+    </p>
+
+    <h4>규칙 2 — 가장 큰 항만 남긴다 (지배항)</h4>
+    <p>
+      O(n² + n + 100) = O(n²). n이 커질수록 n² 외의 항은 비율이 0으로 수렴.
+    </p>
+    <div class="code-block"><div class="code-header"><span class="code-label">두 부분으로 나뉜 코드</span><button class="copy-btn">복사</button></div>
+    <pre><code>def f(nums):
+    s = 0
+    for x in nums:           # O(n)
+        s += x
+    for i in range(len(nums)):
+        for j in range(len(nums)):   # O(n²)
+            ...
+    # 전체: O(n + n²) = O(n²)</code></pre></div>
+
+    <h4>규칙 3 — 곱셈은 곱셈으로 (중첩 루프)</h4>
+    <p>
+      바깥 루프 O(a), 안쪽 루프 O(b) → 전체 O(a × b).
+    </p>
+    <div class="code-block"><div class="code-header"><span class="code-label">행렬 순회</span><button class="copy-btn">복사</button></div>
+    <pre><code>for i in range(n):       # O(n)
+    for j in range(m):   # O(m)
+        do_O1()
+# 전체: O(n × m)</code></pre></div>
+
+    <h4>규칙 4 — 덧셈은 덧셈으로 (순차)</h4>
+    <p>
+      두 단계가 차례로 실행되면 O(a) + O(b) = O(max(a, b)).
+    </p>
+
+    <h4>규칙 5 — 함수 호출 비용은 그대로 곱한다</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">함정 — in 연산자</span><button class="copy-btn">복사</button></div>
+    <pre><code>def slow(nums, queries):
+    result = []
+    for q in queries:        # O(|queries|)
+        if q in nums:        # ⚠️ list의 in은 O(n)
+            result.append(q)
+    return result
+# 전체: O(|queries| × |nums|), 보통 O(n²)</code></pre></div>
+    <p>
+      <code>q in nums</code>가 O(1)이 아니라 O(n)이라는 걸 모르면 빅오를 한 단계 잘못 잡습니다.<br>
+      <strong>set으로 바꾸면 O(1)</strong> → 전체 O(|queries| + |nums|) = O(n).
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>주의 — "겉모습 ≠ 빅오"</h3>
+
+    <h4>예 1: 중첩 루프인데 O(n)인 경우</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">투 포인터</span><button class="copy-btn">복사</button></div>
+    <pre><code>def two_pointer(nums, target):
+    lo, hi = 0, len(nums) - 1
+    while lo &lt; hi:                  # 보기엔 O(n)
+        s = nums[lo] + nums[hi]
+        if s == target: return (lo, hi)
+        elif s &lt; target: lo += 1
+        else: hi -= 1
+    return None</code></pre></div>
+    <p>
+      while 루프이고 안에 보이는 비용은 O(1)이지만, 각 반복마다 lo+1 또는 hi-1 — 즉 lo와 hi가 만나기까지 정확히 n번 반복.<br>
+      따라서 <strong>O(n)</strong>. "while = O(n²)"이라는 미신은 틀렸습니다.
+    </p>
+
+    <h4>예 2: 단일 루프인데 O(n²)인 경우</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">감춰진 비용</span><button class="copy-btn">복사</button></div>
+    <pre><code>def collect(nums):
+    result = ""
+    for x in nums:           # n번
+        result += str(x)     # ⚠️ Python 문자열은 immutable
+    return result</code></pre></div>
+    <p>
+      <code>result += str(x)</code>는 매번 새 문자열을 만듭니다. i번째 반복에서 길이 i 문자열을 복사 → 1+2+…+n = O(n²).<br>
+      해결: <code>"".join(...)</code>를 쓰면 O(n).
+    </p>
+
+    <div class="why-box">
+      <div class="box-header">WHY — CPython 한정 최적화</div>
+      <p>
+        실제로는 <code>s += t</code>가 참조 카운트 == 1일 때 in-place로 동작하는 최적화가 있어 O(n)이 되기도 합니다.
+        그러나 PyPy/Jython/IronPython에는 이 최적화가 없습니다. <strong>"문자열 누적은 join"</strong>이 안전한 규칙.
+      </p>
+    </div>
+
+    <h4>예 3: 재귀 호출의 비용</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">재귀</span><button class="copy-btn">복사</button></div>
+    <pre><code>def f(n):
+    if n == 0: return 1
+    return f(n-1) + f(n-1)   # ⚠️ 같은 부분 두 번 계산</code></pre></div>
+    <p>
+      매 단계마다 호출 수가 2배 → T(n) = 2·T(n-1) + O(1) → T(n) = Θ(2ⁿ).<br>
+      <code>v = f(n-1); return v + v</code>로 바꾸면 T(n) = T(n-1) + O(1) → Θ(n).
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>덧셈 vs 곱셈 — 실전 판별</h3>
+    <ul>
+      <li><strong>덧셈</strong>: 두 단계가 <em>순차로 한 번씩</em> 실행 → max만 남김.</li>
+      <li><strong>곱셈</strong>: 한 단계 안에서 <em>다른 단계가 반복</em> → 곱한다.</li>
+    </ul>
+    <p>
+      이 둘을 헷갈리면 O(n+m)을 O(nm)으로 부풀리거나 그 반대. 코드를 읽을 때 <em>"이 루프는 저 루프 안에 들어 있나?"</em>를 항상 묻습니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 09. 점화식과 마스터 정리 ==================== -->
+<section id="recurrence">
+  <h2>09 — 점화식과 마스터 정리</h2>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>분할 정복 알고리즘은 점화식으로 표현된다</h3>
+    <p>
+      병합 정렬은 입력을 절반으로 나눠 각각 정렬하고 합칩니다.
+    </p>
+    <div class="code-block"><div class="code-header"><span class="code-label">merge sort 골격</span><button class="copy-btn">복사</button></div>
+    <pre><code>def merge_sort(a):
+    if len(a) &lt;= 1:
+        return a
+    mid = len(a) // 2
+    left = merge_sort(a[:mid])      # T(n/2)
+    right = merge_sort(a[mid:])     # T(n/2)
+    return merge(left, right)       # O(n)</code></pre></div>
+    <p>
+      이걸 시간 점화식으로 쓰면:
+    </p>
+    <div class="formula-box">
+      T(n) = 2·T(n/2) + Θ(n), &nbsp; T(1) = Θ(1)
+    </div>
+    <p>
+      이 점화식의 닫힌 형태(closed form)가 바로 <strong>Θ(n log n)</strong>입니다.
+    </p>
+
+    <h4>3가지 풀이법</h4>
+    <ol>
+      <li><strong>치환법(substitution)</strong> — 답을 추측하고 귀납으로 증명.</li>
+      <li><strong>재귀 트리(recursion tree)</strong> — 호출 트리를 그려 레벨별 비용을 합산.</li>
+      <li><strong>마스터 정리(master theorem)</strong> — 정형 패턴이면 공식으로.</li>
+    </ol>
+
+    <h4>방법 2: 재귀 트리로 T(n) = 2T(n/2) + n 풀기</h4>
+    <p>
+      각 레벨의 총 비용을 봅니다.
+    </p>
+    <table class="dict-table">
+      <thead><tr><th>레벨</th><th>노드 수</th><th>각 노드 비용</th><th>레벨 합</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>1</td><td>n</td><td>n</td></tr>
+        <tr><td>1</td><td>2</td><td>n/2</td><td>n</td></tr>
+        <tr><td>2</td><td>4</td><td>n/4</td><td>n</td></tr>
+        <tr><td>k</td><td>2^k</td><td>n/2^k</td><td>n</td></tr>
+        <tr><td>log n</td><td>n</td><td>1</td><td>n</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>레벨 수 = log₂ n</strong>, <strong>각 레벨 비용 = n</strong> → 총 <strong>n log n</strong>. ∎
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>Part A — 마스터 정리(Master Theorem) — CLRS 4.5</h3>
+    <p>
+      형태가 다음과 같은 점화식:
+    </p>
+    <div class="formula-box">
+      T(n) = a·T(n/b) + f(n), &nbsp; a ≥ 1, &nbsp; b &gt; 1
+    </div>
+    <p>
+      여기서 a는 부분 문제의 개수, b는 분할 비율, f(n)은 분할/결합 비용. 이 점화식의 답은 <strong>n^(log_b a)</strong>와 <strong>f(n)</strong> 중 어느 쪽이 큰가에 따라 결정됩니다. 임계 함수를 <strong>n^c</strong> (c = log_b a)로 둡니다.
+    </p>
+
+    <table class="dict-table">
+      <thead><tr><th>경우</th><th>조건</th><th>해</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>f(n) = O(n^(c-ε)), ε &gt; 0</td>
+          <td>T(n) = Θ(n^c)</td>
+          <td>분할이 비싼 경우 — 잎(leaf)이 지배</td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td>f(n) = Θ(n^c · log^k n), k ≥ 0</td>
+          <td>T(n) = Θ(n^c · log^(k+1) n)</td>
+          <td>분할과 잎이 균형 — 모든 레벨이 같은 무게</td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td>f(n) = Ω(n^(c+ε)), ε &gt; 0<br>(+ 정규성 조건)</td>
+          <td>T(n) = Θ(f(n))</td>
+          <td>분할이 싼 경우 — 뿌리(root)가 지배</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>적용 예제</h4>
+    <ol>
+      <li><strong>병합 정렬</strong>: T(n) = 2T(n/2) + n. a=2, b=2, c=log₂ 2 = 1, f(n)=n=Θ(n¹). 경우 2 (k=0). → <strong>Θ(n log n)</strong>.</li>
+      <li><strong>이분 탐색</strong>: T(n) = T(n/2) + 1. a=1, b=2, c=0, f(n)=1=Θ(n⁰·log⁰). 경우 2 (k=0). → <strong>Θ(log n)</strong>.</li>
+      <li><strong>Strassen 행렬 곱</strong>: T(n) = 7T(n/2) + n². c = log₂ 7 ≈ 2.807. f(n)=n² = O(n^(2.807-ε)). 경우 1. → <strong>Θ(n^2.807)</strong>.</li>
+      <li><strong>이진 트리 순회</strong>: T(n) = 2T(n/2) + 1. c=1, f(n)=1 = O(n^(1-ε)). 경우 1. → <strong>Θ(n)</strong>.</li>
+    </ol>
+
+    <div class="reading-box">
+      <div class="box-header">📖 원서 인용 — CLRS §4.5</div>
+      <p>
+        "마스터 정리는 a ≥ 1과 b &gt; 1이 상수이고 f(n)이 양의 함수일 때, T(n) = aT(n/b) + f(n) 형태의 점화식에 대해 점근적 해를 제공한다.
+        n/b는 ⌊n/b⌋ 또는 ⌈n/b⌉로 해석할 수 있다."
+      </p>
+      <p style="font-size:0.92em;color:var(--text-muted);">
+        출처: CLRS 4th ed., §4.5 "The master method for solving recurrences", Theorem 4.1.
+      </p>
+    </div>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>Part B — 마스터 정리가 안 통하는 경우</h3>
+    <p>
+      마스터 정리는 만능이 아닙니다. 다음 같은 점화식은 <strong>적용 불가</strong>:
+    </p>
+    <ul>
+      <li><strong>T(n) = T(n-1) + n</strong> — n/b 형태가 아님 (감산형 점화식). → 합 공식으로 직접: T(n) = Θ(n²).</li>
+      <li><strong>T(n) = 2T(n/2) + n log n</strong> — 경우 2의 정확한 형태(n^c · log^k n)에 살짝 맞으나 (k=1) Θ(n log² n). 실수로 n log n으로 답하면 안 됨.</li>
+      <li><strong>T(n) = 2T(n/2) + n / log n</strong> — 경우 1, 2, 3 어디에도 안 맞음. <em>Akra-Bazzi 정리</em> 필요.</li>
+      <li><strong>T(n) = T(n/3) + T(2n/3) + n</strong> — 부분 문제 크기가 다름. Akra-Bazzi 또는 재귀 트리.</li>
+    </ul>
+    <p>
+      <strong>Akra-Bazzi 정리</strong>는 마스터의 일반화로, 부분 문제 크기가 다르고 비율이 달라도 적용됩니다 (Akra & Bazzi, 1998).
+    </p>
+    <p style="font-size:0.92em;color:var(--text-muted);">
+      참고: Akra, M.; Bazzi, L. (1998). "On the solution of linear recurrence equations". <em>Computational Optimization and Applications</em>. 10 (2): 195–210.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. AI는 빅오를 어떻게 분석하는가 ==================== -->
+<section id="ai-bigo">
+  <h2>10 — AI는 빅오를 어떻게 분석하는가</h2>
+
+  <p>
+    LLM(대규모 언어 모델)에게 코드를 보여주면 빅오를 곧잘 답합니다. 어떻게 가능한 걸까요?
+  </p>
+
+  <h3>AI가 잘하는 것 — 패턴 매칭</h3>
+  <ul>
+    <li>이중 for문 + 안쪽이 O(1) → "O(n²)일 가능성이 높다"</li>
+    <li><code>while lo &lt;= hi: mid = (lo+hi)//2</code> → "이분 탐색, O(log n)"</li>
+    <li><code>def f(n): return f(n-1) + f(n-1)</code> → "지수 재귀, O(2ⁿ)"</li>
+  </ul>
+  <p>
+    AI는 학습 데이터에서 본 무수한 코드와 그 분석을 패턴으로 압축하고 있습니다. 거의 모든 표준 코드의 빅오는 정확히 답합니다.
+  </p>
+
+  <h3>AI가 자주 틀리는 것 — 감춰진 비용</h3>
+  <ol>
+    <li><strong>언어별 내장 연산의 진짜 비용</strong> — Python <code>list.insert(0, x)</code>가 O(n)인 줄 모를 때가 있음.</li>
+    <li><strong>"하나처럼 보이는데 두 개"</strong> — <code>s = s + t</code>가 새 문자열을 만든다는 점.</li>
+    <li><strong>amortized vs worst-case</strong> — list.append는 평균 O(1)이지만 최악 한 번은 O(n) (재할당). 평균만 답하기 쉬움.</li>
+    <li><strong>해시 충돌</strong> — dict 조회는 평균 O(1)이지만 최악 O(n) (적대적 입력).</li>
+    <li><strong>입력 의존</strong> — quicksort는 평균 O(n log n) / 최악 O(n²)인데 "O(n log n)"으로만 답하기 쉬움.</li>
+  </ol>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 우리가 빅오를 직접 익혀야 하는 이유</div>
+    <p>
+      AI에게 "이 코드의 빅오는?"이라 물으면 80% 정확한 답이 옵니다. 하지만 <strong>나머지 20%가 시스템을 죽입니다.</strong>
+      "평균 O(1)"이라 믿었던 dict가 적대적 입력에서 O(n)이 되어 서버가 다운된 사례 (28C3에서 공개된 hash-collision DoS, CVE-2012-1150 → Python 3.4의 PEP 456 SipHash 도입)가 실제 있었습니다.<br>
+      AI의 답을 <em>검증</em>하려면 빅오의 정의와 계산 규칙을 직접 알아야 합니다. 빅오는 AI 시대에도 <strong>외주 불가능한 사고력</strong>입니다.
+    </p>
+  </div>
+
+  <h3>좋은 질문 패턴</h3>
+  <p>
+    AI에게 빅오를 물을 때는 다음 형태가 더 정확한 답을 끌어냅니다.
+  </p>
+  <ul>
+    <li>❌ "이 코드의 시간복잡도는?"</li>
+    <li>✅ "이 코드의 <strong>최악 시간 복잡도</strong>를 입력 크기 n에 대해 분석해줘. 사용된 모든 표준 라이브러리 호출의 비용도 명시해줘."</li>
+    <li>✅ "여기서 amortized와 worst-case가 다르다면 둘 다 답해줘."</li>
+    <li>✅ "공간 복잡도도 함께."</li>
+  </ul>
+</section>
+
+<!-- ==================== 11. 실습 ==================== -->
+<section id="practice">
+  <h2>11 — 실습: timeit으로 이론과 측정 비교</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>실험 1: O(n) vs O(n²) — 입력 두 배 실험</h3>
+    <p>
+      "n을 2배로 했을 때 시간이 2배가 되는가, 4배가 되는가" 를 직접 측정합니다.
+    </p>
+    <div class="code-block"><div class="code-header"><span class="code-label">timeit_compare.py</span><button class="copy-btn">복사</button></div>
+    <pre><code>import timeit, random
+
+def linear(nums, target):
+    for x in nums:
+        if x == target: return True
+    return False
+
+def quadratic(nums):
+    n = len(nums)
+    cnt = 0
+    for i in range(n):
+        for j in range(n):
+            cnt += 1
+    return cnt
+
+for n in [1000, 2000, 4000, 8000]:
+    nums = [random.randint(0, 10**9) for _ in range(n)]
+    target = -1                                  # 항상 못 찾도록 (worst-case)
+    t1 = timeit.timeit(lambda: linear(nums, target), number=100)
+    t2 = timeit.timeit(lambda: quadratic(nums), number=1)
+    print(f"n={n:5d}  linear={t1*1000:7.2f} ms   quadratic={t2*1000:8.2f} ms")</code></pre></div>
+
+    <div class="output-block">
+      <div class="output-label">예상 출력 (값은 환경마다 다름):</div>
+n= 1000  linear=   3.10 ms   quadratic=    25.40 ms
+n= 2000  linear=   6.20 ms   quadratic=   101.60 ms
+n= 4000  linear=  12.40 ms   quadratic=   406.00 ms
+n= 8000  linear=  24.70 ms   quadratic=  1623.00 ms
+    </div>
+    <p>
+      n이 2배가 될 때:
+    </p>
+    <ul>
+      <li>linear: 시간이 ≈ 2배 → <strong>O(n) 확인</strong></li>
+      <li>quadratic: 시간이 ≈ 4배 → <strong>O(n²) 확인</strong></li>
+    </ul>
+    <p>
+      이론과 측정이 일치합니다. 이게 "이론을 측정으로 <em>검증</em>하는" 표준 절차입니다.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>실험 2: O(log n) — 두 배가 되어도 거의 안 늘어남</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">log_growth.py</span><button class="copy-btn">복사</button></div>
+    <pre><code>import timeit, bisect
+
+for n in [10**4, 10**5, 10**6, 10**7]:
+    sorted_nums = list(range(n))
+    t = timeit.timeit(lambda: bisect.bisect_left(sorted_nums, n // 2), number=10**6)
+    print(f"n={n:10d}  bisect={t*1000:8.2f} ms (1M 회)")</code></pre></div>
+    <p>
+      n이 1000배 늘어도(10⁴ → 10⁷) 이론상 약 <strong>1.75배</strong>(log₂ 10⁷ / log₂ 10⁴ = 7/4)만 늘어납니다 — 실측엔 캐시 효과 등이 추가됩니다.<br>
+      <em>로그가 "거의 평평하다"는 것</em>이 그래서 강력합니다.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>실험 3: list의 in vs set의 in</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">in_compare.py</span><button class="copy-btn">복사</button></div>
+    <pre><code>import timeit, random
+
+n = 10**6
+data_list = [random.randint(0, 10**9) for _ in range(n)]
+data_set = set(data_list)
+target = -1                              # 못 찾도록
+
+t1 = timeit.timeit(lambda: target in data_list, number=100)
+t2 = timeit.timeit(lambda: target in data_set, number=10**6)
+print(f"list:  {t1*1000/100:.4f} ms / 회   (O(n))")
+print(f"set:   {t2*1e6/10**6:.4f} μs / 회  (O(1))")</code></pre></div>
+    <p>
+      같은 <code>x in container</code>인데 컨테이너 타입에 따라 시간이 <strong>10⁵배</strong> 차이.<br>
+      "Python 문법은 같지만 빅오는 다르다"의 가장 명확한 예.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 12. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>12 — 연습문제 (12문제)</h2>
+
+  <!-- 초급 1 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">빅오 판별</span>
+      <span class="level-badge level-elem">초급</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 코드의 빅오는?</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">코드</span><button class="copy-btn">복사</button></div>
+      <pre><code>def f(nums):
+    return nums[0] + nums[-1]</code></pre></div>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <p><strong>O(1)</strong></p>
+          <div class="answer-why">
+            <div class="answer-why-title">왜?</div>
+            <p>인덱싱 두 번과 덧셈 한 번 — n에 무관하게 늘 3번 연산.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 초급 2 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">빅오 판별</span>
+      <span class="level-badge level-elem">초급</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 코드의 빅오는?</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">코드</span><button class="copy-btn">복사</button></div>
+      <pre><code>def f(n):
+    s = 0
+    for i in range(n):
+        for j in range(n):
+            s += 1
+    return s</code></pre></div>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <p><strong>O(n²)</strong></p>
+          <div class="answer-why">
+            <div class="answer-why-title">왜?</div>
+            <p>두 루프 모두 n번 → n × n = n² 회 반복.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 초급 3 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">한계 추정</span>
+      <span class="level-badge level-elem">초급</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">1초에 10⁸ 연산하는 컴퓨터에서, O(n²) 알고리즘으로 1초 안에 처리 가능한 n의 최대치는?</p>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <p><strong>약 n = 10⁴</strong> ((10⁴)² = 10⁸).</p>
+          <div class="answer-why">
+            <div class="answer-why-title">왜?</div>
+            <p>n² ≤ 10⁸ → n ≤ 10⁴. 안전하게 n = 10,000 정도가 한계.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 중급 4 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">빅오 판별 — 함정</span>
+      <span class="level-badge level-inter">중급</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 코드의 빅오는? (Python의 list 동작을 고려할 것)</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">코드</span><button class="copy-btn">복사</button></div>
+      <pre><code>def f(nums):
+    out = []
+    for x in nums:
+        out.insert(0, x)        # 앞에 삽입
+    return out</code></pre></div>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <p><strong>O(n²)</strong></p>
+          <div class="answer-why">
+            <div class="answer-why-title">왜?</div>
+            <p>
+              <code>list.insert(0, x)</code>는 기존 원소를 한 칸씩 뒤로 미는 O(n) 연산. 이걸 n번 → O(n²).<br>
+              해결: <code>out.append(x)</code> 후 <code>out.reverse()</code> → O(n). 또는 <code>collections.deque</code>의 <code>appendleft</code> O(1).
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 중급 5 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">빅오 판별</span>
+      <span class="level-badge level-inter">중급</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 코드의 빅오는?</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">코드</span><button class="copy-btn">복사</button></div>
+      <pre><code>def f(n):
+    i = 1
+    cnt = 0
+    while i &lt; n:
+        i *= 2
+        cnt += 1
+    return cnt</code></pre></div>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <p><strong>O(log n)</strong></p>
+          <div class="answer-why">
+            <div class="answer-why-title">왜?</div>
+            <p>i가 매 반복마다 2배 → 1, 2, 4, 8, …, 2^k. 2^k ≥ n이 되는 순간 멈춤 → k = ⌈log₂ n⌉.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 중급 6 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">빅오 단순화</span>
+      <span class="level-badge level-inter">중급</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음을 가장 타이트한 빅오로 단순화: T(n) = 5n³ + 100n² + 99n + 12345</p>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <p><strong>O(n³)</strong></p>
+          <div class="answer-why">
+            <div class="answer-why-title">왜?</div>
+            <p>지배항만 남기고(5n³ → n³) 상수는 무시. n=10에서도 5n³가 다른 항을 압도.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 고급 7 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">빅오 증명</span>
+      <span class="level-badge level-adv">고급</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">7n + 50 = O(n) 임을 정의에 따라 증명하시오. (c와 n₀를 명시)</p>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">증명</div>
+            <p>
+              c = 8, n₀ = 50 으로 잡는다. n ≥ 50 일 때 50 ≤ n 이므로:<br>
+              7n + 50 ≤ 7n + n = 8n = c·n. ✓ &nbsp; 따라서 7n + 50 = O(n). ∎
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 고급 8 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">투 포인터 분석</span>
+      <span class="level-badge level-adv">고급</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"보기엔 O(n²)지만 실제로 O(n)"인 코드를 직접 만들어 빅오 분석을 해보시오 (투 포인터, 슬라이딩 윈도우 등).</p>
+      <details class="answer">
+        <summary>예시 답안</summary>
+        <div class="answer-content">
+          <div class="code-block"><div class="code-header"><span class="code-label">슬라이딩 윈도우</span><button class="copy-btn">복사</button></div>
+          <pre><code># 합이 정확히 target인 연속 부분배열 개수 (모두 양수)
+def count_subarrays(nums, target):
+    left, s, cnt = 0, 0, 0
+    for right in range(len(nums)):
+        s += nums[right]
+        while s &gt; target and left &lt;= right:
+            s -= nums[left]
+            left += 1
+        if s == target:
+            cnt += 1
+    return cnt</code></pre></div>
+          <div class="answer-why">
+            <div class="answer-why-title">분석</div>
+            <p>
+              안쪽 while가 있어 보이지만, <strong>left는 절대 감소하지 않고 right도 증가만 함</strong>. left와 right는 각각 최대 n번만 움직임 → 총 ≤ 2n 연산 → <strong>O(n)</strong>.
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 고급 9 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">점화식 풀이</span>
+      <span class="level-badge level-adv">고급</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">T(n) = 4T(n/2) + n 의 점근적 해를 마스터 정리로 구하시오.</p>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <p><strong>T(n) = Θ(n²)</strong></p>
+          <div class="answer-why">
+            <div class="answer-why-title">풀이</div>
+            <p>
+              a=4, b=2 → c = log₂ 4 = 2. f(n) = n = O(n^(2-1)) = O(n^(c-ε)) (ε=1).<br>
+              마스터 정리 <strong>경우 1</strong> 적용 → T(n) = Θ(n^c) = Θ(n²). ∎
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 전공자 10 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">엄밀 증명</span>
+      <span class="level-badge level-expert">전공자</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">2ⁿ ≠ O(n^k) (모든 양의 상수 k에 대해) 임을 증명하시오.</p>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">증명 (대우)</div>
+            <p>
+              2ⁿ = O(n^k) 가정 → ∃ c, n₀: n ≥ n₀ ⇒ 2ⁿ ≤ c·n^k.<br>
+              양변 로그: n·ln 2 ≤ ln c + k·ln n.<br>
+              n / ln n → ∞ (n → ∞) 이므로, 좌변(n·ln 2)은 우변(상수 + k·ln n)보다 결국 커짐 — 모순.<br>
+              따라서 2ⁿ ≠ O(n^k). ∎
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 전공자 11 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">점화식 풀이 (마스터 외)</span>
+      <span class="level-badge level-expert">전공자</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">T(n) = 2T(n/2) + n log n 의 해를 구하시오. (마스터 정리의 경우 2 확장형 사용)</p>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <p><strong>T(n) = Θ(n log² n)</strong></p>
+          <div class="answer-why">
+            <div class="answer-why-title">풀이</div>
+            <p>
+              a=2, b=2, c=log₂ 2 = 1. f(n) = n log n = Θ(n^c · log¹ n), k=1.<br>
+              경우 2의 확장 → T(n) = Θ(n^c · log^(k+1) n) = Θ(n · log² n). ∎
+            </p>
+            <p style="font-size:0.92em;color:var(--text-muted);">참고: CLRS §4.5 Theorem 4.1 case 2.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 전공자 12 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-explain">CPython 해석</span>
+      <span class="level-badge level-expert">전공자</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">
+        Python의 <code>list.append</code>가 "amortized O(1)"이라고 합니다. 이 의미를 설명하고, 단일 호출의 최악 시간이 무엇인지 답하시오. CPython의 list 재할당 전략(growth factor)을 함께 설명하시오.
+      </p>
+      <details class="answer">
+        <summary>정답 및 해설</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">amortized 설명</div>
+            <p>
+              "n번의 연속된 append의 총 비용이 O(n)이다 → 평균 O(1)/회" 라는 의미.
+              어떤 호출은 O(n) (재할당이 필요한 시점), 다른 호출은 O(1).
+            </p>
+            <div class="answer-why-title">CPython 구현 (cpython/Objects/listobject.c — list_resize)</div>
+            <p>
+              새 capacity = <code>((size_t)newsize + (newsize &gt;&gt; 3) + 6) &amp; ~(size_t)3</code> 공식으로 약 1.125× 성장 (4바이트 정렬).<br>
+              "두 배" 성장이 아니라 ~12.5% 추가. 이래도 amortized 분석에서는 여전히 O(1)/append.<br>
+              증명 스케치: n번 append 시 재할당 횟수는 O(log n)이고, k번째 재할당 비용은 약 1.125^k. 합 = 등비급수 ≈ O(n). 평균 O(1). ∎
+            </p>
+            <p style="font-size:0.92em;color:var(--text-muted);">
+              참조: cpython/Objects/listobject.c, 함수 <code>list_resize</code> — 공식 문서로는 docs.python.org의 wiki TimeComplexity.
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 13. 정리 ==================== -->
+<section id="summary">
+  <h2>13 — 이번 주 정리</h2>
+  <ol>
+    <li>알고리즘은 <strong>유한·명확·실효</strong>한 단계의 모음. 같은 문제도 알고리즘에 따라 시간이 갈라진다.</li>
+    <li>실측 시간은 환경에 흔들린다 → 입력 크기 n에 대한 <strong>점근 분석</strong>이 표준.</li>
+    <li><strong>O</strong>는 상한, <strong>Ω</strong>는 하한, <strong>Θ</strong>는 정확. 일상에선 O가 통용.</li>
+    <li>계산 규칙: 상수 무시 / 지배항만 / 중첩=곱 / 순차=덧셈(=max).</li>
+    <li>분할정복은 <strong>점화식 T(n) = aT(n/b) + f(n)</strong>로 표현, <strong>마스터 정리</strong>로 풀 수 있음.</li>
+    <li>"보기엔 O(n²) → 실제 O(n)"(투 포인터)도, 그 반대(<code>insert(0)</code>, 문자열 누적)도 있다. 코드의 <em>속까지</em> 봐야 한다.</li>
+    <li>AI는 빅오를 잘 답하지만, <strong>amortized·worst-case·언어별 비용</strong>은 자주 틀린다 — 우리가 검증해야 한다.</li>
+  </ol>
+</section>
+
+<!-- ==================== 14. 용어 사전 ==================== -->
+<section id="glossary">
+  <h2>14 — 용어 사전 (30개)</h2>
+  <table class="dict-table">
+    <thead><tr><th>용어</th><th>의미</th></tr></thead>
+    <tbody>
+      <tr><td><strong>알고리즘 (Algorithm)</strong></td><td>유한·명확한 단계로 입력에서 출력을 만드는 절차.</td></tr>
+      <tr><td><strong>점근 분석 (Asymptotic analysis)</strong></td><td>입력 크기가 무한히 커질 때의 자라남을 분석.</td></tr>
+      <tr><td><strong>입력 크기 (Input size, n)</strong></td><td>분석의 기준이 되는 입력의 크기. 문제마다 정의가 다름.</td></tr>
+      <tr><td><strong>시간 복잡도 (Time complexity)</strong></td><td>n에 대한 실행 시간(연산 수) 함수.</td></tr>
+      <tr><td><strong>공간 복잡도 (Space complexity)</strong></td><td>n에 대한 추가 메모리 사용량 함수.</td></tr>
+      <tr><td><strong>RAM 모델</strong></td><td>기본 연산이 1단위 시간이라 가정하는 표준 분석 모델.</td></tr>
+      <tr><td><strong>최선/최악/평균</strong></td><td>같은 알고리즘의 입력별 시간 — 분석 표준은 최악.</td></tr>
+      <tr><td><strong>O (Big-O)</strong></td><td>점근적 상한. f = O(g) ⟺ ∃c,n₀: f(n) ≤ c·g(n) ∀n≥n₀.</td></tr>
+      <tr><td><strong>Ω (Big-Omega)</strong></td><td>점근적 하한.</td></tr>
+      <tr><td><strong>Θ (Big-Theta)</strong></td><td>상하한이 같은 정확한 자라남.</td></tr>
+      <tr><td><strong>o (little-o)</strong></td><td>엄격한 상한. lim f/g = 0.</td></tr>
+      <tr><td><strong>ω (little-omega)</strong></td><td>엄격한 하한. lim f/g = ∞.</td></tr>
+      <tr><td><strong>지배항 (Dominant term)</strong></td><td>n→∞에서 가장 빠르게 자라는 항. O 분석의 핵심.</td></tr>
+      <tr><td><strong>상한 vs 타이트</strong></td><td>O는 상한이지만, 관례적으로는 가장 타이트한 g를 사용.</td></tr>
+      <tr><td><strong>로그 (log n)</strong></td><td>밑은 무관 (상수배 차이). 보통 log₂ n.</td></tr>
+      <tr><td><strong>점화식 (Recurrence)</strong></td><td>T(n)을 자기보다 작은 T(·)들로 정의한 식.</td></tr>
+      <tr><td><strong>분할 정복 (Divide & Conquer)</strong></td><td>문제를 부분 문제로 나눠 풀고 합침.</td></tr>
+      <tr><td><strong>마스터 정리 (Master Theorem)</strong></td><td>T(n) = aT(n/b) + f(n) 형 점화식의 일반 해. CLRS §4.5.</td></tr>
+      <tr><td><strong>Akra-Bazzi 정리</strong></td><td>마스터의 일반화 — 부분 문제 크기가 다를 때.</td></tr>
+      <tr><td><strong>재귀 트리 (Recursion tree)</strong></td><td>점화식을 시각화해 레벨별 비용을 합산하는 풀이법.</td></tr>
+      <tr><td><strong>치환법 (Substitution)</strong></td><td>해를 추측하고 귀납으로 점화식을 증명하는 방법.</td></tr>
+      <tr><td><strong>amortized 분석</strong></td><td>여러 연산의 평균 비용을 분석. 단일 최악과 다를 수 있음.</td></tr>
+      <tr><td><strong>O(1) 상수</strong></td><td>n에 무관한 시간. 해시 조회, 인덱싱.</td></tr>
+      <tr><td><strong>O(log n) 로그</strong></td><td>이분 탐색, 균형 BST.</td></tr>
+      <tr><td><strong>O(n) 선형</strong></td><td>한 번 훑기. 합계, 최댓값.</td></tr>
+      <tr><td><strong>O(n log n) 선형로그</strong></td><td>비교 기반 정렬의 하한 — 병합/Timsort.</td></tr>
+      <tr><td><strong>O(n²) 이차</strong></td><td>이중 루프, 단순 정렬, 모든 쌍 검사.</td></tr>
+      <tr><td><strong>O(2ⁿ) 지수</strong></td><td>분기 재귀, 부분집합 탐색. n &gt; 30이면 위험.</td></tr>
+      <tr><td><strong>O(n!) 팩토리얼</strong></td><td>모든 순열. n &gt; 11이면 위험.</td></tr>
+      <tr><td><strong>다항 vs 지수</strong></td><td>P 클래스의 분기점. n^k ≺ 2ⁿ 항상 성립.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ==================== 15. 다음 주 맛보기 ==================== -->
+<section id="next-week">
+  <h2>15 — 다음 주 맛보기 — 정확성 증명 (Loop Invariants)</h2>
+  <blockquote class="quote">
+    이번 주는 <em>"얼마나 빠른가"</em>를 봤습니다. 다음 주는 <em>"정말로 맞는가"</em>를 봅니다.<br>
+    "내 정렬 함수는 정말 정렬된 결과를 내는가? — 모든 입력에 대해?"<br>
+    이걸 수학적으로 보장하는 도구가 <strong>루프 불변식(loop invariant)</strong>입니다.<br>
+    선택 정렬·삽입 정렬을 정확성 증명과 함께 다시 봅니다.
+  </blockquote>
+</section>
+
+<!-- ==================== FOOTER NAV ==================== -->
+<nav class="week-nav">
+  <span aria-disabled="true" style="opacity:0.3;">&larr; 이전</span>
+  <a href="algo02.html">2주차: 정확성 증명과 루프 불변식 &rarr;</a>
+</nav>
+
+</main>
+</div>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

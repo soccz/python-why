@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 28주차: 계산 기하 — Graham Scan, Sweep Line | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="계산 기하 — Graham 1972 볼록 껍질, Bentley-Ottmann 1979 선분 교차, Voronoi/Delaunay. GIS·CAD·게임의 수학.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 28주차: 계산 기하 | PyWhy">
+  <meta property="og:description" content="볼록 껍질, 선분 교차, Voronoi — 점·선·면의 알고리즘적 처리">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo28.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A28">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo27.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo29.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 28</div>
+  <h1 class="week-title">계산 기하 — Convex Hull, Sweep Line<br>점·선·면의 알고리즘적 처리</h1>
+  <p class="week-subtitle">
+    1972년 Bell Labs의 <strong>Ronald Graham</strong>(1935-2020)이 2페이지 논문 <em>"An efficient algorithm for determining the convex hull of a finite planar set"</em>(Info. Proc. Letters 1:132-133)을 발표. 컴퓨터 그래픽스·GIS의 기초 <strong>볼록 껍질 O(n log n)</strong>. 같은 1979년 <strong>A.M. Andrew</strong>는 Graham을 단순화한 <em>Monotone Chain</em>을, <strong>Jon Bentley &amp; Thomas Ottmann</strong>은 <em>선분 교차를 sweep line</em>으로 — <em>계산 기하의 황금기</em>.<br>
+    오늘날 Google Maps의 영역 계산, 게임 충돌 감지, CAD 불린 연산, 로봇 경로 계획까지 — 기하 알고리즘은 GUI의 숨은 엔진.<br>
+    핵심 질문: <em>"왜 '세 점의 방향'이라는 단일 연산이 기하 알고리즘의 원자가 되는가? 왜 sweep line이 복잡한 기하를 1차원으로 환원하는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 1972-1979 계산 기하의 탄생</a>
+    </div>
+    <div class="toc-section">
+      <a href="#ccw" class="toc-section-link"><span class="toc-num">02</span>CCW Primitive — 기하의 원자</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#convex-hull-graham" class="toc-section-link"><span class="toc-num">03</span>Graham Scan — 볼록 껍질 1972</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#convex-hull-andrew" class="toc-section-link"><span class="toc-num">04</span>Andrew's Monotone Chain 1979</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#jarvis-chan" class="toc-section-link"><span class="toc-num">05</span>Jarvis / Chan — 출력 민감 알고리즘</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#bentley-ottmann" class="toc-section-link"><span class="toc-num">06</span>Bentley-Ottmann — 선분 교차 1979</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#closest-pair" class="toc-section-link"><span class="toc-num">07</span>최근접 점 쌍 — 분할 정복</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#point-in-polygon" class="toc-section-link"><span class="toc-num">08</span>Point-in-Polygon — Ray Casting</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#voronoi-delaunay" class="toc-section-link"><span class="toc-num">09</span>Voronoi / Delaunay</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#sweep-line-apps" class="toc-section-link"><span class="toc-num">10</span>Sweep Line 응용 — 직사각형 합집합</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#numerical" class="toc-section-link"><span class="toc-num">11</span>부동소수점의 저주</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#applications" class="toc-section-link"><span class="toc-num">12</span>응용 — GIS, CAD, 게임, 로봇</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#libraries" class="toc-section-link"><span class="toc-num">13</span>실무 라이브러리 — Shapely, CGAL</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 1972-1979 계산 기하의 탄생</h2>
+
+  <p>
+    "Computational geometry"라는 용어는 1975년 Shamos &amp; Hoey의 박사 논문에서 정립되었지만, 아이디어의 씨앗은 이미 1972년부터 자라고 있었습니다 (cf. Preparata &amp; Shamos, <em>Computational Geometry: An Introduction</em>, 1985).
+  </p>
+
+  <div class="story-block">
+    <h3>1972 — Ronald Graham, Bell Labs</h3>
+    <p>
+      <strong>Ronald L. Graham</strong>(1935-2020)이 2페이지 논문 <em>"An efficient algorithm for determining the convex hull of a finite planar set"</em>(Info. Proc. Letters 1(4):132-133, 1972)을 발표. <strong>O(n log n)의 볼록 껍질(convex hull)</strong> 알고리즘.
+    </p>
+    <p>
+      Graham은 Paul Erdős의 공동저자로도 유명(Erdős number 1). 저글링 애호가. 수학자·CS 연구자의 전설.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1975 — Michael Shamos의 PhD</h3>
+    <p>
+      Shamos가 Yale에서 박사 학위를 받으며 "<strong>computational geometry</strong>"를 정식 분야로 정립. 볼록 껍질, 최근접 점 쌍, Voronoi 다이어그램 등. 1985년 <strong>Preparata &amp; Shamos의 교과서</strong>가 표준이 됨.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1979 — 계산 기하의 해</h3>
+    <ul>
+      <li><strong>Andrew's Monotone Chain</strong>(A.M. Andrew, Info. Proc. Letters 9(5):216-219): Graham 스캔의 단순화. x 좌표 기준 정렬 → 상·하 chain 각각 linear pass.</li>
+      <li><strong>Bentley-Ottmann</strong>(IEEE Trans. Comput. C-28(9):643-647): sweep line으로 선분 교차 O((n+k) log n) (k=교차 수). <em>Sweep line 패러다임의 대표</em>.</li>
+      <li>같은 해 Bentley의 <em>k-d tree</em>, <em>range tree</em>도 원숙기.</li>
+    </ul>
+  </div>
+
+  <div class="story-block">
+    <h3>1987 — Fortune의 Voronoi</h3>
+    <p>
+      Steven Fortune이 <em>"A sweepline algorithm for Voronoi diagrams"</em>(Algorithmica 2:153-174, 1987)에서 O(n log n) sweep line 기반 Voronoi. 이전은 분할 정복(Shamos 1975). Fortune의 방법은 구현이 더 단순 + 수치적 안정성이 좋음.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1996 — Chan's Algorithm</h3>
+    <p>
+      Timothy Chan(Waterloo 교수)의 <em>"Optimal output-sensitive convex hull algorithms in two and three dimensions"</em>(Discrete &amp; Comput. Geom. 16:361-368). <strong>O(n log h)</strong> — h=볼록 껍질 정점 수. n이 크고 h가 작을 때 Graham O(n log n)보다 빠름.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="계산 기하 역사">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📜 계산 기하의 50년 — 1970년대가 창설의 해</text>
+
+      <line x1="60" y1="130" x2="680" y2="130" stroke="var(--text-muted)" stroke-width="2"/>
+      <polygon points="680,130 670,126 670,134" fill="var(--text-muted)"/>
+
+      <g font-family="JetBrains Mono, monospace" font-size="11">
+        <!-- 1972 Graham -->
+        <circle cx="110" cy="130" r="9" fill="#d4930c" stroke="var(--accent)" stroke-width="2.5"/>
+        <line x1="110" y1="121" x2="110" y2="70" stroke="#d4930c" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="45" y="40" width="135" height="32" rx="4" fill="rgba(212,147,12,0.12)" stroke="#d4930c" stroke-width="1.5"/>
+        <text x="112" y="57" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Graham Scan 1972</text>
+        <text x="112" y="68" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">볼록 껍질 O(n log n)</text>
+        <text x="110" y="155" text-anchor="middle" class="viz-label-small">1972</text>
+
+        <!-- 1973 Jarvis -->
+        <circle cx="160" cy="130" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="160" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Jarvis march</text>
+        <text x="160" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1973</text>
+
+        <!-- 1975 Shamos -->
+        <circle cx="220" cy="130" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="220" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Shamos PhD</text>
+        <text x="220" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1975</text>
+
+        <!-- 1979 Andrew + BO -->
+        <circle cx="310" cy="130" r="8" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <line x1="310" y1="138" x2="310" y2="200" stroke="#3b9b6e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="245" y="200" width="135" height="32" rx="4" fill="rgba(59,155,110,0.1)" stroke="#3b9b6e" stroke-width="1"/>
+        <text x="312" y="218" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Andrew, Bentley-Ottmann</text>
+        <text x="312" y="229" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">Sweep Line + Monotone</text>
+        <text x="310" y="155" text-anchor="middle" class="viz-label-small">1979</text>
+
+        <!-- 1985 Preparata-Shamos book -->
+        <circle cx="400" cy="130" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="400" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">P-S 교과서</text>
+        <text x="400" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1985</text>
+
+        <!-- 1987 Fortune -->
+        <circle cx="470" cy="130" r="7" fill="#196aa1" stroke="#196aa1" stroke-width="2"/>
+        <line x1="470" y1="122" x2="470" y2="80" stroke="#196aa1" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="405" y="50" width="135" height="32" rx="4" fill="rgba(25,106,161,0.1)" stroke="#196aa1" stroke-width="1"/>
+        <text x="472" y="67" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Fortune 1987</text>
+        <text x="472" y="78" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">Voronoi sweep O(n log n)</text>
+        <text x="470" y="155" text-anchor="middle" class="viz-label-small">1987</text>
+
+        <!-- 1996 Chan -->
+        <circle cx="570" cy="130" r="7" fill="#c23b5e" stroke="#c23b5e" stroke-width="2"/>
+        <line x1="570" y1="138" x2="570" y2="200" stroke="#c23b5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="510" y="200" width="130" height="32" rx="4" fill="rgba(194,59,94,0.1)" stroke="#c23b5e" stroke-width="1"/>
+        <text x="575" y="218" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Chan 1996</text>
+        <text x="575" y="229" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">O(n log h) 출력민감</text>
+        <text x="570" y="155" text-anchor="middle" class="viz-label-small">1996</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>계산 기하의 창설기</strong>: 1972 Graham Scan → 1975 Shamos의 분야 정의 → 1979 Andrew/Bentley-Ottmann의 sweep line → 1985 교과서 → 1987 Fortune → 1996 Chan 최적. 대부분 1970년대 Bell Labs / CMU / Yale 집중.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. CCW ==================== -->
+<section id="ccw">
+  <h2>02 — CCW Primitive — 기하의 원자</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">세 점의 방향</h3>
+    </div>
+    <p>
+      세 점 A, B, C에 대해 <em>A → B → C</em>가 어느 방향으로 도는가? 세 가지 경우:
+    </p>
+    <ul>
+      <li><strong>반시계(CCW, Counter-Clockwise)</strong>: 왼쪽으로 꺾음 → 양수.</li>
+      <li><strong>시계(CW, Clockwise)</strong>: 오른쪽으로 꺾음 → 음수.</li>
+      <li><strong>일직선(Collinear)</strong>: 꺾지 않음 → 0.</li>
+    </ul>
+    <p>
+      이 값은 <strong>외적(cross product) z 성분</strong>으로 계산:
+    </p>
+    <div class="formula-box">
+      ccw(A, B, C) = (B.x − A.x)·(C.y − A.y) − (B.y − A.y)·(C.x − A.x)
+    </div>
+    <ul>
+      <li>&gt; 0: CCW (좌회전).</li>
+      <li>&lt; 0: CW (우회전).</li>
+      <li>= 0: collinear.</li>
+    </ul>
+    <p>
+      <strong>이 하나의 연산</strong>이 볼록 껍질, 선분 교차, 다각형 내부 판정, 삼각형 회전 방향, Delaunay 유효성 검사 등 거의 모든 기하 알고리즘의 원자(primitive). <em>기하 알고리즘은 이 값의 부호 조합</em>.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">ccw.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">ccw</span>(A, B, C):
+    <span class="hl-kw">return</span> (B[<span class="hl-num">0</span>] - A[<span class="hl-num">0</span>]) * (C[<span class="hl-num">1</span>] - A[<span class="hl-num">1</span>]) - (B[<span class="hl-num">1</span>] - A[<span class="hl-num">1</span>]) * (C[<span class="hl-num">0</span>] - A[<span class="hl-num">0</span>])
+
+<span class="hl-bi">print</span>(ccw((<span class="hl-num">0</span>,<span class="hl-num">0</span>), (<span class="hl-num">1</span>,<span class="hl-num">0</span>), (<span class="hl-num">1</span>,<span class="hl-num">1</span>)))    <span class="hl-cmt"># 1 > 0: CCW</span>
+<span class="hl-bi">print</span>(ccw((<span class="hl-num">0</span>,<span class="hl-num">0</span>), (<span class="hl-num">1</span>,<span class="hl-num">1</span>), (<span class="hl-num">1</span>,<span class="hl-num">0</span>)))    <span class="hl-cmt"># -1 < 0: CW</span>
+<span class="hl-bi">print</span>(ccw((<span class="hl-num">0</span>,<span class="hl-num">0</span>), (<span class="hl-num">1</span>,<span class="hl-num">1</span>), (<span class="hl-num">2</span>,<span class="hl-num">2</span>)))    <span class="hl-cmt"># 0: collinear</span></code></pre>
+    </div>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CCW primitive">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🧭 CCW(A, B, C) — 세 점의 회전 방향</text>
+
+      <!-- CCW case -->
+      <g transform="translate(80, 55)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="80" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">CCW &gt; 0 (좌회전)</text>
+
+        <line x1="20" y1="120" x2="140" y2="120" stroke="#3b9b6e" stroke-width="2" marker-end="url(#arr-ccw)"/>
+        <line x1="140" y1="120" x2="110" y2="40" stroke="#3b9b6e" stroke-width="2" marker-end="url(#arr-ccw)"/>
+
+        <circle cx="20"  cy="120" r="5" fill="#3b9b6e"/>
+        <text x="20" y="140" text-anchor="middle" class="viz-label-small" font-weight="700">A</text>
+        <circle cx="140" cy="120" r="5" fill="#3b9b6e"/>
+        <text x="140" y="140" text-anchor="middle" class="viz-label-small" font-weight="700">B</text>
+        <circle cx="110" cy="40"  r="5" fill="#3b9b6e"/>
+        <text x="110" y="30" text-anchor="middle" class="viz-label-small" font-weight="700">C</text>
+
+        <text x="80" y="180" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">외적 z &gt; 0</text>
+
+        <defs>
+          <marker id="arr-ccw" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0 L6,3.5 L0,7 Z" fill="#3b9b6e"/>
+          </marker>
+          <marker id="arr-cw" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0 L6,3.5 L0,7 Z" fill="#c23b5e"/>
+          </marker>
+          <marker id="arr-col" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0 L6,3.5 L0,7 Z" fill="var(--text-muted)"/>
+          </marker>
+        </defs>
+      </g>
+
+      <!-- CW case -->
+      <g transform="translate(300, 55)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="80" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="#c23b5e">CW &lt; 0 (우회전)</text>
+
+        <line x1="20" y1="120" x2="140" y2="120" stroke="#c23b5e" stroke-width="2" marker-end="url(#arr-cw)"/>
+        <line x1="140" y1="120" x2="110" y2="200" stroke="#c23b5e" stroke-width="2" marker-end="url(#arr-cw)"/>
+
+        <circle cx="20"  cy="120" r="5" fill="#c23b5e"/>
+        <text x="20" y="105" text-anchor="middle" class="viz-label-small" font-weight="700">A</text>
+        <circle cx="140" cy="120" r="5" fill="#c23b5e"/>
+        <text x="140" y="105" text-anchor="middle" class="viz-label-small" font-weight="700">B</text>
+        <circle cx="110" cy="200" r="5" fill="#c23b5e"/>
+        <text x="110" y="220" text-anchor="middle" class="viz-label-small" font-weight="700">C</text>
+
+        <text x="80" y="185" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">외적 z &lt; 0</text>
+      </g>
+
+      <!-- Collinear -->
+      <g transform="translate(520, 55)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="80" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="var(--text-muted)">Collinear = 0</text>
+
+        <line x1="20" y1="120" x2="160" y2="120" stroke="var(--text-muted)" stroke-width="2" marker-end="url(#arr-col)"/>
+
+        <circle cx="20"  cy="120" r="5" fill="var(--text-muted)"/>
+        <text x="20" y="140" text-anchor="middle" class="viz-label-small" font-weight="700">A</text>
+        <circle cx="90" cy="120" r="5" fill="var(--text-muted)"/>
+        <text x="90" y="140" text-anchor="middle" class="viz-label-small" font-weight="700">B</text>
+        <circle cx="160" cy="120" r="5" fill="var(--text-muted)"/>
+        <text x="160" y="140" text-anchor="middle" class="viz-label-small" font-weight="700">C</text>
+
+        <text x="80" y="180" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">외적 z = 0</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>CCW primitive</strong>의 세 경우: 좌회전(양수) / 우회전(음수) / 일직선(0). 부동소수점 대신 정수 좌표 + 큰 정수 연산으로 robust하게 계산 가능 — 부정확한 비교가 기하 알고리즘 버그의 주 원인이기 때문.</div>
+  </div>
+</section>
+
+<!-- ==================== 03. Graham Scan ==================== -->
+<section id="convex-hull-graham">
+  <h2>03 — Graham Scan — 볼록 껍질 1972</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">아이디어</h3>
+    </div>
+    <ol>
+      <li><strong>기준점 선택</strong>: y 좌표 최소(동률 시 x 최소)인 점 P<sub>0</sub>. 반드시 볼록 껍질 위.</li>
+      <li><strong>각도 정렬</strong>: 나머지 점들을 P<sub>0</sub>에서 본 극각(polar angle) 오름차순 정렬. O(n log n).</li>
+      <li><strong>stack 스캔</strong>: 각 점을 순서대로 보며 stack에 push. 새 점에서 top 2개와 함께 CCW 체크 — CW 또는 collinear면 top을 pop (볼록 어긋남). CCW 되면 push.</li>
+      <li>끝나면 stack이 볼록 껍질.</li>
+    </ol>
+    <p>
+      <strong>시간</strong>: 정렬 O(n log n) + 스캔 O(n) (각 점 최대 한 번 push/pop) = <strong>O(n log n)</strong>.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">graham_scan.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">ccw</span>(A, B, C):
+    <span class="hl-kw">return</span> (B[<span class="hl-num">0</span>]-A[<span class="hl-num">0</span>])*(C[<span class="hl-num">1</span>]-A[<span class="hl-num">1</span>]) - (B[<span class="hl-num">1</span>]-A[<span class="hl-num">1</span>])*(C[<span class="hl-num">0</span>]-A[<span class="hl-num">0</span>])
+
+<span class="hl-kw">def</span> <span class="hl-bi">graham_scan</span>(points):
+    <span class="hl-cmt"># 1. 기준점: y 최소 (동률 시 x 최소)</span>
+    p0 = <span class="hl-bi">min</span>(points, key=<span class="hl-kw">lambda</span> p: (p[<span class="hl-num">1</span>], p[<span class="hl-num">0</span>]))
+
+    <span class="hl-cmt"># 2. 극각 정렬 (같은 각도면 거리 작은 것 먼저)</span>
+    <span class="hl-kw">import</span> math
+    rest = [p <span class="hl-kw">for</span> p <span class="hl-kw">in</span> points <span class="hl-kw">if</span> p != p0]
+    rest.sort(key=<span class="hl-kw">lambda</span> p: (math.atan2(p[<span class="hl-num">1</span>] - p0[<span class="hl-num">1</span>], p[<span class="hl-num">0</span>] - p0[<span class="hl-num">0</span>]),
+                        (p[<span class="hl-num">0</span>] - p0[<span class="hl-num">0</span>])**<span class="hl-num">2</span> + (p[<span class="hl-num">1</span>] - p0[<span class="hl-num">1</span>])**<span class="hl-num">2</span>))
+
+    <span class="hl-cmt"># 3. stack 스캔</span>
+    hull = [p0]
+    <span class="hl-kw">for</span> p <span class="hl-kw">in</span> rest:
+        <span class="hl-kw">while</span> <span class="hl-bi">len</span>(hull) &gt;= <span class="hl-num">2</span> <span class="hl-kw">and</span> ccw(hull[-<span class="hl-num">2</span>], hull[-<span class="hl-num">1</span>], p) &lt;= <span class="hl-num">0</span>:
+            hull.pop()
+        hull.append(p)
+    <span class="hl-kw">return</span> hull
+
+
+<span class="hl-cmt"># 테스트</span>
+pts = [(<span class="hl-num">0</span>,<span class="hl-num">0</span>), (<span class="hl-num">1</span>,<span class="hl-num">1</span>), (<span class="hl-num">2</span>,<span class="hl-num">2</span>), (<span class="hl-num">4</span>,<span class="hl-num">0</span>), (<span class="hl-num">3</span>,<span class="hl-num">3</span>), (<span class="hl-num">0</span>,<span class="hl-num">4</span>)]
+<span class="hl-bi">print</span>(graham_scan(pts))    <span class="hl-cmt"># [(0,0), (4,0), (3,3), (0,4)]</span></code></pre>
+    </div>
+    <div class="caution-box">
+      <div class="box-header">⚠️ atan2의 부동소수점</div>
+      <p>
+        <code>math.atan2</code>는 부동소수점이라 동률 비교에 취약. 실무엔 <strong>CCW 기반 정렬</strong>이 더 robust: <code>cmp(p1, p2) = ccw(p0, p1, p2)의 부호</code>. 정수 좌표면 정확 판단 가능.
+      </p>
+    </div>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a28gs-show { 0%,2%{opacity:0} 4%,13%{opacity:1} 15%,100%{opacity:0} }
+      .a28gs-S0{animation:a28gs-show 12s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a28gs-S1{animation:a28gs-show 12s linear infinite;animation-delay:2s;animation-fill-mode:backwards}
+      .a28gs-S2{animation:a28gs-show 12s linear infinite;animation-delay:4s;animation-fill-mode:backwards}
+      .a28gs-S3{animation:a28gs-show 12s linear infinite;animation-delay:6s;animation-fill-mode:backwards}
+      .a28gs-S4{animation:a28gs-show 12s linear infinite;animation-delay:8s;animation-fill-mode:backwards}
+      .a28gs-S5{animation:a28gs-show 12s linear infinite;animation-delay:10s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Graham Scan 애니메이션">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📐 Graham Scan — 6점의 볼록 껍질 찾기</text>
+
+      <!-- 좌표계 + 점들 -->
+      <g transform="translate(100, 50)" font-family="JetBrains Mono, monospace" font-size="11">
+        <!-- 축 -->
+        <line x1="0" y1="200" x2="240" y2="200" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="0" y1="0" x2="0" y2="200" stroke="var(--text-muted)" stroke-width="1"/>
+
+        <!-- 모든 점 (회색) -->
+        <circle cx="0" cy="200" r="5" fill="#d4930c" stroke="#d4930c" stroke-width="2"/>
+        <text x="-5" y="215" text-anchor="end" class="viz-label-small" fill="#d4930c" font-weight="700">P0(0,0)</text>
+
+        <circle cx="50" cy="150" r="4" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/>
+        <text x="60" y="155" class="viz-label-small">(1,1)</text>
+
+        <circle cx="100" cy="100" r="4" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/>
+        <text x="110" y="105" class="viz-label-small">(2,2)</text>
+
+        <circle cx="200" cy="200" r="5" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/>
+        <text x="210" y="215" class="viz-label-small">(4,0)</text>
+
+        <circle cx="150" cy="50" r="4" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/>
+        <text x="160" y="55" class="viz-label-small">(3,3)</text>
+
+        <circle cx="0" cy="0" r="5" fill="var(--why-bg-flat)" stroke="var(--why-accent)"/>
+        <text x="10" y="15" class="viz-label-small">(0,4)</text>
+
+        <!-- Hull edges (단계별로 나타남) -->
+        <!-- S1: P0 → (4,0) -->
+        <g class="a28gs-S1 a28gs-S2 a28gs-S3 a28gs-S4 a28gs-S5">
+          <line x1="0" y1="200" x2="200" y2="200" stroke="#3b9b6e" stroke-width="2.5"/>
+        </g>
+        <!-- S2: + (4,0)→(3,3) tried; but (1,1) pops if scanned first -->
+        <g class="a28gs-S2 a28gs-S3 a28gs-S4 a28gs-S5">
+          <line x1="200" y1="200" x2="150" y2="50" stroke="#3b9b6e" stroke-width="2.5"/>
+        </g>
+        <!-- S3: (2,2) tried but CW → pop -->
+        <!-- S4: (3,3)→(0,4) -->
+        <g class="a28gs-S4 a28gs-S5">
+          <line x1="150" y1="50" x2="0" y2="0" stroke="#3b9b6e" stroke-width="2.5"/>
+        </g>
+        <!-- S5: close back to P0 -->
+        <g class="a28gs-S5">
+          <line x1="0" y1="0" x2="0" y2="200" stroke="#3b9b6e" stroke-width="2.5"/>
+          <!-- highlight hull vertices -->
+          <circle cx="200" cy="200" r="7" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2" opacity="0.3"/>
+          <circle cx="150" cy="50" r="7" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2" opacity="0.3"/>
+          <circle cx="0" cy="0" r="7" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2" opacity="0.3"/>
+        </g>
+      </g>
+
+      <!-- 설명 -->
+      <g transform="translate(400, 55)" font-size="12" font-family="JetBrains Mono, monospace">
+        <g class="a28gs-S0">
+          <text x="0" y="0" class="viz-label" font-weight="700">단계 0: 기준점</text>
+          <text x="0" y="22" class="viz-label-small">P0 = (0,0) — y 최소</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">나머지 극각 정렬</text>
+        </g>
+        <g class="a28gs-S1">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 1: Push (4,0)</text>
+          <text x="0" y="22" class="viz-label-small">stack = [(0,0), (4,0)]</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">각도 0, 가장 먼저</text>
+        </g>
+        <g class="a28gs-S2">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 2: (1,1),(2,2),(3,3)은 y=x 위</text>
+          <text x="0" y="22" class="viz-label-small">극각 π/4 동률 → 거리순 처리</text>
+          <text x="0" y="42" class="viz-label-small">(1,1) push → 이후 (2,2) 삽입 시</text>
+          <text x="0" y="58" class="viz-label-small">ccw((4,0),(1,1),(2,2))=−4 &lt; 0 → (1,1) pop</text>
+          <text x="0" y="78" class="viz-label-small" fill="#3b9b6e">(2,2) push: stack=[(0,0),(4,0),(2,2)]</text>
+        </g>
+        <g class="a28gs-S3">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#d4930c">단계 3: (3,3) 고려</text>
+          <text x="0" y="22" class="viz-label-small">ccw((4,0),(2,2),(3,3)) = −4 &lt; 0 (CW)</text>
+          <text x="0" y="42" class="viz-label-small" fill="#c23b5e">(2,2) pop</text>
+          <text x="0" y="62" class="viz-label-small">ccw((0,0),(4,0),(3,3))=12 &gt; 0 → (3,3) push</text>
+        </g>
+        <g class="a28gs-S4">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 4: (0,4) 고려</text>
+          <text x="0" y="22" class="viz-label-small">ccw((4,0),(3,3),(0,4))=8 &gt; 0 ✓ 좌회전</text>
+          <text x="0" y="42" class="viz-label-small">Push → stack=[(0,0),(4,0),(3,3),(0,4)]</text>
+        </g>
+        <g class="a28gs-S5">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">완료 ✓</text>
+          <text x="0" y="22" class="viz-label-small">Hull: {(0,0),(4,0),(3,3),(0,4)}</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">4 정점. (1,1),(2,2)는 pop되어 내부</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>Graham Scan 6단계</strong>: P0=(0,0)에서 극각 정렬 → 같은 각도(π/4)의 (1,1),(2,2),(3,3)을 거리순 처리하며 stack push/pop → 볼록 껍질 4정점. 내부 점 (1,1),(2,2)는 pop으로 제거.</div>
+  </div>
+</section>
+
+<!-- ==================== 04. Andrew ==================== -->
+<section id="convex-hull-andrew">
+  <h2>04 — Andrew's Monotone Chain 1979</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Graham의 단순화</h3>
+    </div>
+    <p>
+      Graham은 극각 정렬에 <code>atan2</code> 필요 → 부동소수점. Andrew 1979는 이를 <em>x 좌표 lex 정렬</em>로 대체. 정수 비교만 필요 → <strong>완전 robust</strong>.
+    </p>
+    <ol>
+      <li>점들을 (x, y) lex 순으로 정렬.</li>
+      <li><strong>하단 체인</strong>: 왼쪽→오른쪽으로 각 점 push. CCW ≤ 0이면 pop.</li>
+      <li><strong>상단 체인</strong>: 오른쪽→왼쪽으로 동일.</li>
+      <li>두 체인 합치기 (끝점 중복 제외).</li>
+    </ol>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">monotone_chain.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">convex_hull_andrew</span>(points):
+    pts = <span class="hl-bi">sorted</span>(<span class="hl-bi">set</span>(points))
+    <span class="hl-kw">if</span> <span class="hl-bi">len</span>(pts) &lt;= <span class="hl-num">1</span>: <span class="hl-kw">return</span> pts
+
+    <span class="hl-cmt"># 하단 체인</span>
+    lower = []
+    <span class="hl-kw">for</span> p <span class="hl-kw">in</span> pts:
+        <span class="hl-kw">while</span> <span class="hl-bi">len</span>(lower) &gt;= <span class="hl-num">2</span> <span class="hl-kw">and</span> ccw(lower[-<span class="hl-num">2</span>], lower[-<span class="hl-num">1</span>], p) &lt;= <span class="hl-num">0</span>:
+            lower.pop()
+        lower.append(p)
+
+    <span class="hl-cmt"># 상단 체인</span>
+    upper = []
+    <span class="hl-kw">for</span> p <span class="hl-kw">in</span> <span class="hl-bi">reversed</span>(pts):
+        <span class="hl-kw">while</span> <span class="hl-bi">len</span>(upper) &gt;= <span class="hl-num">2</span> <span class="hl-kw">and</span> ccw(upper[-<span class="hl-num">2</span>], upper[-<span class="hl-num">1</span>], p) &lt;= <span class="hl-num">0</span>:
+            upper.pop()
+        upper.append(p)
+
+    <span class="hl-kw">return</span> lower[:-<span class="hl-num">1</span>] + upper[:-<span class="hl-num">1</span>]    <span class="hl-cmt"># 끝점 중복 제거</span>
+
+
+<span class="hl-bi">print</span>(convex_hull_andrew([(<span class="hl-num">0</span>,<span class="hl-num">0</span>), (<span class="hl-num">1</span>,<span class="hl-num">1</span>), (<span class="hl-num">2</span>,<span class="hl-num">2</span>), (<span class="hl-num">4</span>,<span class="hl-num">0</span>), (<span class="hl-num">3</span>,<span class="hl-num">3</span>), (<span class="hl-num">0</span>,<span class="hl-num">4</span>)]))
+<span class="hl-cmt"># [(0, 0), (4, 0), (3, 3), (0, 4)]</span></code></pre>
+    </div>
+    <p>
+      같은 O(n log n)이지만 <em>극각 정렬 없이 단순 정렬</em>로 더 robust. 경쟁 프로그래밍에서 Graham보다 선호됨.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 05. Jarvis / Chan ==================== -->
+<section id="jarvis-chan">
+  <h2>05 — Jarvis / Chan — 출력 민감 알고리즘</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Jarvis March (1973, Gift Wrapping)</h3>
+    </div>
+    <p>
+      "선물 포장" 은유: 가장 아래 점에서 시작해, 모든 점과의 각도를 비교해 <em>다음 hull 정점</em>을 매번 골라 시계/반시계 방향으로 진행. h번의 pass × n 비교 = <strong>O(nh)</strong>. h=볼록 껍질 정점 수.
+    </p>
+    <ul>
+      <li>h가 작을 때(예: 점 대부분이 껍질 위가 아닐 때) O(nh) &lt; O(n log n).</li>
+      <li>h=n이면(모든 점이 껍질 위) O(n²) — 최악.</li>
+      <li>출력 크기 의존 → <em>"output-sensitive"</em> 알고리즘.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Chan's Algorithm (1996)</h3>
+    </div>
+    <p>
+      Timothy Chan이 Jarvis와 Graham의 장점을 결합: <strong>O(n log h)</strong> — 이론적으로 볼록 껍질의 optimal 하한.
+    </p>
+    <ol>
+      <li>점들을 크기 m의 그룹으로 나눔. 각 그룹의 볼록 껍질을 Graham으로 구축 → O(n log m).</li>
+      <li>Jarvis 방식으로 전체 hull을 찾되, 다음 점 선택 시 각 그룹의 mini-hull에 tangent를 이진 탐색 → 각 pass O(log m) per group × (n/m) groups = O((n/m) log m).</li>
+      <li>h 라운드 × 위 비용 = O(nh/m · log m).</li>
+      <li>m = h로 놓으면 O(n log h). h를 <em>모르지만</em> exponential search(m=2, 4, 8, ...)로 실제 h 도달.</li>
+    </ol>
+    <p>
+      우아하지만 실무 구현은 드묾. Chan 본인도 "교육용"이라 지칭. 이론적 최적이 중요한 증명.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 06. Bentley-Ottmann ==================== -->
+<section id="bentley-ottmann">
+  <h2>06 — Bentley-Ottmann — 선분 교차 1979</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">문제와 순진한 해법</h3>
+    </div>
+    <p>
+      n개 선분 중 교차하는 모든 쌍 찾기. 순진한 방법 O(n²). 교차가 k개뿐이라면 출력만으로도 Ω(k).
+    </p>
+    <p>
+      <strong>Bentley-Ottmann 1979</strong>: <em>sweep line</em>으로 O((n+k) log n).
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Sweep Line 패러다임</h3>
+    </div>
+    <p>
+      가상의 수직선(sweep line)을 왼쪽에서 오른쪽으로 이동. 이벤트 발생 지점에서만 상태 업데이트.
+    </p>
+    <ul>
+      <li><strong>이벤트 큐</strong>(min-heap): 모든 선분의 왼/오른 끝점 + 발견된 교차점. x 좌표 순.</li>
+      <li><strong>활성 상태</strong>(balanced BST): 현재 sweep line을 지나는 선분들, y 순으로 정렬.</li>
+      <li>세 종류 이벤트:
+        <ul>
+          <li><em>선분 시작</em>: 활성 집합에 추가. 상·하 이웃과 교차 체크.</li>
+          <li><em>선분 끝</em>: 활성 집합에서 제거. 기존 상·하 이웃이 이제 이웃끼리 교차 체크.</li>
+          <li><em>교차</em>: 두 선분 순서 swap. 새 이웃들과 교차 체크.</li>
+        </ul>
+      </li>
+      <li>각 이벤트 O(log n). 이벤트 총 O(n + k) → <strong>O((n+k) log n)</strong>.</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bentley-Ottmann sweep line">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">➡️ Bentley-Ottmann — Sweep line이 이벤트 순으로 좌→우 이동</text>
+
+      <g transform="translate(60, 55)" font-family="JetBrains Mono, monospace" font-size="11">
+        <!-- 선분 4개 -->
+        <line x1="20" y1="50"  x2="400" y2="180" stroke="#196aa1" stroke-width="2.5"/>
+        <text x="5" y="55" class="viz-label-small" fill="#196aa1" font-weight="700">s1</text>
+        <text x="410" y="183" class="viz-label-small" fill="#196aa1">end</text>
+
+        <line x1="20" y1="180" x2="400" y2="50"  stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="5" y="185" class="viz-label-small" fill="#3b9b6e" font-weight="700">s2</text>
+        <text x="410" y="55" class="viz-label-small" fill="#3b9b6e">end</text>
+
+        <line x1="80" y1="30"  x2="500" y2="100" stroke="#d4930c" stroke-width="2.5"/>
+        <text x="65" y="33" class="viz-label-small" fill="#d4930c" font-weight="700">s3</text>
+        <text x="510" y="105" class="viz-label-small" fill="#d4930c">end</text>
+
+        <line x1="150" y1="220" x2="550" y2="60" stroke="#c23b5e" stroke-width="2.5"/>
+        <text x="133" y="225" class="viz-label-small" fill="#c23b5e" font-weight="700">s4</text>
+        <text x="560" y="65" class="viz-label-small" fill="#c23b5e">end</text>
+
+        <!-- 교차점들 (대략) -->
+        <circle cx="210" cy="115" r="6" fill="#fde6a6" stroke="#d4930c" stroke-width="2.5"/>
+        <text x="220" y="110" class="viz-label-small" fill="#d4930c" font-weight="700">×</text>
+        <circle cx="290" cy="75" r="6" fill="#fde6a6" stroke="#d4930c" stroke-width="2.5"/>
+        <text x="300" y="72" class="viz-label-small" fill="#d4930c" font-weight="700">×</text>
+
+        <!-- Sweep line (수직 점선) -->
+        <line x1="260" y1="10" x2="260" y2="240" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6,4"/>
+        <text x="260" y="5" text-anchor="middle" class="viz-label-small" fill="var(--accent)" font-weight="700">sweep</text>
+
+        <!-- 활성 집합 표시 (우측) -->
+        <g transform="translate(600, 40)">
+          <text x="0" y="0" class="viz-label-small" font-weight="700">활성 (위→아래):</text>
+          <text x="0" y="20" class="viz-label-small" fill="#d4930c">s3</text>
+          <text x="0" y="38" class="viz-label-small" fill="#c23b5e">s4</text>
+          <text x="0" y="56" class="viz-label-small" fill="#3b9b6e">s2</text>
+          <text x="0" y="74" class="viz-label-small" fill="#196aa1">s1</text>
+          <text x="0" y="105" class="viz-label-small" fill="var(--text-muted)">이웃</text>
+          <text x="0" y="123" class="viz-label-small" fill="var(--text-muted)">쌍만</text>
+          <text x="0" y="141" class="viz-label-small" fill="var(--text-muted)">교차</text>
+          <text x="0" y="159" class="viz-label-small" fill="var(--text-muted)">체크</text>
+        </g>
+      </g>
+
+      <text x="360" y="270" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">교차 이벤트가 큐에 들어오면 순서대로 처리. 모든 쌍 테스트 → n² 비교 회피.</text>
+    </svg>
+    <div class="viz-caption"><strong>Sweep line 스냅샷</strong>: 수직선이 좌→우로 이동하며 "선분 시작/끝/교차" 이벤트마다 BST 업데이트. 각 시점의 <em>이웃 쌍만</em> 교차 체크 → 모든 n² 쌍을 보지 않아도 모든 교차 발견.</div>
+  </div>
+</section>
+
+<!-- ==================== 07. 최근접 점 쌍 ==================== -->
+<section id="closest-pair">
+  <h2>07 — 최근접 점 쌍 — 분할 정복</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Shamos-Hoey 1975, O(n log n)</h3>
+    </div>
+    <p>
+      n개 점 중 거리가 최소인 쌍. 순진한 O(n²)을 O(n log n)으로.
+    </p>
+    <ol>
+      <li>x 좌표 중간으로 점을 반씩 나눔.</li>
+      <li>왼쪽·오른쪽 각각 재귀. 최소 거리 d<sub>L</sub>, d<sub>R</sub> 구함. δ = min(d<sub>L</sub>, d<sub>R</sub>).</li>
+      <li><em>경계 영역</em> (중간선에서 δ 이내) 내 점들만 고려. 이 영역에서 y 순으로 정렬 후 각 점마다 <em>이웃 7개</em>만 비교(기하 조밀도 주장).</li>
+      <li>전체 재귀 비용 T(n) = 2T(n/2) + O(n) → O(n log n).</li>
+    </ol>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">closest_pair.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">import</span> math
+
+<span class="hl-kw">def</span> <span class="hl-bi">dist</span>(a, b):
+    <span class="hl-kw">return</span> math.hypot(a[<span class="hl-num">0</span>]-b[<span class="hl-num">0</span>], a[<span class="hl-num">1</span>]-b[<span class="hl-num">1</span>])
+
+<span class="hl-kw">def</span> <span class="hl-bi">closest_pair</span>(points):
+    P = <span class="hl-bi">sorted</span>(points)    <span class="hl-cmt"># x 정렬</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">rec</span>(px):
+        n = <span class="hl-bi">len</span>(px)
+        <span class="hl-kw">if</span> n &lt;= <span class="hl-num">3</span>:
+            <span class="hl-kw">return</span> <span class="hl-bi">min</span>((dist(px[i], px[j]), px[i], px[j])
+                       <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n) <span class="hl-kw">for</span> j <span class="hl-kw">in</span> <span class="hl-bi">range</span>(i+<span class="hl-num">1</span>, n))
+        mid = n // <span class="hl-num">2</span>
+        mx = px[mid][<span class="hl-num">0</span>]
+        dl = rec(px[:mid]); dr = rec(px[mid:])
+        d, p1, p2 = <span class="hl-bi">min</span>(dl, dr)
+
+        <span class="hl-cmt"># 중간 영역</span>
+        strip = <span class="hl-bi">sorted</span>([p <span class="hl-kw">for</span> p <span class="hl-kw">in</span> px <span class="hl-kw">if</span> <span class="hl-bi">abs</span>(p[<span class="hl-num">0</span>] - mx) &lt; d], key=<span class="hl-kw">lambda</span> p: p[<span class="hl-num">1</span>])
+        <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-bi">len</span>(strip)):
+            j = i + <span class="hl-num">1</span>
+            <span class="hl-kw">while</span> j &lt; <span class="hl-bi">len</span>(strip) <span class="hl-kw">and</span> strip[j][<span class="hl-num">1</span>] - strip[i][<span class="hl-num">1</span>] &lt; d:
+                nd = dist(strip[i], strip[j])
+                <span class="hl-kw">if</span> nd &lt; d:
+                    d, p1, p2 = nd, strip[i], strip[j]
+                j += <span class="hl-num">1</span>
+        <span class="hl-kw">return</span> d, p1, p2
+
+    <span class="hl-kw">return</span> rec(P)
+
+<span class="hl-bi">print</span>(closest_pair([(<span class="hl-num">0</span>,<span class="hl-num">0</span>), (<span class="hl-num">1</span>,<span class="hl-num">1</span>), (<span class="hl-num">2</span>,<span class="hl-num">2</span>), (<span class="hl-num">4</span>,<span class="hl-num">0</span>), (<span class="hl-num">3</span>,<span class="hl-num">3</span>)]))
+<span class="hl-cmt"># (1.414..., (0,0), (1,1)) 또는 동등한 최근접 쌍</span></code></pre>
+    </div>
+    <p>
+      <strong>핵심 통찰</strong>: strip 내 각 점 주변 δ×2δ 영역에 최대 7개의 다른 점만 있음 (pigeonhole 논증). 따라서 O(n).
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 08. Point-in-Polygon ==================== -->
+<section id="point-in-polygon">
+  <h2>08 — Point-in-Polygon — Ray Casting</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">"홀수번 건너면 내부"</h3>
+    </div>
+    <p>
+      점 P가 다각형 내부인가 외부인가? <strong>Ray casting</strong>:
+    </p>
+    <ol>
+      <li>P에서 한 방향으로 ray(보통 +x 방향)를 쏨.</li>
+      <li>ray와 다각형 변(edge)의 교차 수 k를 셈.</li>
+      <li>k가 <em>홀수</em>면 내부, <em>짝수</em>면 외부. Jordan curve theorem.</li>
+    </ol>
+    <ul>
+      <li>시간 O(n) (n=다각형 변 수).</li>
+      <li>경계 처리: ray가 정점을 정확히 지나는 경우 주의 (정점은 두 번 카운트 방지).</li>
+    </ul>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">point_in_polygon.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">point_in_polygon</span>(point, polygon):
+    <span class="hl-cmt">"""polygon: 꼭짓점 리스트 (순서대로)."""</span>
+    x, y = point
+    n = <span class="hl-bi">len</span>(polygon)
+    inside = <span class="hl-kw">False</span>
+    j = n - <span class="hl-num">1</span>
+    <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n):
+        xi, yi = polygon[i]
+        xj, yj = polygon[j]
+        <span class="hl-cmt"># y 범위 내 + x 방향 교차 체크</span>
+        <span class="hl-kw">if</span> ((yi &gt; y) != (yj &gt; y)) <span class="hl-kw">and</span> (x &lt; (xj - xi) * (y - yi) / (yj - yi) + xi):
+            inside = <span class="hl-kw">not</span> inside
+        j = i
+    <span class="hl-kw">return</span> inside
+
+
+<span class="hl-cmt"># 테스트</span>
+square = [(<span class="hl-num">0</span>,<span class="hl-num">0</span>), (<span class="hl-num">4</span>,<span class="hl-num">0</span>), (<span class="hl-num">4</span>,<span class="hl-num">4</span>), (<span class="hl-num">0</span>,<span class="hl-num">4</span>)]
+<span class="hl-bi">print</span>(point_in_polygon((<span class="hl-num">2</span>, <span class="hl-num">2</span>), square))    <span class="hl-cmt"># True</span>
+<span class="hl-bi">print</span>(point_in_polygon((<span class="hl-num">5</span>, <span class="hl-num">5</span>), square))    <span class="hl-cmt"># False</span>
+<span class="hl-bi">print</span>(point_in_polygon((<span class="hl-num">2</span>, <span class="hl-num">0</span>), square))    <span class="hl-cmt"># 경계 — 구현에 따라 True/False</span></code></pre>
+    </div>
+    <p>
+      <strong>Winding number</strong> 방법도 있음 — ray 주변을 "감는 횟수" 계산. 자기 교차 다각형에도 작동. 경계 처리가 더 robust.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 09. Voronoi ==================== -->
+<section id="voronoi-delaunay">
+  <h2>09 — Voronoi / Delaunay</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Voronoi Diagram</h3>
+    </div>
+    <p style="font-size:0.9em;color:var(--text-secondary);">
+      우크라이나 수학자 <strong>Georgy Voronoy</strong>(1868-1908)의 1908년 정수론 연구에서 기원. 이후 평면 기하로 일반화.
+    </p>
+    <p>
+      평면의 점 집합 S. 각 점 s에 대한 <strong>Voronoi cell</strong> = "s가 S 중 가장 가까운 영역". 평면이 다각형 cell로 분할됨.
+    </p>
+    <ul>
+      <li>응용: "가장 가까운 지하철역 찾기", 전화 기지국 할당, 생태학(영역), 재료과학(결정 구조).</li>
+      <li>구축: Fortune 1987 sweep line O(n log n). 또는 dual인 Delaunay 삼각화에서 유도.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Delaunay Triangulation</h3>
+    </div>
+    <p style="font-size:0.9em;color:var(--text-secondary);">
+      러시아 수학자 <strong>Boris Delaunay</strong>(1890-1980)의 1934년 논문 <em>"Sur la sphère vide"</em>에서 정의.
+    </p>
+    <p>
+      n개 점에 대한 삼각화 중, 각 삼각형의 외접원 내부에 다른 점이 없는 삼각화. Voronoi의 dual.
+    </p>
+    <ul>
+      <li><em>최소 각을 최대화</em> — "뾰족한" 삼각형 회피. 지형/메시 생성의 이상적 결과.</li>
+      <li>Fortune 1987 기반 O(n log n). Flip 기법.</li>
+      <li>응용: FEM(유한 요소법), 지형 mesh, 3D 모델링.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 10. Sweep Line 응용 ==================== -->
+<section id="sweep-line-apps">
+  <h2>10 — Sweep Line 응용 — 직사각형 합집합</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Klee's Measure Problem (1977)</h3>
+    </div>
+    <p>
+      n개 축 정렬 직사각형의 합집합 면적. 가장 단순한 sweep line 응용.
+    </p>
+    <ol>
+      <li>이벤트: 각 직사각형의 왼/오른 변. x 좌표로 정렬.</li>
+      <li>활성 상태: 현재 sweep line을 지나는 y 구간들 (segment tree로 관리).</li>
+      <li>x가 Δ 이동하는 동안 "활성 y 구간 총 길이 × Δ"만큼 면적 누적.</li>
+      <li>총 O(n log n).</li>
+    </ol>
+    <p>
+      Klee's measure problem: 2D는 O(n log n)이 달성되었고 최적 (Bentley 1977 하한과 일치). <em>d ≥ 3</em>은 여전히 open problem — 현재 최선은 Chan 2013의 n<sup>d/2</sup> · 2<sup>O(log* n)</sup>.
+    </p>
+    <p>
+      Bentley 자신이 1977년에 최초 O(n log² n) 해법 제시.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 11. 부동소수점 ==================== -->
+<section id="numerical">
+  <h2>11 — 부동소수점의 저주</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">기하 알고리즘의 악몽</h3>
+    </div>
+    <p>
+      기하 알고리즘은 <em>부동소수점 오차</em>에 특히 취약. 세 점이 "수학적으로 collinear"인데 floating point로는 <em>약간 CCW 또는 약간 CW</em>로 판정되어 결과가 엉망.
+    </p>
+    <p>
+      예: Graham scan에서 ccw(A, B, C) = 0(collinear)을 엉뚱하게 양수 또는 음수로 → 잘못된 점을 hull에 포함 / 제외.
+    </p>
+    <ul>
+      <li><strong>해결책 1</strong>: 정수 좌표 + 큰 정수 연산. Python은 native bigint 지원 — 기하 알고리즘에 유리.</li>
+      <li><strong>해결책 2</strong>: Exact arithmetic (CGAL). 유리수 또는 구간 산술.</li>
+      <li><strong>해결책 3</strong>: Adaptive precision (Shewchuk 1997). 필요할 때만 정밀도 증가.</li>
+      <li><strong>해결책 4</strong>: SoS (Simulation of Simplicity, Edelsbrunner-Mücke 1990). 기호적 섭동으로 degeneracy 처리.</li>
+    </ul>
+    <p>
+      <strong>실무 교훈</strong>: 순진한 <code>float</code> 기반 기하 구현은 <em>거의 반드시 버그를 품음</em>. CGAL, Shapely 같은 검증된 라이브러리 사용 권장.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 12. 응용 ==================== -->
+<section id="applications">
+  <h2>12 — 응용 — GIS, CAD, 게임, 로봇</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">GIS — 지리 정보 시스템</h3>
+    </div>
+    <ul>
+      <li><strong>Spatial queries</strong>: "이 영역에 포함된 건물 목록", "반경 1km 이내 식당" → point-in-polygon, range search.</li>
+      <li><strong>Map overlay</strong>: 두 지도 레이어 합치기 — 다각형 Boolean (교집합/합집합/차집합).</li>
+      <li><strong>Shortest path on roads</strong>: Dijkstra(Algo 15) + 도로망 기하.</li>
+      <li><strong>PostGIS</strong>(2001-): PostgreSQL 공간 확장. Google Maps도 내부는 비슷한 원리.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">CAD — 컴퓨터 지원 설계</h3>
+    </div>
+    <ul>
+      <li><strong>Boolean operations</strong>: 두 솔리드의 합·교·차. CSG(Constructive Solid Geometry).</li>
+      <li><strong>Constraint solving</strong>: 평행·수직·접선 제약 해결.</li>
+      <li><strong>Mesh generation</strong>: Delaunay 기반 유한 요소 분석(FEM) 메쉬.</li>
+      <li>AutoCAD, SolidWorks, Onshape 등.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">게임 — 충돌 감지</h3>
+    </div>
+    <ul>
+      <li><strong>Broad phase</strong>: BVH(Bounding Volume Hierarchy) 또는 spatial hash로 후보 쌍 필터링.</li>
+      <li><strong>Narrow phase</strong>: GJK 알고리즘 (볼록 형상 교차), SAT(Separating Axis Theorem).</li>
+      <li><strong>Physics engine</strong>: Box2D, Bullet, Havok 등.</li>
+      <li><strong>AI 경로</strong>: Navmesh — Delaunay 변형.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">로봇 — 경로 계획</h3>
+    </div>
+    <ul>
+      <li><strong>Configuration space</strong>: 장애물 Minkowski 합 → 점 로봇 문제로 변환.</li>
+      <li><strong>Visibility graph</strong>: 볼록 장애물 정점 간 선분 중 교차 없는 것. Dijkstra로 최단 경로.</li>
+      <li><strong>RRT / PRM</strong>: 랜덤 sampling 기반. 고차원 공간에서 효율적.</li>
+      <li>자율주행, 수술 로봇, 물류 자동화.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 13. 라이브러리 ==================== -->
+<section id="libraries">
+  <h2>13 — 실무 라이브러리 — Shapely, CGAL</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">Python: Shapely</h3>
+    </div>
+    <p>
+      Shapely는 Python의 표준 2D 기하 라이브러리. 내부는 C++ GEOS(Geometry Engine Open Source, JTS Java Topology Suite의 포팅).
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">shapely_example.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> shapely.geometry <span class="hl-kw">import</span> Point, Polygon, LineString
+
+p = Polygon([(<span class="hl-num">0</span>,<span class="hl-num">0</span>), (<span class="hl-num">4</span>,<span class="hl-num">0</span>), (<span class="hl-num">4</span>,<span class="hl-num">4</span>), (<span class="hl-num">0</span>,<span class="hl-num">4</span>)])
+<span class="hl-bi">print</span>(p.area)                             <span class="hl-cmt"># 16.0</span>
+<span class="hl-bi">print</span>(Point(<span class="hl-num">2</span>, <span class="hl-num">2</span>).within(p))             <span class="hl-cmt"># True</span>
+<span class="hl-bi">print</span>(p.convex_hull)                      <span class="hl-cmt"># 이미 볼록이므로 자신</span>
+<span class="hl-bi">print</span>(p.intersection(Polygon([(<span class="hl-num">2</span>,<span class="hl-num">2</span>), (<span class="hl-num">6</span>,<span class="hl-num">2</span>), (<span class="hl-num">6</span>,<span class="hl-num">6</span>), (<span class="hl-num">2</span>,<span class="hl-num">6</span>)])))
+<span class="hl-cmt"># POLYGON ((4 2, 2 2, 2 4, 4 4, 4 2))</span>
+
+line = LineString([(<span class="hl-num">0</span>,<span class="hl-num">0</span>), (<span class="hl-num">5</span>,<span class="hl-num">5</span>)])
+<span class="hl-bi">print</span>(line.length)                        <span class="hl-cmt"># 7.07...</span></code></pre>
+    </div>
+    <ul>
+      <li>geopandas와 결합하면 지리 데이터 쉽게 처리.</li>
+      <li>성능: 내부 C++이라 순수 Python 대비 100배 이상 빠름.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">C++: CGAL</h3>
+    </div>
+    <p>
+      <strong>Computational Geometry Algorithms Library</strong>(1996-). 가장 완성도 높은 기하 라이브러리. 학계·산업에서 표준.
+    </p>
+    <ul>
+      <li>Exact arithmetic kernel: 기하 알고리즘의 정확성 보장.</li>
+      <li>Voronoi, Delaunay, convex hull, Boolean, mesh 등 수백 알고리즘.</li>
+      <li>Autodesk, Bentley, Dassault 등 상용 제품의 내부.</li>
+    </ul>
+    <p>
+      Python 바인딩은 성숙도 낮음. 상용 소프트웨어는 주로 C++ CGAL 또는 자체 구현.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">AI가 기하를 잘못 쓰는 패턴</h3>
+    </div>
+    <ul>
+      <li><strong>Float 직접 비교</strong>: <code>ccw(A, B, C) == 0</code> — 거의 절대 참 아님. <code>abs(ccw) &lt; eps</code>도 eps 선택이 문제.</li>
+      <li><strong>정렬 → O(n log n)인데 정렬 안 하고 "O(n)" 주장</strong>: Graham scan 등에서 자주 오류.</li>
+      <li><strong>다각형이 self-intersecting일 때</strong>: ray casting도 깨짐. winding number 쓰거나 검증.</li>
+      <li><strong>2D에만 유효한 알고리즘을 3D에 적용</strong>: 볼록 껍질 3D는 훨씬 복잡 (divide-conquer, gift wrapping 등 별도).</li>
+      <li><strong>순진한 O(n²) 선분 교차</strong>: n=10⁴면 10⁸ — 가능하지만 큰 문제엔 Bentley-Ottmann 필수.</li>
+    </ul>
+    <p>
+      <strong>교정 질문</strong>: "정수 좌표로 할 수 있나?", "degeneracy 처리?", "Shapely/CGAL로 충분?"
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">CCW 외적 공식이 왜 "좌회전/우회전"을 말해주나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>2D 벡터 AB와 AC의 외적 z 성분 = |AB|·|AC|·sin θ. θ는 AB → AC의 각도. sin θ &gt; 0은 반시계 방향(CCW), &lt; 0은 시계(CW), = 0은 parallel. 즉 외적의 부호가 회전 방향. 3D 외적의 z 성분만 취한 것.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Graham scan에서 극각이 같은 점이 여러 개면?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>기준점에서 거리 <em>가까운 것 먼저</em> 오도록 정렬. 가장 먼 점만 hull에 포함됨 (같은 방향의 중간 점들은 collinear이므로 pop됨). 반대로 정렬(먼 것 먼저)이면 collinear 처리 로직이 복잡해짐. 실무 구현은 거리 근접 우선.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">두 선분 (p1,p2), (p3,p4)의 교차 여부 판정 (CCW 기반).</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>교차 조건: ccw(p1,p2,p3)와 ccw(p1,p2,p4)가 부호가 다름 AND ccw(p3,p4,p1)와 ccw(p3,p4,p2)가 부호가 다름. 즉 각 선분이 다른 선분의 양쪽을 가름. Collinear + 중첩 케이스는 별도 처리. 4번의 CCW 호출로 판정.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Andrew 알고리즘에서 "상·하 체인" 조합이 왜 올바른 볼록 껍질이 되나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>점들을 x 순으로 정렬하면 가장 왼쪽과 가장 오른쪽 점은 반드시 hull 위. 하단 체인: 이 두 점을 y 작은 쪽으로 잇는 사슬. 상단: y 큰 쪽. 두 체인이 왼쪽·오른쪽 끝점에서 만나 전체 hull 완성. 각 체인 내부에서 stack pop으로 오목 부분 제거.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">최근접 점 쌍의 strip 내 "7개 이웃" 논증.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>strip 너비 2δ (중간선 기준 ±δ). 한 점 p 주변 2δ × 2δ 박스를 8개 작은 δ/2 × δ 부분으로 나누면 각 부분에 최대 1점 (δ 미만 거리 없으므로). 따라서 p 주변 박스엔 최대 7개 다른 점 → y 순 다음 7개만 검사.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다각형의 면적을 CCW로 계산 (Shoelace formula).</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Shoelace (Gauss): area = |Σ (x_i · y_{i+1} − x_{i+1} · y_i)| / 2. 또는 CCW 해석: 삼각형 (O, p_i, p_{i+1})의 부호 있는 면적 합. 부호 = CCW이면 양수. 자기 교차 없는 단순 다각형에 정확.</p>
+            <pre><code>def area(poly):
+    n = len(poly)
+    s = 0
+    for i in range(n):
+        x1, y1 = poly[i]
+        x2, y2 = poly[(i+1) % n]
+        s += x1*y2 - x2*y1
+    return abs(s) / 2</code></pre>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">n=10만 점의 볼록 껍질 — Graham vs Chan 실측 예상.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Graham O(n log n) = 10⁵ · 17 ≈ 2·10⁶ 연산. C++ 수십 ms. Chan O(n log h): h가 작을수록 빠름. 랜덤 점에선 h ≈ log n ≈ 12 → 10⁵ · 4 = 4·10⁵ 연산. 하지만 상수가 큼, 실측에선 비슷. 이론적 최적인 h가 정말 작을 때만 유리. 실무엔 Andrew's monotone chain이 표준.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Bentley-Ottmann에서 교차 이벤트가 큐에 동적으로 추가되는 이유.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>선분 시작 시 이웃끼리 교차 점검 → 미래 교차점을 큐에 추가. 선분 끝 시 사라진 선분의 원래 이웃들이 이제 직접 이웃 → 교차 체크. 즉 <em>sweep line이 만날 교차점만</em> 큐에. 모든 O(n²)쌍이 아닌 활성 이웃만 검사하는 것이 효율의 핵심.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Voronoi가 왜 Delaunay의 dual인가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Voronoi cell의 정점 = 세(이상) cell의 공통 경계점 = 세 점과 같은 거리 = 세 점의 외접원 중심. Delaunay 삼각형의 외접원 중심도 같음. Voronoi 간선이 두 Delaunay 점을 잇는 수직 이등분선, Voronoi 정점이 Delaunay 삼각형의 외심 — 정확한 dual 관계. 하나 구하면 다른 것도 O(n)으로.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"직사각형 합집합 면적" sweep line 구현 스케치.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <ol>
+              <li>각 직사각형 (x1, x2, y1, y2)에서 (x1, +, y1, y2), (x2, −, y1, y2) 이벤트.</li>
+              <li>x 순 정렬. 스위프하며 segment tree에 y 구간 유지.</li>
+              <li>각 이벤트 사이 구간 Δx 동안 "현재 덮인 y 총 길이" × Δx 누적.</li>
+              <li>Segment tree는 "y 좌표 좌표 압축 + lazy count"로 구현. O(n log n).</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "GPS 경로에 점이 다각형에 들어가는지 매번 check"에 순진 ray casting 제안. 최적화?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">질문</div>
+            <ol>
+              <li>"다각형 고정이고 점이 많으면 <em>전처리</em> 가능. Trapezoidal decomposition 또는 R-tree 인덱스."</li>
+              <li>"한 번의 질의 O(log n)."</li>
+              <li>"Shapely/PostGIS 같은 라이브러리가 이미 최적화된 index 제공."</li>
+              <li>"수백만 점의 GPS trace면 bulk insert + spatial join이 훨씬 빠름."</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">컴퓨터 그래픽스의 "Z-buffer"와 계산 기하의 관계.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>3D 장면을 2D 스크린에 투영 시 "가장 가까운 표면만 보이는" 문제. 기하학적으로는 3D hidden surface removal — sweep line의 변형(스크린을 pixel 단위로 탐색). 현대 GPU는 하드웨어 z-buffer로 초당 수십억 pixel 처리. 계산 기하의 정교한 이론보다 단순 무식한 O(screen · objects)가 실무에 채택된 사례.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">🧭</div>
+      <h3>CCW Primitive</h3>
+      <p>세 점의 방향 = 외적 부호. 기하의 원자.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔷</div>
+      <h3>Graham / Andrew</h3>
+      <p>볼록 껍질 O(n log n). Andrew가 더 robust.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">➡️</div>
+      <h3>Sweep Line</h3>
+      <p>Bentley-Ottmann 1979. 2D 문제를 1D 이벤트로.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🕸️</div>
+      <h3>Voronoi / Delaunay</h3>
+      <p>공간 분할의 두 얼굴. Dual 관계.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🎯</div>
+      <h3>Point-in-Polygon</h3>
+      <p>Ray casting. Jordan curve theorem. 홀수번 교차.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">⚠️</div>
+      <h3>부동소수점의 저주</h3>
+      <p>정수 좌표 / Exact arithmetic / Shapely·CGAL 사용.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Convex Hull</div><div class="glossary-def">점 집합을 포함하는 최소 볼록 다각형.</div></div>
+    <div class="glossary-item"><div class="glossary-term">CCW Primitive</div><div class="glossary-def">세 점 방향 판정. 외적 부호.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Graham Scan</div><div class="glossary-def">Graham 1972. 극각 정렬 + stack. O(n log n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Ronald Graham</div><div class="glossary-def">1935-2020. Bell Labs. Graham scan, Erdős 협력자.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Monotone Chain</div><div class="glossary-def">Andrew 1979. x 정렬 + 상/하 체인.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Jarvis March</div><div class="glossary-def">1973. Gift wrapping. O(nh).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Chan's Algorithm</div><div class="glossary-def">Chan 1996. O(n log h) 출력민감 최적.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Sweep Line</div><div class="glossary-def">가상 수직선 이동 + 이벤트 처리. 2D→1D.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Bentley-Ottmann</div><div class="glossary-def">1979. 선분 교차 O((n+k) log n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Jon Bentley</div><div class="glossary-def">Algo 26 재등장. Programming Pearls.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Closest Pair</div><div class="glossary-def">Shamos-Hoey 1975. 분할 정복 O(n log n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Shoelace Formula</div><div class="glossary-def">Gauss. 다각형 면적 O(n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Point-in-Polygon</div><div class="glossary-def">Ray casting. 홀짝 판정.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Winding Number</div><div class="glossary-def">자기 교차 다각형에도 작동. 감는 횟수.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Voronoi Diagram</div><div class="glossary-def">점별 "가장 가까운 영역" 분할.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Delaunay Triangulation</div><div class="glossary-def">외접원 내부 다른 점 없음. Voronoi dual.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Fortune's Algorithm</div><div class="glossary-def">1987. Voronoi sweep line O(n log n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Klee's Measure</div><div class="glossary-def">1977. 직사각형 합집합 면적.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Shapely</div><div class="glossary-def">Python 기하. 내부 GEOS/JTS.</div></div>
+    <div class="glossary-item"><div class="glossary-term">CGAL</div><div class="glossary-def">Computational Geometry Algorithms Library. C++ 표준.</div></div>
+    <div class="glossary-item"><div class="glossary-term">PostGIS</div><div class="glossary-def">PostgreSQL 공간 확장.</div></div>
+    <div class="glossary-item"><div class="glossary-term">GJK / SAT</div><div class="glossary-def">게임 엔진 충돌 감지 알고리즘.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Visibility Graph</div><div class="glossary-def">로봇 경로. 장애물 정점 간 가시선.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Exact Arithmetic</div><div class="glossary-def">기하 정확성. 정수 또는 유리수.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Simulation of Simplicity</div><div class="glossary-def">Edelsbrunner-Mücke 1990. 기호적 섭동.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 29</div>
+    <h3>NP와 근사 알고리즘 (CLRS §34, §35)</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      P vs NP, 환원, 근사비 — 이론 CS의 정점.
+    </p>
+    <ul>
+      <li><strong>P, NP, NP-complete</strong> — Cook 1971, Karp 1972.</li>
+      <li><strong>Reduction</strong> — 문제를 다른 문제로 변환.</li>
+      <li><strong>Approximation Algorithms</strong> — Vertex Cover 2-approx, Set Cover ln(n), Metric TSP Christofides.</li>
+      <li><strong>PCP Theorem</strong> — 근사 불가능성의 증명.</li>
+      <li><strong>P vs NP의 현재</strong> — 미해결 Millennium Problem.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo27.html">&larr; Algo 27 — 고급 자료구조</a>
+  <a href="algo29.html">Algo 29 — NP와 근사 &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">Graham 1972 (IPL 1:132-133), Andrew 1979 (IPL 9:216-219), Bentley-Ottmann 1979 (IEEE ToC C-28:643-647), Fortune 1987 (Algorithmica 2:153-174) 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

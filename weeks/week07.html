@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
     <div class="header-nav">
       <a href="week06.html" class="nav-btn">&larr; 이전</a>
       <a href="week08.html" class="nav-btn">다음 &rarr;</a>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -339,7 +340,7 @@ dis.dis(simple_loop)</code></pre>
       <li><code>FOR_ITER N</code> (offset 6): <code>next(iterator)</code> → <code>iterator.__next__()</code> 호출. StopIteration 시 N steps 앞으로 jump (→ END_FOR)</li>
       <li><code>STORE_FAST</code> (offset 10): 꺼낸 값을 루프 변수 <code>x</code>에 저장</li>
       <li><code>JUMP_BACKWARD</code> (offset 12): FOR_ITER (offset 6)로 되돌아감</li>
-      <li><code>END_FOR</code> (offset 14): 루프 정상 종료 표시 (Python 3.11에서 도입, 3.12에서 동작이 변경됨)</li>
+      <li><code>END_FOR</code> (offset 14): 루프 정상 종료 표시 (Python 3.12에서 도입)</li>
     </ul>
     <p>
       <code>&gt;&gt;</code>는 jump target을 의미합니다.
@@ -472,8 +473,8 @@ for 첫달, *나머지 in 월별매출:
     <span class="level-badge level-expert">전공자</span>
     <h3>Part B: FOR_ITER의 특화(Specialization) — Python 3.12</h3>
     <p>
-      Python 3.12의 Specializing Adaptive Interpreter는 <code>FOR_ITER</code>를
-      반복 실행 후 타입에 맞게 자동 특화합니다:
+      Python 3.12의 Specializing Adaptive Interpreter (<a href="https://peps.python.org/pep-0659/" target="_blank">PEP 659</a>)는 <code>FOR_ITER</code>를
+      반복 실행 후 타입에 맞게 자동 특화합니다 (원서 문서에는 표면적으로 노출되지 않는 내부 명령어 — CPython 소스 <code>Python/bytecodes.c</code>와 <code>Python/specialize.c</code> 참조):
     </p>
     <ul>
       <li><code>FOR_ITER_LIST</code>: list_iterator → <code>ob_item[index]</code> 직접 접근, C 수준 range 검사</li>
@@ -2501,7 +2502,7 @@ print(f"차이: {t2/t1:.1f}배")
     </div>
     <div class="glossary-item">
       <h4>END_FOR</h4>
-      <p>Python 3.11에서 도입, 3.12에서 동작이 변경된 for 루프 종료 바이트코드. FOR_ITER의 StopIteration jump target.</p>
+      <p>Python 3.12에서 도입된 for 루프 종료 바이트코드. FOR_ITER의 StopIteration jump target.</p>
     </div>
     <div class="glossary-item">
       <h4>tp_iternext</h4>

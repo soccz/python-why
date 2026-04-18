@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
-      color: var(--accent);
+      color: var(--accent-text);
       background: var(--accent-soft);
       border: 1px solid var(--border-accent);
       border-radius: var(--radius-full);
@@ -75,7 +76,7 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: var(--accent);
+      background: var(--accent-hover);
       color: #fff;
       border: none;
       border-radius: var(--radius-sm);
@@ -141,7 +142,7 @@
       font-family: 'Noto Serif KR', serif;
       font-size: 1.8rem;
       font-weight: 900;
-      color: var(--accent);
+      color: var(--accent-text);
       line-height: 1;
       display: block;
     }
@@ -184,7 +185,7 @@
       font-size: 0.95rem;
     }
     .about-text p:last-child { margin-bottom: 0; }
-    .about-text strong { color: var(--accent); }
+    .about-text strong { color: var(--accent-text); }
     .difference-list {
       list-style: none;
       padding: 0;
@@ -274,7 +275,7 @@
     .week-card-num {
       font-size: 0.72rem;
       font-weight: 700;
-      color: var(--accent);
+      color: var(--accent-text);
       text-transform: uppercase;
       letter-spacing: 1.5px;
     }
@@ -286,7 +287,7 @@
       border: 1px solid;
     }
     .status-ready {
-      color: #3b9b6e;
+      color: #267547;
       background: #f0f9f4;
       border-color: rgba(59, 155, 110, 0.25);
     }
@@ -318,7 +319,7 @@
       padding: 2px 8px;
       border-radius: var(--radius-full);
       background: var(--surface);
-      color: var(--text-muted);
+      color: var(--text-secondary);
       border: 1px solid var(--border);
     }
     .week-card.upcoming {
@@ -378,7 +379,7 @@
       display: block;
       font-size: 0.88rem;
       font-weight: 700;
-      color: var(--accent);
+      color: var(--accent-text);
       margin-bottom: 5px;
     }
     .philosophy-item p {
@@ -418,10 +419,10 @@
       border-radius: var(--radius-full);
       margin-bottom: 10px;
     }
-    .aud-elem  .audience-level { background: #f0f9f4; color: #3b9b6e; border: 1px solid rgba(59,155,110,0.2); }
-    .aud-inter .audience-level { background: #fdf8ef; color: #c48b2c; border: 1px solid rgba(196,139,44,0.2); }
-    .aud-adv   .audience-level { background: #fdf2f2; color: #c45858; border: 1px solid rgba(196,88,88,0.2); }
-    .aud-exp   .audience-level { background: #f2f0fc; color: #5a48c0; border: 1px solid rgba(90,72,192,0.2); }
+    .aud-elem  .audience-level { background: #f0f9f4; color: #267547; border: 1px solid rgba(59,155,110,0.2); }
+    .aud-inter .audience-level { background: #fdf8ef; color: #8a5f0e; border: 1px solid rgba(196,139,44,0.2); }
+    .aud-adv   .audience-level { background: #fdf2f2; color: #963434; border: 1px solid rgba(196,88,88,0.2); }
+    .aud-exp   .audience-level { background: #f2f0fc; color: #4835a0; border: 1px solid rgba(90,72,192,0.2); }
     .audience-card h4 {
       font-size: 0.82rem;
       font-weight: 700;
@@ -457,6 +458,53 @@
       margin-left: auto;
       margin-right: auto;
     }
+
+    /* Algorithms CTA card (alg-course-card) */
+    .algo-course-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: linear-gradient(135deg, var(--accent-soft) 0%, var(--bg-elevated) 100%);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      margin-bottom: 64px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.25s var(--ease-out);
+    }
+    .algo-course-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+    .algo-tag-pill {
+      font-size: 0.7rem;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    /* ===== RESPONSIVE — landing page ===== */
+    @media (max-width: 480px) {
+      .hero { padding: 48px 0 36px; }
+      .hero-cta-group { flex-direction: column; align-items: stretch; gap: 10px; }
+      .hero-cta-group .btn-primary,
+      .hero-cta-group .btn-secondary { justify-content: center; padding: 12px 20px; }
+
+      .stats-row { flex-wrap: wrap; }
+      .stat-item { flex: 1 1 50%; border-right: none; border-bottom: 1px solid var(--border); }
+      .stat-item:nth-child(2n) { border-right: none; }
+      .stat-item:nth-last-child(-n+2) { border-bottom: none; }
+
+      .about-text p code,
+      .about-text p strong,
+      .week-card { word-break: keep-all; }
+
+      .week-card-tags { gap: 4px; }
+
+      .algo-course-card { padding: 24px 18px; }
+    }
   </style>
 </head>
 <body>
@@ -470,8 +518,9 @@
         <a href="index.html" class="site-title">PyWhy</a>
       </div>
     <div class="header-nav">
+      <a href="algorithms/index.html" class="nav-btn">알고리즘 코너</a>
       <a href="weeks/week01.html" class="nav-btn">강의 시작하기 →</a>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -491,6 +540,7 @@
   </p>
   <div class="hero-cta-group">
     <a href="weeks/week01.html" class="btn-primary">Week 01부터 시작하기 →</a>
+    <a href="algorithms/index.html" class="btn-secondary">알고리즘 코너 →</a>
     <a href="#curriculum" class="btn-secondary">커리큘럼 보기</a>
   </div>
 
@@ -536,35 +586,35 @@
   </div>
   <ul class="difference-list">
     <li>
-      <span class="diff-icon">🔍</span>
+      <span class="diff-icon" aria-hidden="true">🔍</span>
       <div class="diff-body">
         <strong>De-sugaring 방식</strong>
         <span><code>for</code>문을 <code>iter()</code>/<code>next()</code>/<code>StopIteration</code>으로 분해해서 이해합니다</span>
       </div>
     </li>
     <li>
-      <span class="diff-icon">📖</span>
+      <span class="diff-icon" aria-hidden="true">📖</span>
       <div class="diff-body">
         <strong>공식 문서 기반</strong>
         <span>Python 공식 튜토리얼의 개념 흐름과 용어를 그대로 사용합니다</span>
       </div>
     </li>
     <li>
-      <span class="diff-icon">🤖</span>
+      <span class="diff-icon" aria-hidden="true">🤖</span>
       <div class="diff-body">
         <strong>AI 시대 관점</strong>
         <span>AI가 생성한 코드를 읽고, 검증하고, 판단하는 능력을 키웁니다</span>
       </div>
     </li>
     <li>
-      <span class="diff-icon">⚠️</span>
+      <span class="diff-icon" aria-hidden="true">⚠️</span>
       <div class="diff-body">
         <strong>실수 포인트 명시</strong>
         <span>Mutable 기본값, 클로저 캡처 등 실제로 자주 틀리는 함정을 짚어줍니다</span>
       </div>
     </li>
     <li>
-      <span class="diff-icon">🧪</span>
+      <span class="diff-icon" aria-hidden="true">🧪</span>
       <div class="diff-body">
         <strong>직접 실행 중심</strong>
         <span>모든 개념마다 "지금 바로 해봐" 블록으로 즉시 확인합니다</span>
@@ -788,6 +838,63 @@
 
 <hr class="section-divider">
 
+<!-- ===== ALGORITHMS COURSE ===== -->
+<div class="section-header">
+  <h2>심화 코너 — 알고리즘</h2>
+  <p>15주 본 강의를 마쳤다면, "왜 이 알고리즘이 맞는가"를 깊이 파는 30주 커리큘럼</p>
+</div>
+
+<a href="algorithms/index.html" class="algo-course-card">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+    <span style="font-size:0.7rem;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color: var(--accent-text);background:var(--bg-elevated);padding:4px 12px;border-radius:var(--radius-full);border:1px solid var(--border-accent);">
+      NEW · 30주 코스
+    </span>
+    <span style="font-size:0.72rem;color:var(--text-muted);">CLRS 4판 + Python 표준 라이브러리 기반</span>
+  </div>
+  <h3 style="font-size:1.4rem;font-weight:900;margin:0 0 8px;color:var(--text);">
+    알고리즘은 왜? <span style="color: var(--accent-text);">→</span>
+  </h3>
+  <p style="font-size:0.92rem;color:var(--text-secondary);line-height:1.7;margin:0 0 18px;max-width:640px;">
+    빅오·정렬·자료구조·그래프·DP·NP까지 — 각 알고리즘을
+    <strong style="color:var(--text);">비유 → 시각화 → 루프 불변식 증명 → 점화식 → CPython 구현 → CLRS 정리</strong>
+    의 6단으로 분해합니다.
+  </p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <span class="algo-tag-pill">Algo 01: 빅오 표기법</span>
+    <span class="algo-tag-pill">Algo 02: 정확성 증명</span>
+    <span class="algo-tag-pill">Algo 03: 분할 정복</span>
+    <span class="algo-tag-pill">Algo 04: 확률과 randomized</span>
+    <span class="algo-tag-pill">Algo 05: O(n²) 정렬들</span>
+    <span class="algo-tag-pill">Algo 06: O(n log n) 정렬들</span>
+    <span class="algo-tag-pill">Algo 07: Timsort</span>
+    <span class="algo-tag-pill">Algo 08: 동적 배열</span>
+    <span class="algo-tag-pill">Algo 09: Linked List · deque</span>
+    <span class="algo-tag-pill">Algo 10: 해시 테이블</span>
+    <span class="algo-tag-pill">Algo 11: BST · AVL · RB</span>
+    <span class="algo-tag-pill">Algo 12: heapq · PQ</span>
+    <span class="algo-tag-pill">Algo 13: 트리 순회</span>
+    <span class="algo-tag-pill">Algo 14: 그래프 + BFS/DFS</span>
+    <span class="algo-tag-pill">Algo 15: Dijkstra</span>
+    <span class="algo-tag-pill">Algo 16: BF · FW</span>
+    <span class="algo-tag-pill">Algo 17: MST</span>
+    <span class="algo-tag-pill">Algo 18: Max-Flow</span>
+    <span class="algo-tag-pill">Algo 19: Greedy</span>
+    <span class="algo-tag-pill">Algo 20: DP I</span>
+    <span class="algo-tag-pill">Algo 21: DP II</span>
+    <span class="algo-tag-pill">Algo 22: Backtracking</span>
+    <span class="algo-tag-pill">Algo 23: B&amp;B</span>
+    <span class="algo-tag-pill">Algo 24: String Matching</span>
+    <span class="algo-tag-pill">Algo 25: Hashing 심화</span>
+    <span class="algo-tag-pill">Algo 26: 구간 자료구조</span>
+    <span class="algo-tag-pill">Algo 27: 고급 자료구조</span>
+    <span class="algo-tag-pill">Algo 28: 계산 기하</span>
+    <span class="algo-tag-pill">Algo 29: NP/근사</span>
+    <span class="algo-tag-pill">Algo 30: 종합 설계</span>
+  </div>
+</a>
+
+<hr class="section-divider">
+
 <!-- ===== AUDIENCE ===== -->
 <div class="audience-section">
   <div class="section-header">
@@ -828,32 +935,32 @@
   </div>
   <div class="philosophy-grid">
     <div class="philosophy-item">
-      <span class="philosophy-icon">❓</span>
+      <span class="philosophy-icon" aria-hidden="true">❓</span>
       <strong>WHY 중심</strong>
       <p>모든 개념에 "왜 이것이 존재하는가"를 먼저 설명합니다</p>
     </div>
     <div class="philosophy-item">
-      <span class="philosophy-icon">🔬</span>
+      <span class="philosophy-icon" aria-hidden="true">🔬</span>
       <strong>내부 동작 해체</strong>
       <p><code>for</code>문이 실제로 <code>iter()</code>/<code>next()</code>를 호출하는 것을 직접 확인합니다</p>
     </div>
     <div class="philosophy-item">
-      <span class="philosophy-icon">📚</span>
+      <span class="philosophy-icon" aria-hidden="true">📚</span>
       <strong>공식 문서 기반</strong>
       <p>Python 3.14 공식 튜토리얼의 구조와 용어를 존중합니다</p>
     </div>
     <div class="philosophy-item">
-      <span class="philosophy-icon">🤖</span>
+      <span class="philosophy-icon" aria-hidden="true">🤖</span>
       <strong>AI 시대 준비</strong>
       <p>AI가 만든 코드를 읽고, 검증하고, 판단하는 능력을 키웁니다</p>
     </div>
     <div class="philosophy-item">
-      <span class="philosophy-icon">💬</span>
+      <span class="philosophy-icon" aria-hidden="true">💬</span>
       <strong>소크라테스식</strong>
       <p>질문 → 답변 → 반론 → 심화 형태로 개념을 깊이 파고듭니다</p>
     </div>
     <div class="philosophy-item">
-      <span class="philosophy-icon">🏋️</span>
+      <span class="philosophy-icon" aria-hidden="true">🏋️</span>
       <strong>실전 연습</strong>
       <p>문법 암기가 아닌 "왜 이 코드가 답인가"를 설명하는 연습</p>
     </div>

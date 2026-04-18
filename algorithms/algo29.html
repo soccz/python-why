@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 29주차: NP와 근사 알고리즘 — Cook, Karp, Christofides | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="P vs NP — Cook-Levin 1971, Karp 1972 21문제, Christofides 1.5-approx. 이론 CS의 정점.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 29주차: NP와 근사 | PyWhy">
+  <meta property="og:description" content="NP-complete, 환원, 근사비 — 계산 복잡도 이론의 정점">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo29.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A29">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo28.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo30.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 29</div>
+  <h1 class="week-title">NP와 근사 알고리즘<br>P vs NP — 이론 CS의 정점</h1>
+  <p class="week-subtitle">
+    1971년 5월 토론토. <strong>Stephen Cook</strong>이 막 창설된 ACM STOC에 <em>"The Complexity of Theorem-Proving Procedures"</em>를 발표 — <strong>SAT이 NP-complete</strong>라는 증명. 1년 뒤 1972년 Berkeley의 <strong>Richard Karp</strong>가 <em>"Reducibility Among Combinatorial Problems"</em>에서 <strong>21개 문제</strong>가 모두 NP-complete임을 보이며 그 개념의 폭발적 위력을 드러냄. 같은 시기 소련의 <strong>Leonid Levin</strong>이 독립적으로 같은 결과에 도달.<br>
+    <em>"P = NP인가?"</em> — 2000년 Clay Institute의 7대 Millennium Problem 중 하나. 상금 100만 달러. 아직 미해결. 만약 P = NP라면 현대 암호학 붕괴 + 생산성 혁명, P ≠ NP라면 "빠르게 풀 수 없는 문제가 있다"는 근본 제약 확정.<br>
+    핵심 질문: <em>"왜 SAT이 모든 NP 문제의 대표인가? 근사 알고리즘은 어떻게 NP-hard 문제와 타협하는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 1971, 복잡도 이론의 탄생</a>
+    </div>
+    <div class="toc-section">
+      <a href="#p-np" class="toc-section-link"><span class="toc-num">02</span>P, NP, NP-Complete 정의</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#cook-levin" class="toc-section-link"><span class="toc-num">03</span>Cook-Levin — SAT은 NP-complete</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#reduction" class="toc-section-link"><span class="toc-num">04</span>Reduction — 문제 간의 변환</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#karp-21" class="toc-section-link"><span class="toc-num">05</span>Karp의 21문제 (1972)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#np-hard-examples" class="toc-section-link"><span class="toc-num">06</span>대표적 NP-complete — TSP, VC, 3SAT</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#approx-intro" class="toc-section-link"><span class="toc-num">07</span>근사 알고리즘 — NP-hard와의 타협</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#vertex-cover" class="toc-section-link"><span class="toc-num">08</span>Vertex Cover 2-근사</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#set-cover" class="toc-section-link"><span class="toc-num">09</span>Set Cover ln(n) 근사</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#metric-tsp" class="toc-section-link"><span class="toc-num">10</span>Metric TSP — Christofides 1.5</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#pcp" class="toc-section-link"><span class="toc-num">11</span>PCP Theorem — 근사의 한계</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#fpt" class="toc-section-link"><span class="toc-num">12</span>FPT — 매개변수 복잡도</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#practical" class="toc-section-link"><span class="toc-num">13</span>실무 — SAT/ILP Solver가 NP-hard를 푸는 이유</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 1971, 복잡도 이론의 탄생</h2>
+
+  <blockquote>
+    <em>"I have tried to show that several well-known intractable problems are related in that the efficient solvability of any one implies the efficient solvability of all."</em>
+    <br>— Richard M. Karp, <em>Reducibility among Combinatorial Problems</em>, 1972
+  </blockquote>
+
+  <div class="story-block">
+    <h3>1971 — Stephen Cook, University of Toronto</h3>
+    <p>
+      <strong>Stephen A. Cook</strong>(1939-)이 1971년 ACM STOC(3회 대회)에서 <em>"The Complexity of Theorem-Proving Procedures"</em>(STOC 1971:151-158)를 발표. STOC는 1969년 창립. <strong>SAT(Boolean satisfiability) 문제가 NP에 속하는 모든 문제를 다항 시간에 환원할 수 있는 "가장 어려운" 문제</strong> — NP-complete 개념의 탄생.
+    </p>
+    <p>
+      당시 Cook은 UC Berkeley에서 tenure를 거부당해 Toronto로 이직한 직후. 이 논문이 <strong>1982년 Turing Award</strong>를 안김. 박사 지도교수는 Hao Wang(타일 문제의 그 Wang).
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1972 — Richard Karp, UC Berkeley</h3>
+    <p>
+      <strong>Richard M. Karp</strong>(1935-)가 IBM Yorktown Heights symposium에서 <em>"Reducibility Among Combinatorial Problems"</em>(in: Complexity of Computer Computations, Plenum Press 1972, pp.85-103) 발표. Cook의 SAT → <em>21개 문제 중 각각</em>으로 다항 시간 환원 → 모두 NP-complete임을 증명.
+    </p>
+    <p>
+      Karp 21 problems에 포함: <em>CLIQUE, Vertex Cover, Hamiltonian Cycle, TSP, 3-SAT, 0/1 Knapsack, Set Cover, Graph Coloring, Integer Programming</em> 등. <em>거의 모든 중요 조합 최적화 문제</em>가 NP-complete임을 한 논문으로 증명. <strong>Karp도 1985 Turing Award</strong>.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1971-1973 — Leonid Levin, 소련</h3>
+    <p>
+      같은 시기 Moscow의 대학원생 <strong>Leonid Levin</strong>이 독립적으로 NP-completeness 개념을 발견. 1971년부터 세미나에서 발표했으나 <em>정치적 이유로 논문 출판 제약</em>. 1973년에야 논문 게재. 현재 <em>Cook-Levin Theorem</em>으로 공동 명명. Levin은 1978년 미국 이민 후 Boston University 교수.
+    </p>
+    <p>
+      Levin의 접근은 Cook/Karp와 약간 다름 — <em>search problem</em>(해를 찾는 문제) 기준. 6개의 "universal problem" 제시. 당시 동서 냉전 중이라 서방에 즉시 알려지지 않음.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>2000 — Clay Institute, P vs NP Millennium Problem</h3>
+    <p>
+      Clay Mathematics Institute가 7개의 <em>Millennium Prize Problems</em> 선정. 각 상금 100만 달러. <em>P vs NP</em>는 그 중 하나. 2003년 Perelman이 Poincaré 추측을 해결했지만 P vs NP는 아직 미해결. 대다수 연구자 믿음: <strong>P ≠ NP</strong>이지만 증명 없음.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>근사 알고리즘과 PCP</h3>
+    <ul>
+      <li><strong>1970년대</strong>: Graham의 bin packing, Johnson의 set cover — 근사 비율 공식화.</li>
+      <li><strong>1976</strong>: <strong>Christofides</strong>가 metric TSP의 1.5-근사 발표.</li>
+      <li><strong>1992</strong>: <strong>PCP Theorem</strong>(Arora, Lund, Motwani, Sudan, Szegedy) — 근사의 어려움 이론적 증명. "Set Cover보다 나은 근사는 P ≠ NP 가정 하에 불가능" 같은 결과. Arora-Safra, Arora-Lund-Motwani-Sudan-Szegedy 두 팀이 Gödel Prize 공동 수상(2001).</li>
+      <li><strong>2020</strong>: 44년 깨지지 않던 Christofides를 Karlin-Klein-Oveis Gharan이 1.5-ε로 개선 (미세한 ε).</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="복잡도 이론 역사">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📜 계산 복잡도 이론의 50년 — Turing Award 3개</text>
+
+      <line x1="60" y1="130" x2="680" y2="130" stroke="var(--text-muted)" stroke-width="2"/>
+      <polygon points="680,130 670,126 670,134" fill="var(--text-muted)"/>
+
+      <g font-family="JetBrains Mono, monospace" font-size="11">
+        <!-- 1971 Cook -->
+        <circle cx="100" cy="130" r="9" fill="#d4930c" stroke="var(--accent)" stroke-width="2.5"/>
+        <line x1="100" y1="121" x2="100" y2="70" stroke="#d4930c" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="35" y="40" width="135" height="32" rx="4" fill="rgba(212,147,12,0.12)" stroke="#d4930c" stroke-width="1.5"/>
+        <text x="102" y="57" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Cook 1971</text>
+        <text x="102" y="68" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">SAT NP-complete</text>
+        <text x="100" y="155" text-anchor="middle" class="viz-label-small">1971</text>
+
+        <!-- 1972 Karp -->
+        <circle cx="170" cy="130" r="9" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2.5"/>
+        <line x1="170" y1="138" x2="170" y2="200" stroke="#3b9b6e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="105" y="200" width="135" height="32" rx="4" fill="rgba(59,155,110,0.1)" stroke="#3b9b6e" stroke-width="1.5"/>
+        <text x="172" y="218" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Karp 1972</text>
+        <text x="172" y="229" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">21 문제 NP-complete</text>
+        <text x="170" y="155" text-anchor="middle" class="viz-label-small">1972</text>
+
+        <!-- 1973 Levin -->
+        <circle cx="220" cy="130" r="7" fill="#196aa1" stroke="#196aa1" stroke-width="2"/>
+        <text x="220" y="110" text-anchor="middle" class="viz-label-small" fill="#196aa1" font-weight="700">Levin (독립)</text>
+        <text x="220" y="155" text-anchor="middle" class="viz-label-small">1973</text>
+
+        <!-- 1976 Christofides -->
+        <circle cx="310" cy="130" r="7" fill="#c23b5e" stroke="#c23b5e" stroke-width="2"/>
+        <line x1="310" y1="122" x2="310" y2="80" stroke="#c23b5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="245" y="50" width="135" height="32" rx="4" fill="rgba(194,59,94,0.1)" stroke="#c23b5e" stroke-width="1"/>
+        <text x="315" y="67" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Christofides 1976</text>
+        <text x="315" y="78" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">TSP 1.5-approx</text>
+        <text x="310" y="155" text-anchor="middle" class="viz-label-small">1976</text>
+
+        <!-- 1982 Cook Turing -->
+        <circle cx="380" cy="130" r="5" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="380" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Cook Turing</text>
+        <text x="380" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1982</text>
+
+        <!-- 1985 Karp Turing -->
+        <circle cx="430" cy="130" r="5" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="430" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Karp Turing</text>
+        <text x="430" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1985</text>
+
+        <!-- 1992 PCP -->
+        <circle cx="520" cy="130" r="8" fill="#196aa1" stroke="#196aa1" stroke-width="2"/>
+        <line x1="520" y1="138" x2="520" y2="200" stroke="#196aa1" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="450" y="200" width="145" height="32" rx="4" fill="rgba(25,106,161,0.1)" stroke="#196aa1" stroke-width="1"/>
+        <text x="525" y="218" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">PCP Theorem 1992</text>
+        <text x="525" y="229" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">ALMSS + Arora-Safra</text>
+        <text x="520" y="155" text-anchor="middle" class="viz-label-small">1992</text>
+
+        <!-- 2000 Clay -->
+        <circle cx="620" cy="130" r="7" fill="#d4930c" stroke="var(--accent)" stroke-width="2"/>
+        <text x="620" y="110" text-anchor="middle" class="viz-label-small" fill="#d4930c" font-weight="700">Clay $1M</text>
+        <text x="620" y="155" text-anchor="middle" class="viz-label-small">2000</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>복잡도 이론 50년</strong>: 1971-72 Cook-Karp-Levin 3인방 → 1976 Christofides → 1982 Cook Turing → 1985 Karp Turing → 1992 PCP theorem (Gödel Prize) → 2000 Millennium Problem. 이론 CS에서 가장 화려한 계보.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. P vs NP ==================== -->
+<section id="p-np">
+  <h2>02 — P, NP, NP-Complete 정의</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">핵심 정의</h3>
+    </div>
+    <ul>
+      <li><strong>P (Polynomial)</strong>: 다항 시간 결정론적 튜링 머신으로 풀 수 있는 결정 문제의 집합. 예: 정렬, 최단 경로, 이분 매칭.</li>
+      <li><strong>NP (Nondeterministic Polynomial)</strong>: 해답이 주어지면 다항 시간에 <em>검증</em> 가능한 문제. 해를 찾는 건 어려울 수 있지만, 누군가가 준 답을 확인은 쉬움.</li>
+      <li><strong>NP-Hard</strong>: NP의 모든 문제가 다항 시간에 환원되는 문제 (NP 안이 아닐 수도 있음).</li>
+      <li><strong>NP-Complete</strong>: NP ∩ NP-Hard. "NP 중 가장 어려운" 문제.</li>
+    </ul>
+    <p>
+      <strong>포함 관계</strong>: P ⊆ NP (다항이면 검증도 다항). NP ⊆ NP-Complete의 어떤 문제로 환원 가능 (NP-complete 존재 시).
+    </p>
+    <p>
+      <strong>P = NP?</strong> 아직 미증명. 대다수 전문가 의견은 <strong>P ≠ NP</strong>. 증명이 가능하다면 Millennium Prize 100만 달러.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="P vs NP 다이어그램">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🎯 P vs NP — 두 가능성</text>
+
+      <!-- P ≠ NP case -->
+      <g transform="translate(80, 55)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="140" y="0" text-anchor="middle" class="viz-label" font-weight="700">P ≠ NP 가정 (주류 관점)</text>
+
+        <!-- Outer: NP -->
+        <ellipse cx="140" cy="120" rx="130" ry="90" fill="rgba(212,147,12,0.08)" stroke="#d4930c" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="140" y="40" text-anchor="middle" class="viz-label" font-weight="700" fill="#d4930c">NP</text>
+
+        <!-- Inner: P -->
+        <ellipse cx="90" cy="135" rx="55" ry="45" fill="rgba(59,155,110,0.15)" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="90" y="120" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">P</text>
+        <text x="90" y="138" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">정렬,</text>
+        <text x="90" y="152" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">최단경로</text>
+
+        <!-- NP-complete region -->
+        <path d="M 185,80 Q 230,120 230,180 Q 200,210 170,190 Q 160,170 165,140 Q 170,100 185,80 Z"
+              fill="rgba(194,59,94,0.15)" stroke="#c23b5e" stroke-width="2"/>
+        <text x="205" y="145" text-anchor="middle" class="viz-label" font-weight="700" fill="#c23b5e" font-size="10">NP-</text>
+        <text x="205" y="160" text-anchor="middle" class="viz-label" font-weight="700" fill="#c23b5e" font-size="10">Complete</text>
+        <text x="205" y="178" text-anchor="middle" class="viz-label-small" fill="#c23b5e">SAT, TSP</text>
+
+        <text x="140" y="230" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">P, NP-Complete 서로 disjoint</text>
+        <text x="140" y="245" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">중간에 NP-intermediate 가능 (Ladner 정리)</text>
+      </g>
+
+      <!-- P = NP case -->
+      <g transform="translate(420, 55)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="140" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="var(--accent)">P = NP 가정 (만약)</text>
+
+        <ellipse cx="140" cy="120" rx="110" ry="80" fill="rgba(59,155,110,0.2)" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="140" y="100" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">P = NP</text>
+        <text x="140" y="120" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">= NP-Complete</text>
+        <text x="140" y="140" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">모두 같은 집합</text>
+
+        <text x="140" y="210" text-anchor="middle" class="viz-label-small" fill="var(--accent)">SAT, TSP도 다항 시간</text>
+        <text x="140" y="225" text-anchor="middle" class="viz-label-small" fill="var(--accent)">RSA/ECC 암호 붕괴</text>
+        <text x="140" y="240" text-anchor="middle" class="viz-label-small" fill="var(--accent)">약물 설계·최적화 혁명</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>P vs NP 두 시나리오</strong>: (좌) 주류 가정 P ≠ NP — P와 NP-complete 분리된 영역. (우) 만약 P = NP라면 모든 NP 문제가 다항 시간. 암호학이 붕괴되지만 최적화/AI/신약 설계에 혁명. <em>증명 없이 100만 달러</em>.</div>
+  </div>
+</section>
+
+<!-- ==================== 03. Cook-Levin ==================== -->
+<section id="cook-levin">
+  <h2>03 — Cook-Levin Theorem</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">정리</h3>
+    </div>
+    <div class="formula-box" style="text-align:left;font-size:0.95rem;">
+      <strong>Theorem (Cook 1971, Levin 1973)</strong><br>
+      Boolean Satisfiability Problem (SAT)은 NP-complete이다.
+    </div>
+    <p>
+      즉, <em>모든 NP 문제는 SAT으로 다항 시간에 환원 가능</em>. SAT이 다항 시간에 풀리면 NP = P.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">증명 아이디어</h3>
+    </div>
+    <ol>
+      <li>임의의 NP 문제 L을 증인(witness)과 함께 다항 시간에 검증하는 튜링 머신 M을 가정.</li>
+      <li>M의 계산 테이프 상태를 <em>Boolean 변수의 거대한 집합</em>으로 표현.
+        <ul>
+          <li>x<sub>t, i, σ</sub>: 시각 t에 위치 i의 심볼이 σ.</li>
+          <li>q<sub>t, s</sub>: 시각 t에 상태가 s.</li>
+          <li>h<sub>t, i</sub>: 시각 t에 헤드가 i 위치.</li>
+        </ul>
+      </li>
+      <li>M의 전이 규칙을 <em>CNF 절(clause)</em>로 부호화: 초기 상태, 매 스텝의 정당성, 최종 수락 상태.</li>
+      <li>이 CNF는 입력 크기 n에 대해 다항 크기. SAT 만족가능 ⟺ M이 해당 witness로 수락 ⟺ L에 속함.</li>
+      <li>따라서 L ≤<sub>p</sub> SAT. ∀ L ∈ NP. □</li>
+    </ol>
+    <p>
+      <strong>역사적 중요성</strong>: 이 증명이 <em>"NP-complete 문제가 실존한다"</em>를 보인 첫 결과. 이후 Karp가 SAT → 21개 문제로 연쇄 환원.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">3-SAT과 SAT</h3>
+    </div>
+    <p>
+      <strong>3-SAT</strong>: 각 절이 정확히 3개 리터럴인 CNF. 일반 SAT에서 3-SAT으로 다항 시간 환원 가능 (절을 쪼개서) → 3-SAT도 NP-complete.
+    </p>
+    <p>
+      3-SAT이 "캐논 NP-complete 문제"로 자주 쓰임 — 더 간단한 구조 덕에 다른 문제로의 환원이 용이.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 04. Reduction ==================== -->
+<section id="reduction">
+  <h2>04 — Reduction — 문제 간의 변환</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Karp Reduction (Polynomial-Time Many-One)</h3>
+    </div>
+    <p>
+      문제 A를 문제 B로 <em>환원(reduce)</em>한다는 것: A의 인스턴스 x를 B의 인스턴스 f(x)로 <strong>다항 시간에 변환</strong>하되, <code>x ∈ A ⟺ f(x) ∈ B</code>가 성립.
+    </p>
+    <div class="formula-box">
+      A ≤<sub>p</sub> B &nbsp;⟺&nbsp; B를 풀 수 있으면 A도 풀 수 있다
+    </div>
+    <ul>
+      <li>B가 "같거나 더 어려움"을 의미.</li>
+      <li>A가 NP-hard고 A ≤<sub>p</sub> B이면 B도 NP-hard.</li>
+      <li>B가 P고 A ≤<sub>p</sub> B이면 A도 P (대우: A가 P 아니면 B도 P 아님).</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">예: 3-SAT ≤<sub>p</sub> CLIQUE</h3>
+    </div>
+    <p>
+      3-SAT 인스턴스 φ = C<sub>1</sub> ∧ C<sub>2</sub> ∧ ... ∧ C<sub>m</sub>, 각 C<sub>i</sub>는 3개 리터럴. 다음 그래프 G를 구축:
+    </p>
+    <ul>
+      <li>각 리터럴을 정점으로 (총 3m 정점).</li>
+      <li>두 정점 u, v 사이 간선: <em>서로 다른 절에 있고</em> <em>서로 충돌(ℓ vs ¬ℓ)하지 않음</em>.</li>
+      <li>주장: φ가 만족가능 ⟺ G에 크기 m의 clique 존재.</li>
+    </ul>
+    <p>
+      이 환원은 다항 시간 (입력 크기 × 상수 인자). 따라서 <em>3-SAT ≤<sub>p</sub> CLIQUE</em>. SAT이 NP-complete이므로 CLIQUE도 NP-complete.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Reduction chain">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🔗 Karp Reduction Chain — SAT에서 시작된 NP-complete의 연쇄</text>
+
+      <!-- SAT node (center-top) -->
+      <g transform="translate(0, 50)" font-family="JetBrains Mono, monospace" font-size="11">
+        <circle cx="360" cy="30" r="24" fill="#fde6a6" stroke="#d4930c" stroke-width="3"/>
+        <text x="360" y="28" text-anchor="middle" class="viz-label" font-weight="700">SAT</text>
+        <text x="360" y="42" text-anchor="middle" class="viz-label-small">(Cook 1971)</text>
+
+        <!-- Edges to 21 problems (representative few) -->
+        <line x1="346" y1="48" x2="200" y2="110" stroke="#3b9b6e" stroke-width="1.5" marker-end="url(#arr-red)"/>
+        <line x1="374" y1="48" x2="460" y2="110" stroke="#3b9b6e" stroke-width="1.5" marker-end="url(#arr-red)"/>
+        <line x1="350" y1="55" x2="280" y2="110" stroke="#3b9b6e" stroke-width="1.5" marker-end="url(#arr-red)"/>
+        <line x1="370" y1="55" x2="380" y2="110" stroke="#3b9b6e" stroke-width="1.5" marker-end="url(#arr-red)"/>
+        <line x1="340" y1="50" x2="100" y2="150" stroke="#3b9b6e" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arr-red)"/>
+        <line x1="380" y1="50" x2="620" y2="150" stroke="#3b9b6e" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arr-red)"/>
+
+        <defs>
+          <marker id="arr-red" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <path d="M0,0 L6,3.5 L0,7 Z" fill="#3b9b6e"/>
+          </marker>
+        </defs>
+
+        <!-- Level 1 children -->
+        <circle cx="200" cy="130" r="20" fill="#cfe3ed" stroke="#196aa1" stroke-width="2"/>
+        <text x="200" y="128" text-anchor="middle" class="viz-label-small" font-weight="700">3-SAT</text>
+        <text x="200" y="142" text-anchor="middle" class="viz-label-small">NP-comp</text>
+
+        <circle cx="280" cy="130" r="20" fill="#cfe3ed" stroke="#196aa1" stroke-width="2"/>
+        <text x="280" y="128" text-anchor="middle" class="viz-label-small" font-weight="700">CLIQUE</text>
+        <text x="280" y="142" text-anchor="middle" class="viz-label-small">NP-comp</text>
+
+        <circle cx="380" cy="130" r="20" fill="#cfe3ed" stroke="#196aa1" stroke-width="2"/>
+        <text x="380" y="128" text-anchor="middle" class="viz-label-small" font-weight="700">VC</text>
+        <text x="380" y="142" text-anchor="middle" class="viz-label-small">NP-comp</text>
+
+        <circle cx="460" cy="130" r="20" fill="#cfe3ed" stroke="#196aa1" stroke-width="2"/>
+        <text x="460" y="128" text-anchor="middle" class="viz-label-small" font-weight="700">HAM</text>
+        <text x="460" y="142" text-anchor="middle" class="viz-label-small">NP-comp</text>
+
+        <!-- Level 2 children (through some middle problem) -->
+        <circle cx="100" cy="170" r="18" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5" stroke-dasharray="2,2"/>
+        <text x="100" y="168" text-anchor="middle" class="viz-label-small" font-weight="700">Knapsack</text>
+        <text x="100" y="180" text-anchor="middle" class="viz-label-small">NP-comp</text>
+
+        <circle cx="620" cy="170" r="18" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1.5" stroke-dasharray="2,2"/>
+        <text x="620" y="168" text-anchor="middle" class="viz-label-small" font-weight="700">TSP</text>
+        <text x="620" y="180" text-anchor="middle" class="viz-label-small">NP-comp</text>
+
+        <text x="360" y="195" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">... Karp의 21문제 + 수천 개 후속 발견</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>Karp 환원의 트리</strong>: SAT (Cook 1971)이 뿌리 → 21개 직접 환원(1972) → 수천 개 후속 NP-complete. <em>하나라도 다항이면 전부 다항</em> — 이것이 NP-complete의 위력.</div>
+  </div>
+</section>
+
+<!-- ==================== 05. Karp 21 ==================== -->
+<section id="karp-21">
+  <h2>05 — Karp의 21문제 (1972)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">21문제 목록 (대표)</h3>
+    </div>
+    <ul>
+      <li><strong>SAT</strong>(from Cook) → 0-1 INTEGER PROGRAMMING → CLIQUE → ...</li>
+      <li><strong>Graph problems</strong>: Clique, Vertex Cover, Independent Set, Graph Coloring, Hamiltonian Cycle/Path, Feedback Vertex/Arc Set.</li>
+      <li><strong>Set problems</strong>: Set Cover, Exact Cover, 3-Dimensional Matching, Hitting Set.</li>
+      <li><strong>Number problems</strong>: Partition, Subset Sum, Knapsack, Max-Cut.</li>
+      <li><strong>Sequencing</strong>: Sequencing on 1 machine, Job Sequencing with deadlines.</li>
+      <li><strong>TSP</strong>, <strong>Steiner Tree</strong>.</li>
+    </ul>
+    <p>
+      오늘날 알려진 NP-complete 문제 수: 수천 개. Garey &amp; Johnson 1979 교과서 <em>"Computers and Intractability"</em>에 300+ 나열. 여전히 CS 분야의 "NP-complete 포켓 사전".
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">어디서 "경계"가 갈라지는가</h3>
+    </div>
+    <p>
+      비슷해 보이는 문제들의 미묘한 경계:
+    </p>
+    <ul>
+      <li><strong>2-SAT</strong>: P (implication graph의 SCC로).</li>
+      <li><strong>3-SAT</strong>: NP-complete.</li>
+      <li><strong>2-Coloring</strong>(이분 그래프): P (BFS).</li>
+      <li><strong>3-Coloring</strong>: NP-complete.</li>
+      <li><strong>Euler Cycle</strong>(모든 간선 정확히 1번): P.</li>
+      <li><strong>Hamiltonian Cycle</strong>(모든 정점 정확히 1번): NP-complete.</li>
+      <li><strong>Shortest Path</strong>(Dijkstra): P.</li>
+      <li><strong>Longest Simple Path</strong>: NP-complete.</li>
+    </ul>
+    <p>
+      숫자 하나 바뀌거나 조건 하나 추가되면 복잡도 경계를 넘을 수 있음. "Rice 정리"의 계산 복잡도 버전.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 06. 대표 NP-complete ==================== -->
+<section id="np-hard-examples">
+  <h2>06 — 대표적 NP-complete — TSP, VC, 3SAT</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">TSP (Traveling Salesman Problem)</h3>
+    </div>
+    <p>
+      n개 도시를 모두 방문해 출발지로 돌아오는 최소 비용 cycle. Decision version: "비용 ≤ k인 cycle이 있는가?" NP-complete.
+    </p>
+    <ul>
+      <li>정확 해법: Held-Karp DP O(n²·2ⁿ), B&amp;B (Algo 23).</li>
+      <li>실무: Concorde (Algo 23 §11)로 85,900-node 최적해까지.</li>
+      <li>근사: Metric TSP면 Christofides 1.5-approx. 일반 TSP는 근사 불가 (c-approx 존재 시 P=NP 증명).</li>
+    </ul>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">Vertex Cover</h3>
+    </div>
+    <p>
+      무방향 그래프 G=(V,E). 모든 간선의 적어도 한 끝점이 S에 속하게 하는 정점 집합 S. 최소 |S|?
+    </p>
+    <ul>
+      <li>Karp 21 중 하나. 다양한 환원의 중간 허브로 자주 사용.</li>
+      <li>근사: 2-approx (다음 섹션).</li>
+      <li>FPT: k(해 크기) 매개변수로 O(1.2738ᵏ·n)까지 가능 (Chen-Kanj-Xia 2006).</li>
+    </ul>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">3-SAT (Canonical)</h3>
+    </div>
+    <p>
+      CNF 식, 각 절이 정확히 3개 리터럴. 만족 가능한 assignment 존재 여부. <em>reduction의 캐논 출발점</em>.
+    </p>
+    <ul>
+      <li>현대 SAT solver(MiniSat, Glucose, Kissat)가 수만 변수 실무 인스턴스 해결.</li>
+      <li>하드웨어 검증, Bounded Model Checking, 소프트웨어 검증의 주력.</li>
+      <li>2SAT은 P (implication graph + SCC, Aspvall-Plass-Tarjan 1979).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 07. 근사 ==================== -->
+<section id="approx-intro">
+  <h2>07 — 근사 알고리즘 — NP-hard와의 타협</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">핵심 개념</h3>
+    </div>
+    <p>
+      <strong>α-근사 알고리즘</strong>: 최적해 OPT에 대해, 알고리즘 출력 A가
+    </p>
+    <div class="formula-box">
+      최소화: A / OPT ≤ α<br>
+      최대화: OPT / A ≤ α
+    </div>
+    <p>
+      α=1이면 정확, α가 클수록 나쁨. <em>다항 시간에 보장된 α 달성</em>이 목표.
+    </p>
+    <ul>
+      <li><strong>PTAS</strong> (Polynomial Time Approx. Scheme): 임의 ε&gt;0에 대해 (1+ε)-근사를 다항 시간에.</li>
+      <li><strong>FPTAS</strong> (Fully Polynomial): PTAS에 실행 시간도 1/ε의 다항.</li>
+      <li><strong>APX</strong>: 상수 근사비 가능한 문제 집합. PTAS ⊂ APX ⊂ NP.</li>
+      <li><strong>inapproximable</strong>: PCP theorem으로 근사조차 어려움 증명된 문제들.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 08. Vertex Cover ==================== -->
+<section id="vertex-cover">
+  <h2>08 — Vertex Cover 2-근사</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">매우 단순한 2-근사</h3>
+    </div>
+    <ol>
+      <li>아직 덮이지 않은 간선 (u, v) 하나 선택.</li>
+      <li>두 끝점 <em>모두</em> C에 추가.</li>
+      <li>이제 u, v에 인접한 간선은 모두 덮임 — 리스트에서 제거.</li>
+      <li>덮이지 않은 간선 없을 때까지 반복.</li>
+    </ol>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">vertex_cover_approx.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">vertex_cover_2approx</span>(edges):
+    cover = <span class="hl-bi">set</span>()
+    remaining = <span class="hl-bi">list</span>(edges)
+    <span class="hl-kw">while</span> remaining:
+        u, v = remaining[<span class="hl-num">0</span>]
+        cover.add(u); cover.add(v)
+        remaining = [(a, b) <span class="hl-kw">for</span> a, b <span class="hl-kw">in</span> remaining
+                     <span class="hl-kw">if</span> a <span class="hl-kw">not</span> <span class="hl-kw">in</span> cover <span class="hl-kw">and</span> b <span class="hl-kw">not</span> <span class="hl-kw">in</span> cover]
+    <span class="hl-kw">return</span> cover
+
+
+<span class="hl-bi">print</span>(vertex_cover_2approx([(<span class="hl-num">1</span>,<span class="hl-num">2</span>), (<span class="hl-num">2</span>,<span class="hl-num">3</span>), (<span class="hl-num">3</span>,<span class="hl-num">4</span>), (<span class="hl-num">4</span>,<span class="hl-num">5</span>)]))
+<span class="hl-cmt"># {1, 2, 3, 4} 크기 4 (최적은 {2, 4} 크기 2, 이 경우 2배)</span></code></pre>
+    </div>
+    <p>
+      <strong>분석</strong>: 선택한 간선들 E' = {(u<sub>1</sub>,v<sub>1</sub>), (u<sub>2</sub>,v<sub>2</sub>), ...}은 <em>matching</em> — 어떤 두 간선도 끝점 공유 안 함. 임의의 vertex cover는 각 간선에서 최소 한 끝점을 포함해야 → <strong>|OPT| ≥ |E'|</strong>. 알고리즘이 반환하는 cover 크기는 <strong>2|E'|</strong>. 따라서 <em>2|E'| ≤ 2·|OPT|</em>. 2-근사 증명. □
+    </p>
+    <p>
+      <strong>더 나은 근사 가능?</strong> PCP에 의해 <em>1.36-approx는 P=NP 가정 하에 불가능</em>(Dinur-Safra 2002). <em>2−ε로 개선 가능 여부는 open</em>(Unique Games Conjecture 가정 시 불가능).
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 09. Set Cover ==================== -->
+<section id="set-cover">
+  <h2>09 — Set Cover ln(n) 근사</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Greedy</h3>
+    </div>
+    <p>
+      Universe U = {1, 2, ..., n}, 집합 collection S<sub>1</sub>, S<sub>2</sub>, ..., S<sub>m</sub> (합집합 = U). U를 덮는 최소 수의 S<sub>i</sub> 선택.
+    </p>
+    <ol>
+      <li>아직 덮이지 않은 원소를 <em>가장 많이 덮는</em> S<sub>i</sub> 선택.</li>
+      <li>그 S<sub>i</sub>를 추가. 덮인 원소 U에서 제거.</li>
+      <li>U 빌 때까지 반복.</li>
+    </ol>
+    <p>
+      <strong>Johnson 1974 분석</strong>: 이 greedy가 <strong>H<sub>n</sub>-approx</strong> (H<sub>n</sub> = 1 + 1/2 + 1/3 + ... + 1/n ≈ ln n). 즉 <em>OPT × ln n</em> 이내.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">set_cover_greedy.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">set_cover_greedy</span>(universe, subsets):
+    uncovered = <span class="hl-bi">set</span>(universe)
+    cover = []
+    <span class="hl-kw">while</span> uncovered:
+        <span class="hl-cmt"># 가장 많이 덮는 부분집합</span>
+        best = <span class="hl-bi">max</span>(subsets, key=<span class="hl-kw">lambda</span> s: <span class="hl-bi">len</span>(s &amp; uncovered))
+        cover.append(best)
+        uncovered -= best
+    <span class="hl-kw">return</span> cover
+
+
+<span class="hl-bi">print</span>(set_cover_greedy(<span class="hl-bi">set</span>([<span class="hl-num">1</span>,<span class="hl-num">2</span>,<span class="hl-num">3</span>,<span class="hl-num">4</span>,<span class="hl-num">5</span>,<span class="hl-num">6</span>,<span class="hl-num">7</span>]),
+       [{<span class="hl-num">1</span>,<span class="hl-num">2</span>,<span class="hl-num">3</span>}, {<span class="hl-num">2</span>,<span class="hl-num">4</span>,<span class="hl-num">5</span>}, {<span class="hl-num">3</span>,<span class="hl-num">6</span>}, {<span class="hl-num">4</span>,<span class="hl-num">7</span>}]))
+<span class="hl-cmt"># [{1,2,3}, {2,4,5}, {3,6}, {4,7}] 또는 비슷 — 4개 전부 필요</span></code></pre>
+    </div>
+    <p>
+      <strong>Inapproximability</strong>: Dinur-Steurer 2014 — <em>(1-o(1))·ln n</em>보다 나은 근사는 P=NP 가정 하에 불가능. <em>Greedy의 ln n이 최적</em>.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. Christofides ==================== -->
+<section id="metric-tsp">
+  <h2>10 — Metric TSP — Christofides 1.5</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Christofides 1976 (독립 Serdyukov 1978)</h3>
+    </div>
+    <p>
+      <em>Metric TSP</em>: 거리 함수가 <strong>삼각 부등식 만족</strong>. 대부분 실무 TSP(지리 거리, 유클리드).
+    </p>
+    <ol>
+      <li><strong>MST 구축</strong> (Algo 17). 비용 M.</li>
+      <li><strong>홀수 차수 정점</strong> 집합 O. |O|는 짝수(그래프 이론 핸드셰이킹 레마).</li>
+      <li><strong>O에 대한 최소 가중치 perfect matching</strong> 계산. 비용 M'.</li>
+      <li>MST ∪ Matching이 <strong>Eulerian multigraph</strong>(모든 차수 짝수). Euler cycle 존재.</li>
+      <li>Euler cycle을 따라가되 이미 방문한 정점 건너뛰기 → Hamilton cycle. <em>Shortcutting</em>.</li>
+      <li>삼각 부등식으로 shortcut 비용 ≤ Euler cycle 비용.</li>
+    </ol>
+    <p>
+      <strong>분석</strong>: Hamilton cycle 비용 ≤ M + M' ≤ OPT + OPT/2 = <strong>1.5·OPT</strong>. □
+    </p>
+    <p>
+      <strong>역사</strong>: Christofides 1976 보고서 발표. 거의 같은 시기 1978 Anatoliy Serdyukov가 소련에서 독립 발견. 근래 <em>Christofides-Serdyukov algorithm</em>으로 공동 명명 경향.
+    </p>
+    <p>
+      <strong>44년 후의 개선</strong>: 2020-2021 Karlin-Klein-Oveis Gharan이 (1.5-ε)-approx 발표(ε ≈ 10<sup>-36</sup>, 극미). 하지만 개념적 돌파 — "1.5가 깨지지 않을 수도 있다"는 믿음을 뒤집음.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 11. PCP ==================== -->
+<section id="pcp">
+  <h2>11 — PCP Theorem — 근사의 한계</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Probabilistically Checkable Proofs (1992)</h3>
+    </div>
+    <p>
+      <strong>PCP Theorem</strong>(Arora, Safra 1992 + Arora, Lund, Motwani, Sudan, Szegedy 1992; 일명 ALMSS):
+    </p>
+    <div class="formula-box" style="font-size:0.93rem;">
+      NP = PCP[O(log n), O(1)]<br>
+      <br>
+      (모든 NP 증명은 "상수 개 비트만 확인"해도 높은 확률로 정확성 판정 가능한 형태로 다시 쓸 수 있다.)
+    </div>
+    <p>
+      이 정리가 <strong>근사 불가능성</strong>의 이론적 기반. 일부 NP-hard 문제는 <em>특정 근사비 이하로 개선하는 것 자체가 P=NP 증명</em>.
+    </p>
+    <ul>
+      <li><strong>MAX-3SAT</strong>: 7/8-approx 이하 불가능 (Håstad 1997).</li>
+      <li><strong>Set Cover</strong>: (1-o(1))·ln n 이하 불가능 (Feige 1998, Dinur-Steurer 2014).</li>
+      <li><strong>Max Clique</strong>: n<sup>1-ε</sup>-approx 이하 불가능 — 거의 trivially 어려움.</li>
+    </ul>
+    <p>
+      <strong>Gödel Prize 2001</strong>: Arora-Safra, Arora-Lund-Motwani-Sudan-Szegedy 공동 수상. <em>이론 CS의 가장 큰 성취 중 하나</em>로 평가.
+    </p>
+    <p>
+      <strong>Unique Games Conjecture</strong>(Khot 2002): 더 강한 가정. 이게 참이면 Vertex Cover는 (2-ε) 불가능 확정.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 12. FPT ==================== -->
+<section id="fpt">
+  <h2>12 — FPT — 매개변수 복잡도</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Fixed-Parameter Tractable</h3>
+    </div>
+    <p>
+      NP-hard 문제라도 <em>특정 매개변수 k가 작으면</em> 다항 시간 가능할 수 있음.
+    </p>
+    <div class="formula-box">
+      f(k) · poly(n) 시간 (f는 임의 함수, k와 n 독립)
+    </div>
+    <ul>
+      <li><strong>Vertex Cover</strong>: k=해 크기면 O(1.2738<sup>k</sup>·n). 대부분 실무 그래프에서 k가 작음 → 실용적.</li>
+      <li><strong>Small-treewidth</strong>: 트리 폭(treewidth) w가 작으면 많은 NP-hard 문제가 O(f(w)·n)에 풀림. Courcelle's theorem.</li>
+      <li><strong>k-path</strong>: 길이 k 경로는 FPT (Monien 1985, 나중에 color coding Alon-Yuster-Zwick 1995).</li>
+    </ul>
+    <p>
+      응용: 생물학(phylogenetic tree), 컴파일러(graph coloring for register allocation), 제약 조건 충족.
+    </p>
+    <p>
+      <strong>W 계층</strong>: FPT ⊆ W[1] ⊆ W[2] ⊆ ... ⊆ XP. Clique가 W[1]-complete (FPT가 아님이 주류 믿음).
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 13. 실무 ==================== -->
+<section id="practical">
+  <h2>13 — 실무 — SAT/ILP Solver가 NP-hard를 푸는 이유</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">SAT Revolution</h3>
+    </div>
+    <p>
+      1990년대 초반까지는 수백 변수 SAT도 난제. 2000년대 이후 <strong>수만~수백만 변수 실무 인스턴스</strong>도 해결. "SAT revolution".
+    </p>
+    <ul>
+      <li><strong>DPLL</strong>(Davis-Putnam-Logemann-Loveland 1962): 기본 백트래킹 + 단위 전파.</li>
+      <li><strong>CDCL</strong>(Conflict-Driven Clause Learning, Marques-Silva 1996): 충돌 분석으로 "learned clause" 추가. 같은 오류를 피하는 학습.</li>
+      <li><strong>VSIDS</strong>(Variable State Independent Decaying Sum): 변수 선택 heuristic.</li>
+      <li><strong>Restart</strong>: 주기적으로 탐색 재시작 (학습된 절은 유지).</li>
+      <li><strong>2-watched literals</strong>: 빠른 단위 전파 (MiniSat).</li>
+    </ul>
+    <p>
+      현대 SAT solver: <strong>Kissat</strong>(2020), <strong>CaDiCaL</strong>, <strong>Glucose</strong>. SAT Competition 매년 개최.
+    </p>
+    <p>
+      실무 적용: Intel/AMD CPU 설계 검증, 소프트웨어 verification(CBMC, SMT solvers), 스케줄링, 암호 해독 실험, 블록체인 verification.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">ILP Solver</h3>
+    </div>
+    <p>
+      Integer Linear Programming — NP-hard 일반적으로. 하지만 <strong>CPLEX, Gurobi</strong>(Algo 23) 같은 solver가 수십만 변수 문제 해결.
+    </p>
+    <ul>
+      <li>Branch &amp; Bound + Cutting Planes + Heuristics.</li>
+      <li>지난 35년간 알고리즘 ~100배 향상 + 하드웨어 1000배 → <strong>수백만배 speedup</strong>.</li>
+      <li>실무 제조, 물류, 금융 최적화의 핵심.</li>
+    </ul>
+    <p>
+      <strong>교훈</strong>: "NP-hard = 절대 못 품"이 아니라 "최악 지수 시간이지만, 실무 인스턴스엔 구조가 있어 합리적 시간 내 가능".
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">AI가 NP-complete를 잘못 다루는 패턴</h3>
+    </div>
+    <ul>
+      <li><strong>"NP-hard는 불가능"</strong>: 실무는 solver/휴리스틱/FPT/근사로 일상 해결. 과장된 비관.</li>
+      <li><strong>2-SAT을 3-SAT으로 환원 후 SAT solver</strong>: 2-SAT은 P (implication SCC). SAT solver 돌리는 건 낭비.</li>
+      <li><strong>모든 NP-hard에 greedy</strong>: greedy가 근사비 보장 있는 경우는 제한적. vertex cover는 2-approx, set cover는 log n — 하지만 knapsack greedy는 no bound.</li>
+      <li><strong>P vs NP 증명 주장</strong>: 연간 수많은 "증명" 시도, 모두 틀림. Scott Aaronson의 "Ten Signs a Claimed Mathematical Breakthrough is Wrong" 참고.</li>
+      <li><strong>Quantum으로 NP 해결</strong>: Quantum은 NP-complete 문제를 다항 시간에 풀 수 있다고 주류에선 믿지 않음 (BQP와 NP의 포함 관계 자체도 open). Shor의 RSA 깨기는 factoring 문제 — factoring은 NP∩co-NP에 있지만 NP-complete는 아닌 것으로 여겨짐.</li>
+    </ul>
+    <p>
+      <strong>교정 질문</strong>: "이 문제가 정말 NP-hard인가(특수 구조 확인)?", "근사비 보장 필요?", "FPT 매개변수는?"
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"검증 가능"(NP)과 "풀 수 있음"(P)의 차이를 스도쿠로.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>완성된 스도쿠 보드가 주어지면 각 행/열/박스에 1-9가 정확히 한 번씩 있는지 O(n²)에 검증. 빈 보드에서 해결은 백트래킹 최악 지수. <em>검증은 쉬움, 해결은 어려움</em> — NP의 전형. NxN 일반화 스도쿠는 NP-complete.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">3-SAT ≤<sub>p</sub> CLIQUE 환원에서 m개 절, 3m 리터럴이면 clique 크기는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>크기 <strong>m</strong>의 clique. 각 절에서 "참인 리터럴" 하나씩 선택 → m개 선택. 같은 절 내 리터럴은 간선 없음(같은 절 내부). 다른 절 간은 모두 간선(충돌 없으면). clique = 크기 m. 3-SAT 만족가능 ⟺ clique 존재.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Vertex Cover 2-근사를 4개 정점 path(1-2-3-4)에 적용.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>간선 {(1,2),(2,3),(3,4)}. 첫 간선 (1,2) 선택 → {1,2} 추가 → (2,3) 덮임 → 남은 (3,4). 선택 → {3,4} 추가. 최종 cover = {1,2,3,4} 크기 4. 최적은 {2,3} 크기 2. 2배(= 2-approx 상한). 이 예는 worst case.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Christofides의 1.5 비율 유도.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>MST 비용 M ≤ OPT (임의 hamilton cycle에서 간선 하나 빼면 spanning tree). 홀수차수 정점 matching M' ≤ OPT/2 (OPT cycle에서 홀수 정점들을 번갈아 2개 matching으로 분해 → 둘 중 작은 게 ≤ OPT/2). Euler cycle = M + M'. Shortcut 후 ≤ M + M' ≤ OPT + OPT/2 = 1.5·OPT.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">2-SAT은 P인데 3-SAT은 NP-complete인 "경계" 이유.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>2-SAT은 각 절 (a∨b)을 함축 (¬a→b, ¬b→a)로 해석. 변수+negation 총 2n 정점의 implication graph에서 SCC 분석. 한 SCC에 x와 ¬x가 같이 있으면 unsat, 아니면 sat. O(V+E) 선형. 3-SAT은 이런 implication 구조 없음 — 3개 리터럴 (a∨b∨c)은 "a가 false면 b∨c" 같은 복합 제약 → 단순 그래프로 환원 불가.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Set Cover greedy에 universe=[1..6], subsets={1,2,3},{3,4},{4,5,6}을 적용.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Round 1: {1,2,3}과 {4,5,6}이 동률 3개 덮음. 둘 중 하나 선택 — 예: {1,2,3}. Uncovered={4,5,6}. Round 2: {3,4} 남은 1개, {4,5,6} 남은 3개. {4,5,6} 선택. Uncovered=∅. Cover={ {1,2,3}, {4,5,6} } 크기 2. 최적도 2. 이 인스턴스는 최적 달성.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">P=NP라면 현대 암호학이 왜 붕괴되는가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>공개키 암호의 안전성은 "큰 수의 인수 분해, 이산 로그 등이 지수 시간"이라는 가정에. 이 문제들은 NP 안(해답 있으면 검증 다항). P=NP면 이 문제들도 다항 → RSA, ECC, Diffie-Hellman 모두 다항 시간에 깨짐. 전자 서명, HTTPS, 블록체인 등 전면 재설계 필요. 단 대칭키 암호(AES)는 P=NP와 직접 무관.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">FPT의 "매개변수 k"가 왜 실무에 의미 있나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>실무 문제에선 "문제 크기는 크지만 특수한 파라미터는 작음"이 흔함. 네트워크 라우팅에서 홀수 차수 정점 수, 스케줄링에서 공정 수, 생물학에서 phylogenetic tree 복잡도 등. k가 작으면 f(k) 상수여서 n·k 정도로 풀림. NP-hard의 이론적 저주를 우회.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">PCP theorem이 "근사조차 어려움"을 보이는 직관.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>PCP: NP 증명을 "상수 비트만 확인해도 오류 탐지" 형태로 만들 수 있음. 이는 <em>MAX-3SAT 최적 vs 7/8 근사의 gap</em>과 같은 형태. "좋은 근사" 알고리즘이 있으면 이 gap을 구분 → NP를 다항에 결정 → P=NP. 대우: P≠NP면 gap을 건너뛰는 근사 불가능. 이것이 "hardness of approximation"의 메커니즘.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"0/1 배낭은 NP-hard"인데 왜 DP로 풀리는가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>DP는 O(nW). n은 입력 크기의 <em>로그 스케일</em>, W는 <em>값</em>. W가 크면 (예: W = 2^100) O(nW)는 지수. 이를 <strong>pseudo-polynomial</strong>이라 함. W가 작을 때만 실무 가능. 정식 입력 크기(비트 수) 기준으로는 DP가 지수 — NP-hardness와 모순 없음. W의 bit 수가 다항이면 풀림 ⟹ weakly NP-hard.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "TSP는 NP-hard니 heuristic만 가능" 주장. 교정?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">질문</div>
+            <ol>
+              <li>"Metric TSP면 Christofides가 <strong>증명된 1.5-approx</strong>."</li>
+              <li>"Concorde solver로 수만 도시 정확 해 가능. 실무 크기에선 heuristic보다 정확 해가 실용적."</li>
+              <li>"Heuristic(LKH, 2-opt, 3-opt, Lin-Kernighan)은 근사비 보장 없지만 평균 0.5% 이내 — 대규모에선 이게 choice."</li>
+              <li>"규모(n), 목표(근사비 vs 속도), 기하 구조 고려."</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Levin과 Cook의 독립 발견이 의미하는 바.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>냉전 중 동서 학계가 거의 단절되어 있었지만 같은 시기에 같은 개념(NP-completeness)에 도달. <em>아이디어의 "때가 무르익음"</em>을 보여주는 사례. Cook은 1982년 Turing Award, Levin은 1978년 미국 이민 후 Boston University 교수. 두 사람의 독립 발견이 오늘날 "Cook-Levin Theorem"으로 공동 명명 — 과학사의 아름다운 교차.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">📐</div>
+      <h3>Cook-Levin 1971</h3>
+      <p>SAT이 NP-complete. 이론 CS의 기축.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔗</div>
+      <h3>Karp 1972</h3>
+      <p>21문제 환원. 거의 모든 조합 최적화가 NP-complete.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">💰</div>
+      <h3>P vs NP</h3>
+      <p>Millennium Problem $1M. 대다수 P≠NP 예상.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">📏</div>
+      <h3>근사 알고리즘</h3>
+      <p>VC 2-approx, Set Cover ln n, Metric TSP 1.5.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🚧</div>
+      <h3>PCP Theorem</h3>
+      <p>근사 불가능성의 이론적 기반. Gödel Prize 2001.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔧</div>
+      <h3>실무 극복</h3>
+      <p>SAT/ILP solver, FPT, 휴리스틱 — 이론 비관 ≠ 실무 절망.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">P</div><div class="glossary-def">다항 시간 결정 문제 클래스.</div></div>
+    <div class="glossary-item"><div class="glossary-term">NP</div><div class="glossary-def">다항 시간 검증 가능한 결정 문제.</div></div>
+    <div class="glossary-item"><div class="glossary-term">NP-Hard</div><div class="glossary-def">NP의 모든 문제가 다항 환원되는 문제. NP 안이 아닐 수도.</div></div>
+    <div class="glossary-item"><div class="glossary-term">NP-Complete</div><div class="glossary-def">NP ∩ NP-Hard. "NP 중 가장 어려운".</div></div>
+    <div class="glossary-item"><div class="glossary-term">Stephen Cook</div><div class="glossary-def">1939-. Toronto. 1971 Cook-Levin. 1982 Turing Award.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Richard Karp</div><div class="glossary-def">1935-. Berkeley. 1972 21문제. 1985 Turing Award.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Leonid Levin</div><div class="glossary-def">1948-. 소련→BU. 독립 NP-complete 발견.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Cook-Levin Theorem</div><div class="glossary-def">SAT이 NP-complete. 모든 NP → SAT 환원.</div></div>
+    <div class="glossary-item"><div class="glossary-term">SAT</div><div class="glossary-def">Boolean Satisfiability. NP-complete의 대표.</div></div>
+    <div class="glossary-item"><div class="glossary-term">3-SAT</div><div class="glossary-def">각 절 3 리터럴. 환원의 캐논 출발점.</div></div>
+    <div class="glossary-item"><div class="glossary-term">2-SAT</div><div class="glossary-def">각 절 2 리터럴. P (implication SCC).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Karp Reduction</div><div class="glossary-def">Polynomial-time many-one 변환. A ≤ₚ B.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Karp 21 Problems</div><div class="glossary-def">1972 논문. CLIQUE, VC, TSP 등.</div></div>
+    <div class="glossary-item"><div class="glossary-term">α-Approximation</div><div class="glossary-def">최적의 α배 이내 보장 알고리즘.</div></div>
+    <div class="glossary-item"><div class="glossary-term">PTAS</div><div class="glossary-def">Polynomial Time Approx Scheme. (1+ε)-approx.</div></div>
+    <div class="glossary-item"><div class="glossary-term">FPTAS</div><div class="glossary-def">Fully PTAS. 1/ε도 다항.</div></div>
+    <div class="glossary-item"><div class="glossary-term">APX</div><div class="glossary-def">상수 근사 가능. Inapproximability의 대비.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Christofides 1976</div><div class="glossary-def">Metric TSP 1.5-approx. MST + matching.</div></div>
+    <div class="glossary-item"><div class="glossary-term">PCP Theorem</div><div class="glossary-def">1992 ALMSS + Arora-Safra. NP = PCP[log, O(1)].</div></div>
+    <div class="glossary-item"><div class="glossary-term">Gödel Prize</div><div class="glossary-def">이론 CS 최고 상. PCP 2001 공동 수상.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Unique Games Conjecture</div><div class="glossary-def">Khot 2002. 강한 inapproximability 가정.</div></div>
+    <div class="glossary-item"><div class="glossary-term">FPT</div><div class="glossary-def">Fixed-Parameter Tractable. f(k)·poly(n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Pseudo-polynomial</div><div class="glossary-def">값 크기에 다항. 0/1 배낭 DP.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Clay Millennium</div><div class="glossary-def">7대 난제 $1M. P vs NP 포함.</div></div>
+    <div class="glossary-item"><div class="glossary-term">CDCL</div><div class="glossary-def">Conflict-Driven Clause Learning. 현대 SAT solver 핵심.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 30 (최종주)</div>
+    <h3>종합 — 알고리즘 설계 전략</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      30주 여정의 종합. 새 문제를 만났을 때의 사고 흐름.
+    </p>
+    <ul>
+      <li><strong>문제 분류 트리</strong> — 새 문제를 기존 유형에 매핑.</li>
+      <li><strong>설계 패러다임 결정 플로우</strong> — 언제 DP, 그리디, B&amp;B, 근사?</li>
+      <li><strong>복잡도 예측</strong> — 입력 크기로부터 적절 알고리즘 추정.</li>
+      <li><strong>30주 전체 복습</strong> — Part I-VI 핵심 개념 요약.</li>
+      <li><strong>앞으로</strong> — 고급 주제(quantum, ML, parallel) 진로.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo28.html">&larr; Algo 28 — 계산 기하</a>
+  <a href="algo30.html">Algo 30 — 종합 &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">Cook 1971 (STOC), Karp 1972 (Complexity of Computer Computations), Christofides 1976, Arora-Safra + ALMSS 1992 (PCP Theorem) 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

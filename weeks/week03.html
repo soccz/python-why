@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
     <div class="header-nav">
       <a href="week02.html" class="nav-btn">&larr; 이전</a>
       <a href="week04.html" class="nav-btn">다음 &rarr;</a>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -582,7 +583,8 @@ True
     </div>
     <p>
       Python은 자주 사용하는 작은 정수(<code>-5 ~ 256</code>)와 일부 문자열을 미리 만들어 재사용합니다.<br>
-      이를 <strong>인터닝(Interning)</strong> 또는 <strong>캐싱(Caching)</strong>이라 합니다.
+      이를 <strong>인터닝(Interning)</strong> 또는 <strong>캐싱(Caching)</strong>이라 합니다.<br>
+      <small>※ 범위 출처 — 공식 문서 <a href="https://docs.python.org/3/c-api/long.html#c.PyLong_FromLong" target="_blank">C API/PyLong_FromLong</a>: <em>"CPython keeps an array of integer objects for all integers between -5 and 256."</em></small>
     </p>
     <div class="code-block">
       <div class="code-header">

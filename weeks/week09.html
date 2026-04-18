@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
     <div class="header-nav">
       <a href="week08.html" class="nav-btn">&larr; 이전</a>
       <a href="week10.html" class="nav-btn">다음 &rarr;</a>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -1393,7 +1394,7 @@ print(f.__defaults__)       # ([1, 1],)</code></pre>
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>Part A — CALL 바이트코드 (CPython 3.12)</h3>
+    <h3>Part A — CALL 바이트코드 (CPython 3.11+)</h3>
     <pre><code class="language-python">import dis
 
 def call_example():
@@ -1404,17 +1405,18 @@ def call_example():
 
 dis.dis(call_example)</code></pre>
     <div class="output-block">
-      <div class="output-label">call_example 핵심 바이트코드 (Python 3.12):</div>
+      <div class="output-label">call_example 핵심 바이트코드 (Python 3.11+):</div>
   LOAD_FAST      add           ← 함수 객체를 스택에 push
   LOAD_CONST     10            ← 첫 번째 인수
   LOAD_CONST     20            ← 두 번째 인수
-  CALL           2             ← 인수 2개로 함수 호출 (CPython 3.12)
+  CALL           2             ← 인수 2개로 함수 호출 (CPython 3.11+)
   STORE_FAST     result
     </div>
     <p>
-      CPython 3.12에서 <code>CALL</code>은 이전 버전의 <code>CALL_FUNCTION</code>을 대체합니다.
+      CPython 3.11에서 <code>CALL</code>이 도입되어 이전의 <code>CALL_FUNCTION</code>을 대체했습니다 (PEP 659 적응형 인터프리터의 일환).
       인수는 스택에 순서대로 push된 뒤, <code>CALL N</code>이 스택에서 N개의 인수와 함수 객체를 꺼내
-      새 <code>PyFrameObject</code>를 생성하고 함수 body의 바이트코드를 실행합니다.
+      새 <code>_PyInterpreterFrame</code>을 C 스택에 할당하고 (CPython 3.12+)
+      함수 body의 바이트코드를 실행합니다.
     </p>
     <h3>Part B — Evaluation Strategy: Eager vs Lazy</h3>
     <p>

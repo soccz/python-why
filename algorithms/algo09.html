@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 9주차: 연결 리스트 · 스택 · 큐 | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="Python은 왜 단일 연결 리스트를 표준 제공 안 하는가 — 캐시 지역성의 승리. CPython deque의 block-linked list 구조와 LRU cache.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 9주차: 연결 리스트 · 스택 · 큐 | PyWhy">
+  <meta property="og:description" content="교과서 linked list는 왜 실전에서 안 쓰는가. CPython deque의 block-linked list 비밀.">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo09.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A9">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo08.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo10.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 09</div>
+  <h1 class="week-title">연결 리스트 · 스택 · 큐<br>왜 Python은 linked list를 주지 않는가</h1>
+  <p class="week-subtitle">
+    교과서의 첫 자료구조인 <strong>단일 연결 리스트(singly linked list)</strong>가 Python 표준 라이브러리에는 없습니다.
+    <em>왜일까요?</em> 이론적으로 완벽한 자료구조가 실전에서 외면받는 이유 — <strong>캐시 지역성</strong>.<br>
+    그리고 Python이 대신 주는 것 — <code>collections.deque</code>. <em>이건 linked list지만, 여러분이 아는 그 linked list가 아닙니다.</em><br>
+    이번 주의 핵심 질문: <em>"교과서와 현실 사이에서 CPython은 어떤 타협을 했는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 인라인 스케이터와 버스 승객</a>
+    </div>
+    <div class="toc-section">
+      <a href="#linked-list-basic" class="toc-section-link"><span class="toc-num">02</span>단일 연결 리스트 (Singly Linked List)</a>
+      <div class="toc-levels"><span class="toc-level-dot elem">초</span><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#why-no-linked" class="toc-section-link"><span class="toc-num">03</span>왜 Python은 단일 연결 리스트가 없는가</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#doubly-linked" class="toc-section-link"><span class="toc-num">04</span>이중 연결 리스트 (Doubly Linked List)</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#stack-adt" class="toc-section-link"><span class="toc-num">05</span>Stack ADT — list로 충분하다</a>
+      <div class="toc-levels"><span class="toc-level-dot elem">초</span><span class="toc-level-dot inter">중</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#queue-adt" class="toc-section-link"><span class="toc-num">06</span>Queue ADT — deque가 필수다</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#cpython-deque" class="toc-section-link"><span class="toc-num">07</span>CPython deque — <code>_collectionsmodule.c</code></a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#block-linked" class="toc-section-link"><span class="toc-num">08</span>Block-Linked List — BLOCKLEN=64의 천재성</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#deque-ops" class="toc-section-link"><span class="toc-num">09</span>deque 연산 복잡도 — rotate, extend, indexing</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#circular-buffer" class="toc-section-link"><span class="toc-num">10</span>원형 버퍼 — <code>deque(maxlen=n)</code></a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#lru-cache" class="toc-section-link"><span class="toc-num">11</span>LRU Cache — 이중 연결 리스트 + dict</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#ai-linked" class="toc-section-link"><span class="toc-num">12</span>AI가 흔히 놓치는 linked list 함정</a>
+    </div>
+    <div class="toc-section">
+      <a href="#practice" class="toc-section-link"><span class="toc-num">13</span>실습 — LinkedList + reverse + cycle detection</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 인라인 스케이터와 버스 승객</h2>
+
+  <div class="story-block">
+    <h3>버스 승객 — 배열 (array)</h3>
+    <p>
+      버스의 좌석은 <strong>연속된 메모리</strong>와 같습니다. 승객(원소)이 좌석 1, 2, 3, ...에 차례로 앉아 있습니다.
+      <em>5번 좌석 승객을 찾아라</em> 하면? — 기사가 5번 좌석으로 직행. <strong>O(1)</strong>.
+    </p>
+    <p>
+      새 승객이 타면 마지막 빈 좌석에. 좌석이 꽉 차면? — <em>모든 승객이 내려서 더 큰 버스로 이동</em>. Algo 08의 동적 배열 이야기.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>인라인 스케이터 그룹 — 단일 연결 리스트 (linked list)</h3>
+    <p>
+      인라인 스케이터들이 일렬로 타며 각자 <strong>앞 사람 어깨만 잡고 있습니다</strong>. 누군가 끼어들기 쉬움 — <em>두 사람 사이를 끊고 끼어들면 됨</em>. <strong>O(1) 삽입</strong>.
+    </p>
+    <p>
+      하지만 5번째 사람을 찾으려면? — <em>줄 맨 앞에서 시작해 한 명씩 세며 따라가야</em> 함. <strong>O(n) 접근</strong>.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 교과서가 찬양하는 linked list가 현실에서 밀리는 이유</div>
+    <p>
+      교과서는 이렇게 말합니다: <em>"linked list는 삽입·삭제가 O(1)이니 많은 경우 배열보다 낫다."</em>
+    </p>
+    <p>
+      현실 하드웨어에서는 틀립니다.
+    </p>
+    <ul>
+      <li>버스 승객은 <strong>옆자리 사람 얼굴이 바로 보임</strong>. CPU의 L1 캐시는 이웃한 메모리를 한 번에 가져옴.</li>
+      <li>인라인 스케이터는 각자가 <strong>다른 도시에 흩어져</strong> 있음 (malloc이 각 node를 힙의 임의 위치에 할당). 다음 사람을 찾는 데 매번 "새 도시로 이동" — <strong>캐시 미스</strong>.</li>
+    </ul>
+    <p>
+      n=10,000개 원소에 대해:
+    </p>
+    <table>
+      <thead>
+        <tr><th>연산</th><th>Array 이론</th><th>Linked List 이론</th><th>Array 실측</th><th>Linked List 실측</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>순회 (traversal)</td><td>O(n)</td><td>O(n)</td><td>0.01ms</td><td>0.1~1ms (10~100배 느림)</td></tr>
+        <tr><td>중간 삽입</td><td>O(n)</td><td>O(1)*</td><td>빠름</td><td>노드 찾는 데 O(n), 결국 비슷</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <em>*</em>원소 포인터를 이미 가지고 있을 때만 O(1). 노드 "찾는" 건 여전히 O(n).<br>
+      <strong>이래서 Python은 단일 연결 리스트를 표준으로 주지 않습니다</strong>. 대신 <code>list</code>(동적 배열)와 <code>deque</code>(block-linked list)만.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="단일/이중 연결 리스트와 deque의 block-linked 구조">
+      <!-- 단일 연결 리스트 -->
+      <text x="40" y="20" class="viz-label">교과서 단일 linked list (1 노드 = 1 데이터)</text>
+      <g transform="translate(40, 35)">
+        <rect x="0" y="0" width="60" height="36" rx="4" class="viz-node-alt"/>
+        <text x="20" y="22" class="viz-label" text-anchor="middle">A</text>
+        <text x="48" y="22" class="viz-label-small" text-anchor="middle">→</text>
+        <rect x="80" y="0" width="60" height="36" rx="4" class="viz-node-alt"/>
+        <text x="100" y="22" class="viz-label" text-anchor="middle">B</text>
+        <text x="128" y="22" class="viz-label-small" text-anchor="middle">→</text>
+        <rect x="160" y="0" width="60" height="36" rx="4" class="viz-node-alt"/>
+        <text x="180" y="22" class="viz-label" text-anchor="middle">C</text>
+        <text x="208" y="22" class="viz-label-small" text-anchor="middle">→</text>
+        <rect x="240" y="0" width="60" height="36" rx="4" class="viz-node-alt"/>
+        <text x="260" y="22" class="viz-label" text-anchor="middle">D</text>
+        <text x="288" y="22" class="viz-label-small" text-anchor="middle">→</text>
+        <text x="316" y="22" class="viz-label-small">∅</text>
+      </g>
+      <text x="40" y="100" class="viz-label-small" fill="var(--caution-accent)">overhead: 노드당 8B 데이터 + 8B 다음 포인터 (50%)</text>
+      <text x="40" y="115" class="viz-label-small" fill="var(--caution-accent)">메모리 흩어짐 → 캐시 미스. malloc N번.</text>
+
+      <!-- 구분선 -->
+      <line x1="40" y1="135" x2="560" y2="135" stroke="currentColor" stroke-width="1" opacity="0.3" stroke-dasharray="4,4"/>
+
+      <!-- CPython deque의 block-linked -->
+      <text x="40" y="160" class="viz-label" fill="var(--computer-accent)">CPython deque: block-linked (1 블록 = 64 데이터)</text>
+      <g transform="translate(40, 175)">
+        <!-- Block 1 -->
+        <rect x="0" y="0" width="180" height="60" rx="4" fill="var(--computer-bg-flat)" stroke="var(--computer-accent)" stroke-width="2"/>
+        <text x="90" y="16" class="viz-label-small" text-anchor="middle" fill="var(--computer-accent)">Block (BLOCKLEN=64)</text>
+        <g font-family="JetBrains Mono, monospace" font-size="9" transform="translate(8, 25)">
+          <rect x="0" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="14" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="28" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="42" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="56" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <text x="80" y="9">…</text>
+          <rect x="100" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="114" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="128" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="142" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <text x="80" y="32" text-anchor="middle">data[64]</text>
+        </g>
+        <text x="180" y="38" class="viz-label-small" fill="var(--computer-accent)">↔</text>
+        <!-- Block 2 -->
+        <rect x="194" y="0" width="180" height="60" rx="4" fill="var(--computer-bg-flat)" stroke="var(--computer-accent)" stroke-width="2"/>
+        <text x="284" y="16" class="viz-label-small" text-anchor="middle" fill="var(--computer-accent)">Block</text>
+        <g font-family="JetBrains Mono, monospace" font-size="9" transform="translate(202, 25)">
+          <rect x="0" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="14" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <rect x="28" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <text x="80" y="9">…</text>
+          <rect x="142" y="0" width="14" height="12" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+          <text x="80" y="32" text-anchor="middle">data[64]</text>
+        </g>
+        <text x="374" y="38" class="viz-label-small" fill="var(--computer-accent)">↔ ...</text>
+      </g>
+      <text x="40" y="260" class="viz-label-small" fill="var(--computer-accent)">overhead: 블록당 16B 포인터 / 512B 데이터 = 3% (vs 단일 50%)</text>
+    </svg>
+    <div class="viz-caption"><strong>Python의 영리한 절충: deque = block-linked list.</strong> 64개씩 묶어 캐시 친화 + 메타데이터 오버헤드 1/16. 양 끝 push/pop 모두 O(1).</div>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a09-listpop {
+        0%,5% { transform: translateX(0); }
+        10% { transform: translateX(-32px); }
+        15% { transform: translateX(-64px); }
+        20% { transform: translateX(-96px); }
+        25% { transform: translateX(-128px); }
+        30%,100% { transform: translateX(-160px); }
+      }
+      @keyframes a09-dequepop {
+        0%,5% { transform: translateX(0); }
+        7%,100% { transform: translateX(-32px); }
+      }
+      .a09-list-shift { animation: a09-listpop 6s ease-in-out infinite; animation-fill-mode: backwards; }
+      .a09-deque-shift { animation: a09-dequepop 6s ease-in-out infinite; animation-fill-mode: backwards; }
+      @keyframes a09-counter-l { 0%,100%{opacity:0} 35%,90%{opacity:1} }
+      @keyframes a09-counter-d { 0%,100%{opacity:0} 12%,90%{opacity:1} }
+      .a09-cnt-l { animation: a09-counter-l 6s ease-in-out infinite; animation-fill-mode: backwards; }
+      .a09-cnt-d { animation: a09-counter-d 6s ease-in-out infinite; animation-fill-mode: backwards; }
+    </style>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="list.pop(0) vs deque.popleft 속도 비교">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">앞에서 빼기 (pop(0) / popleft) — list vs deque</text>
+
+      <!-- list.pop(0): 모든 원소가 한 칸씩 이동 -->
+      <text x="40" y="60" class="viz-label" font-weight="700" fill="#d44058">😩 list.pop(0): 5개 원소 모두 한 칸씩 shift (O(n))</text>
+      <g transform="translate(180, 75)" font-family="JetBrains Mono, monospace" font-size="14">
+        <!-- 원래 위치에 빈 칸 표시 -->
+        <rect x="0" y="0" width="32" height="32" fill="rgba(212,64,88,0.15)" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="16" y="20" text-anchor="middle" opacity="0.4">A</text>
+        <!-- 이동하는 원소들 -->
+        <g class="a09-list-shift">
+          <rect x="32" y="0" width="32" height="32" fill="rgba(212,64,88,0.2)" stroke="#d44058" stroke-width="2"/><text x="48" y="20" text-anchor="middle">B</text>
+          <rect x="64" y="0" width="32" height="32" fill="rgba(212,64,88,0.2)" stroke="#d44058" stroke-width="2"/><text x="80" y="20" text-anchor="middle">C</text>
+          <rect x="96" y="0" width="32" height="32" fill="rgba(212,64,88,0.2)" stroke="#d44058" stroke-width="2"/><text x="112" y="20" text-anchor="middle">D</text>
+          <rect x="128" y="0" width="32" height="32" fill="rgba(212,64,88,0.2)" stroke="#d44058" stroke-width="2"/><text x="144" y="20" text-anchor="middle">E</text>
+          <rect x="160" y="0" width="32" height="32" fill="rgba(212,64,88,0.2)" stroke="#d44058" stroke-width="2"/><text x="176" y="20" text-anchor="middle">F</text>
+        </g>
+      </g>
+      <text x="40" y="135" class="viz-label-small a09-cnt-l" fill="#d44058" font-weight="700">→ 5번의 메모리 이동 발생!</text>
+
+      <!-- deque.popleft: 포인터만 이동 -->
+      <text x="40" y="180" class="viz-label" font-weight="700" fill="#3b9b6e">😎 deque.popleft: 포인터(leftindex)만 1 증가 (O(1))</text>
+      <g transform="translate(180, 195)" font-family="JetBrains Mono, monospace" font-size="14">
+        <!-- 원래 자리에 그대로 -->
+        <rect x="0" y="0" width="32" height="32" fill="rgba(59,155,110,0.15)" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="16" y="20" text-anchor="middle" opacity="0.4">A</text>
+        <rect x="32" y="0" width="32" height="32" fill="rgba(59,155,110,0.2)" stroke="#3b9b6e" stroke-width="2"/><text x="48" y="20" text-anchor="middle">B</text>
+        <rect x="64" y="0" width="32" height="32" fill="rgba(59,155,110,0.2)" stroke="#3b9b6e" stroke-width="2"/><text x="80" y="20" text-anchor="middle">C</text>
+        <rect x="96" y="0" width="32" height="32" fill="rgba(59,155,110,0.2)" stroke="#3b9b6e" stroke-width="2"/><text x="112" y="20" text-anchor="middle">D</text>
+        <rect x="128" y="0" width="32" height="32" fill="rgba(59,155,110,0.2)" stroke="#3b9b6e" stroke-width="2"/><text x="144" y="20" text-anchor="middle">E</text>
+        <rect x="160" y="0" width="32" height="32" fill="rgba(59,155,110,0.2)" stroke="#3b9b6e" stroke-width="2"/><text x="176" y="20" text-anchor="middle">F</text>
+        <!-- 포인터 -->
+        <text class="a09-deque-shift" x="48" y="-8" text-anchor="middle" font-size="16" fill="#3b9b6e">▼ leftindex</text>
+      </g>
+      <text x="40" y="255" class="viz-label-small a09-cnt-d" fill="#3b9b6e" font-weight="700">→ 화살표만 이동! 데이터는 그대로.</text>
+
+      <text x="360" y="275" class="viz-label-small" text-anchor="middle" opacity="0.6">n=10⁵에서 list로 큐 만들면 25,000배 느림 (O(n²) vs O(n))</text>
+    </svg>
+    <div class="viz-caption"><strong>큐(queue)는 deque로!</strong> list.pop(0)는 모든 원소를 옮기느라 O(n). deque.popleft()는 포인터만 한 칸 이동 → O(1). BFS·작업 큐 같은 패턴에서 절대 list 쓰면 안 되는 이유.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. 단일 연결 리스트 ==================== -->
+<section id="linked-list-basic">
+  <h2>02 — 단일 연결 리스트 (Singly Linked List)</h2>
+
+  <div class="level-section elementary">
+    <div class="level-section-header">
+      <span class="level-badge level-elem">초급</span>
+      <h3 class="level-section-title">기본 구조</h3>
+    </div>
+    <p>
+      각 노드(node)는 두 부분: <strong>데이터</strong> + <strong>다음 노드 포인터</strong>.
+    </p>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      head → [A|·] → [B|·] → [C|·] → [D|·] → None<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↑&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↑&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↑&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↑<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; data &nbsp;&nbsp; data &nbsp;&nbsp; data &nbsp;&nbsp; data<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; next &nbsp;&nbsp; next &nbsp;&nbsp; next &nbsp;&nbsp; next
+    </div>
+    <p>
+      head 포인터로 리스트의 시작을 안다. 마지막 노드의 next는 <code>None</code>(또는 NULL).
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">Python 구현 (교육용)</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">singly_linked.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">Node</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self, data, next=<span class="hl-kw">None</span>):
+        self.data = data
+        self.next = next
+
+
+<span class="hl-kw">class</span> <span class="hl-bi">LinkedList</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self):
+        self.head = <span class="hl-kw">None</span>
+        self.size = <span class="hl-num">0</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">push_front</span>(self, x):   <span class="hl-cmt"># O(1)</span>
+        self.head = Node(x, self.head)
+        self.size += <span class="hl-num">1</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">pop_front</span>(self):       <span class="hl-cmt"># O(1)</span>
+        <span class="hl-kw">if</span> <span class="hl-kw">not</span> self.head: <span class="hl-kw">raise</span> IndexError
+        x = self.head.data
+        self.head = self.head.next
+        self.size -= <span class="hl-num">1</span>
+        <span class="hl-kw">return</span> x
+
+    <span class="hl-kw">def</span> <span class="hl-bi">find</span>(self, target):    <span class="hl-cmt"># O(n)</span>
+        cur = self.head
+        <span class="hl-kw">while</span> cur:
+            <span class="hl-kw">if</span> cur.data == target: <span class="hl-kw">return</span> cur
+            cur = cur.next
+        <span class="hl-kw">return</span> <span class="hl-kw">None</span>
+
+    <span class="hl-kw">def</span> <span class="hl-bi">__getitem__</span>(self, i):  <span class="hl-cmt"># O(i) — 배열과 결정적 차이</span>
+        cur = self.head
+        <span class="hl-kw">for</span> _ <span class="hl-kw">in</span> <span class="hl-bi">range</span>(i):
+            cur = cur.next
+        <span class="hl-kw">return</span> cur.data</code></pre>
+    </div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">각 연산의 복잡도 — 양 끝의 비대칭</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>연산</th><th>Linked List (단일)</th><th>Python list (동적 배열)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>push_front (앞 삽입)</td><td><strong>O(1)</strong></td><td>O(n) (insert(0))</td></tr>
+        <tr><td>pop_front (앞 삭제)</td><td><strong>O(1)</strong></td><td>O(n) (pop(0))</td></tr>
+        <tr><td>push_back (뒤 삽입)</td><td>O(n) (끝까지 가야)</td><td><strong>O(1) amortized</strong></td></tr>
+        <tr><td>pop_back</td><td>O(n)</td><td><strong>O(1)</strong></td></tr>
+        <tr><td>indexing A[i]</td><td>O(i)</td><td><strong>O(1)</strong></td></tr>
+        <tr><td>중간 삽입/삭제 (포인터 있음)</td><td><strong>O(1)</strong></td><td>O(n)</td></tr>
+        <tr><td>중간 삽입/삭제 (인덱스만 있음)</td><td>O(i)</td><td>O(n)</td></tr>
+      </tbody>
+    </table>
+    <p>
+      단일 연결 리스트가 array를 이기는 곳: <strong>앞 삽입/삭제</strong>. 그게 전부입니다. 나머지는 array가 이기거나 비슷.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — push_back을 어떻게 O(1)로?</div>
+    <p>
+      tail 포인터를 따로 유지하면 됩니다. head와 tail 둘 다 저장.
+    </p>
+    <ul>
+      <li>push_back: tail.next = Node(x); tail = tail.next. O(1).</li>
+      <li>하지만 pop_back은 여전히 O(n). 왜? <em>tail의 prev</em>를 모르니 끝까지 다시 순회해야.</li>
+    </ul>
+    <p>
+      이 문제를 풀려면 <strong>이중 연결 리스트</strong>로 가야 함 (§04).
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. 왜 Python은 linked list 없는가 ==================== -->
+<section id="why-no-linked">
+  <h2>03 — 왜 Python은 단일 연결 리스트가 없는가</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">이유 1 — 캐시 지역성</h3>
+    </div>
+    <p>
+      현대 CPU의 구조:
+    </p>
+    <ul>
+      <li>L1 캐시: ~32KB, 접근 1~3 사이클 (~1ns).</li>
+      <li>L2 캐시: ~256KB, 접근 10~20 사이클.</li>
+      <li>L3 캐시: ~8MB, 접근 40~50 사이클.</li>
+      <li>DRAM: 무제한, 접근 <strong>100~300 사이클</strong> (캐시의 100배 느림).</li>
+    </ul>
+    <p>
+      CPU가 메모리를 읽을 때 <strong>64바이트 "캐시 라인"을 한 번에 가져옴</strong>. 배열의 한 원소를 읽으면 옆 7~8개도 공짜로 캐시에 들어옴 (<code>int</code> 기준).
+    </p>
+    <p>
+      반면 linked list 순회는 <em>매 노드마다 다른 메모리 위치</em>로 점프. 매번 캐시 미스 가능성. 이론 O(n)이라도 실측 10~100배 느림.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">이유 2 — Python 객체 overhead</h3>
+    </div>
+    <p>
+      Python에서 linked list를 구현한다면 각 Node가 <strong>Python 객체</strong>. 오버헤드:
+    </p>
+    <ul>
+      <li>PyObject 헤더: 16바이트 (refcount + type pointer).</li>
+      <li>__dict__ 또는 __slots__: 속성 저장소.</li>
+      <li>각 Node마다 malloc 호출: 수 μs (bulk allocation 없음).</li>
+    </ul>
+    <p>
+      실제 데이터 1개당 수십~수백 바이트 overhead. list는 <code>ob_item</code> 하나에 포인터만 압축해 저장해 효율 높음.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">이유 3 — list로 대부분 충분하다</h3>
+    </div>
+    <p>
+      linked list의 킬러 장점은 "앞/뒤 O(1)"인데, 이건 <code>deque</code>가 해결. 중간 삽입은 어떤 자료구조든 어렵고, 진짜 필요하면 tree나 skip list 같은 고급 자료구조.
+    </p>
+    <p>
+      그래서 Python 표준 라이브러리의 자료구조:
+    </p>
+    <ul>
+      <li><strong>list</strong>: 동적 배열. 대부분 경우의 답.</li>
+      <li><strong>deque</strong>: 양 끝 O(1) 필요할 때. Block-linked list 내부.</li>
+      <li><strong>dict / set</strong>: O(1) 조회. Hash table (Algo 10).</li>
+      <li><strong>heapq</strong>: 우선순위 큐. Binary heap (Algo 12).</li>
+    </ul>
+    <p>
+      단일 linked list는 — 이 표에 없습니다. 필요하면 <strong>직접 만들어 쓰세요</strong>가 Python의 입장.
+    </p>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 유명한 인용 — Bjarne Stroustrup (C++ 창시자)</div>
+    <p>
+      <em>"I have often been asked which is better: vector or list? Most of the time, in an experienced programmer's code, you will find something surprising. Why? It is because cache locality matters enormously..."</em>
+    </p>
+    <p style="font-size:0.84rem;color:var(--text-secondary);margin-top:8px;">
+      — Bjarne Stroustrup, GoingNative 2012 keynote. vector가 linked list보다 삽입/삭제에서도 빠를 수 있다는 유명한 벤치마크 발표.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 04. 이중 연결 리스트 ==================== -->
+<section id="doubly-linked">
+  <h2>04 — 이중 연결 리스트 (Doubly Linked List)</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">양방향 포인터</h3>
+    </div>
+    <p>
+      각 노드가 <strong>next와 prev</strong> 둘 다 가지는 구조.
+    </p>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      None ← [·|A|·] ↔ [·|B|·] ↔ [·|C|·] ↔ [·|D|·] → None<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↑&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↑<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; head &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tail
+    </div>
+    <p>
+      head + tail 두 포인터 유지. <strong>양 끝에서의 삽입/삭제 O(1)</strong> 보장.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">트레이드오프</h3>
+    </div>
+    <ul>
+      <li><strong>장점</strong>: 양 끝 O(1) + "노드 포인터가 있으면 그 위치에서 제거/삽입 O(1)".</li>
+      <li><strong>단점</strong>: 메모리 2배 (prev + next). 코드 복잡도 증가 (모든 삽입·삭제에 양쪽 포인터 업데이트).</li>
+    </ul>
+    <p>
+      실무에서 이중 연결 리스트가 빛나는 대표 사례: <strong>LRU Cache</strong>. 해시로 노드 포인터를 O(1)에 찾고, 포인터로 즉시 O(1) 이동. Algo 10 맛보기 + §11 참조.
+    </p>
+
+    <h4>Python 표준 라이브러리에서 숨은 이중 연결 리스트</h4>
+    <ul>
+      <li><code>collections.OrderedDict</code>: Python 3.7 전까지 이중 연결 리스트 + dict. 3.7+에서 dict 자체가 삽입 순서 유지하면서 단순화.</li>
+      <li><code>functools.lru_cache</code>: <strong>현재도 순환 이중 연결 리스트</strong> + dict. C 구현.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 05. Stack ADT ==================== -->
+<section id="stack-adt">
+  <h2>05 — Stack ADT — list로 충분하다</h2>
+
+  <div class="level-section elementary">
+    <div class="level-section-header">
+      <span class="level-badge level-elem">초급</span>
+      <h3 class="level-section-title">Stack이란</h3>
+    </div>
+    <p>
+      <strong>LIFO (Last In, First Out)</strong>. 마지막에 넣은 것이 가장 먼저 나옴. 접시 쌓기 비유.
+    </p>
+    <ul>
+      <li><code>push(x)</code>: 맨 위에 추가.</li>
+      <li><code>pop()</code>: 맨 위 제거 + 반환.</li>
+      <li><code>peek()</code> or <code>top()</code>: 맨 위 조회.</li>
+    </ul>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">Python의 stack — 그냥 list</h3>
+    </div>
+    <p>
+      별도 클래스 불필요. list의 <code>append</code>와 <code>pop</code>이 amortized O(1).
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">stack_with_list.py</span><button class="copy-btn">복사</button></div>
+<pre><code>stack = []
+stack.append(<span class="hl-num">1</span>)       <span class="hl-cmt"># push. O(1) amortized</span>
+stack.append(<span class="hl-num">2</span>)
+stack.append(<span class="hl-num">3</span>)
+top = stack[-<span class="hl-num">1</span>]       <span class="hl-cmt"># peek. O(1)</span>
+x = stack.pop()      <span class="hl-cmt"># pop. O(1). 반환값 3</span></code></pre>
+    </div>
+    <p>
+      <strong>피해야 할 것</strong>: <code>stack.insert(0, x)</code> + <code>stack.pop(0)</code> — 이건 queue 패턴이고 O(n).
+    </p>
+
+    <h4>Stack의 고전 활용</h4>
+    <ul>
+      <li><strong>함수 호출 스택</strong>: 재귀 호출 → 스택 프레임.</li>
+      <li><strong>괄호 균형 검사</strong>: <code>({[]})</code>가 올바른지.</li>
+      <li><strong>DFS (깊이 우선 탐색)</strong>: 재귀 또는 명시적 스택.</li>
+      <li><strong>Undo 기능</strong>: 에디터의 Ctrl-Z.</li>
+      <li><strong>수식 평가</strong>: 후위 표기법(RPN) 계산.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">괄호 균형 검사 예제</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">balance_parens.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">is_balanced</span>(s):
+    stack = []
+    pairs = {<span class="hl-str">')'</span>: <span class="hl-str">'('</span>, <span class="hl-str">']'</span>: <span class="hl-str">'['</span>, <span class="hl-str">'}'</span>: <span class="hl-str">'{'</span>}
+    <span class="hl-kw">for</span> c <span class="hl-kw">in</span> s:
+        <span class="hl-kw">if</span> c <span class="hl-kw">in</span> <span class="hl-str">"([{"</span>:
+            stack.append(c)
+        <span class="hl-kw">elif</span> c <span class="hl-kw">in</span> pairs:
+            <span class="hl-kw">if</span> <span class="hl-kw">not</span> stack <span class="hl-kw">or</span> stack[-<span class="hl-num">1</span>] != pairs[c]:
+                <span class="hl-kw">return</span> <span class="hl-kw">False</span>
+            stack.pop()
+    <span class="hl-kw">return</span> <span class="hl-kw">not</span> stack
+
+
+<span class="hl-bi">print</span>(is_balanced(<span class="hl-str">"({[]})"</span>))    <span class="hl-cmt"># True</span>
+<span class="hl-bi">print</span>(is_balanced(<span class="hl-str">"([)]"</span>))       <span class="hl-cmt"># False</span>
+<span class="hl-bi">print</span>(is_balanced(<span class="hl-str">"((("</span>))         <span class="hl-cmt"># False</span></code></pre>
+    </div>
+    <p>
+      O(n) 시간 + O(n) 공간. 단순하면서 강력한 스택 활용 예.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 06. Queue ADT ==================== -->
+<section id="queue-adt">
+  <h2>06 — Queue ADT — deque가 필수다</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">Queue란</h3>
+    </div>
+    <p>
+      <strong>FIFO (First In, First Out)</strong>. 먼저 들어간 것이 먼저 나옴. 줄서기 비유.
+    </p>
+    <ul>
+      <li><code>enqueue(x)</code>: 뒤에 추가.</li>
+      <li><code>dequeue()</code>: 앞에서 제거 + 반환.</li>
+      <li><code>front()</code>: 앞 조회.</li>
+    </ul>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title"><code>collections.deque</code> 사용</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">queue_with_deque.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> collections <span class="hl-kw">import</span> deque
+
+q = deque()
+q.append(<span class="hl-num">1</span>)          <span class="hl-cmt"># enqueue. O(1)</span>
+q.append(<span class="hl-num">2</span>)
+q.append(<span class="hl-num">3</span>)
+front = q[<span class="hl-num">0</span>]         <span class="hl-cmt"># peek. O(1)</span>
+x = q.popleft()     <span class="hl-cmt"># dequeue. O(1)</span></code></pre>
+    </div>
+    <p>
+      <code>deque</code>는 "double-ended queue"의 약자. <em>양 끝 모두 O(1)</em>이므로 stack으로도, queue로도, 양방향 queue로도 쓸 수 있음.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">BFS — Queue의 고전 활용</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">bfs.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> collections <span class="hl-kw">import</span> deque
+
+<span class="hl-kw">def</span> <span class="hl-bi">bfs</span>(graph, start):
+    visited = {start}
+    queue = deque([start])
+    <span class="hl-kw">while</span> queue:
+        node = queue.popleft()       <span class="hl-cmt"># O(1)</span>
+        <span class="hl-kw">for</span> neighbor <span class="hl-kw">in</span> graph[node]:
+            <span class="hl-kw">if</span> neighbor <span class="hl-kw">not</span> <span class="hl-kw">in</span> visited:
+                visited.add(neighbor)
+                queue.append(neighbor)    <span class="hl-cmt"># O(1)</span>
+    <span class="hl-kw">return</span> visited</code></pre>
+    </div>
+    <p>
+      <strong>만약 list를 썼다면?</strong>: <code>queue.pop(0)</code>이 O(n). n개 노드 BFS가 O(n²). Algo 14에서 그래프를 다룰 때 이게 왜 중요한지 봅니다.
+    </p>
+  </div>
+
+  <div class="caution-box">
+    <div class="box-header">⚠️ <code>queue.Queue</code> 모듈과 혼동 금지</div>
+    <p>
+      Python 표준 라이브러리에 <code>queue</code>라는 별도 모듈이 있습니다 (<code>queue.Queue</code>, <code>queue.LifoQueue</code>, <code>queue.PriorityQueue</code>).
+    </p>
+    <ul>
+      <li>이 모듈은 <strong>스레드 간 통신용</strong>. 내부 락(lock) 포함, 훨씬 느림.</li>
+      <li>단일 스레드 알고리즘에서는 절대 쓰지 말 것 — <code>collections.deque</code>가 10~100배 빠름.</li>
+      <li>producer-consumer 패턴처럼 스레드 안전 필요할 때만 <code>queue.Queue</code>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 07. CPython deque ==================== -->
+<section id="cpython-deque">
+  <h2>07 — CPython deque: <code>_collectionsmodule.c</code></h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Part A — 핵심 구조체</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">Modules/_collectionsmodule.c — 발췌</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-cmt">/* The block length can be any positive integer. Larger numbers reduce the
+ * number of calls to the memory allocator, give faster indexing and rotation,
+ * and reduce the link-to-data overhead ratio. Setting the block length to a
+ * power of two speeds-up the modulo and division calculations. */</span>
+<span class="hl-kw">#define</span> BLOCKLEN 64
+<span class="hl-kw">#define</span> CENTER ((BLOCKLEN - 1) / 2)
+
+<span class="hl-kw">typedef struct</span> BLOCK {
+    <span class="hl-kw">struct</span> BLOCK *leftlink;
+    PyObject *data[BLOCKLEN];
+    <span class="hl-kw">struct</span> BLOCK *rightlink;
+} block;
+
+<span class="hl-kw">typedef struct</span> {
+    PyObject_VAR_HEAD
+    block *leftblock;
+    block *rightblock;
+    Py_ssize_t leftindex;    <span class="hl-cmt">/* 0 &lt;= leftindex &lt; BLOCKLEN */</span>
+    Py_ssize_t rightindex;   <span class="hl-cmt">/* 0 &lt;= rightindex &lt; BLOCKLEN */</span>
+    <span class="hl-bi">size_t</span> state;
+    Py_ssize_t maxlen;
+    <span class="hl-bi">size_t</span> numfreeblocks;
+    block *freeblocks[MAXFREEBLOCKS];
+    PyObject *weakreflist;
+} dequeobject;</code></pre>
+    </div>
+    <ul>
+      <li><strong>BLOCKLEN = 64</strong>: 각 block이 64개의 PyObject 포인터 저장.</li>
+      <li><strong>block</strong>: 이중 연결 (leftlink, rightlink). 즉 blocks가 doubly-linked list.</li>
+      <li><strong>leftblock, rightblock</strong>: deque의 양 끝에 있는 block 포인터.</li>
+      <li><strong>leftindex, rightindex</strong>: 각 끝 block 내에서의 인덱스.</li>
+      <li><strong>freeblocks</strong>: 재사용 가능한 빈 block들의 pool. malloc 호출을 줄임.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Part B — 왜 "block-linked"인가</h3>
+    </div>
+    <p>
+      교과서 이중 연결 리스트는 <em>각 노드마다 데이터 1개 + 포인터 2개</em>:
+    </p>
+    <div class="formula-box" style="text-align:left;">
+      전통 linked list: 노드당 (data 8바이트 + prev 8 + next 8) = 24바이트<br>
+      → data:metadata 비율 = 1:2 (67% overhead)
+    </div>
+    <p>
+      CPython deque는 <em>block 하나가 64개 데이터 + 포인터 2개</em>:
+    </p>
+    <div class="formula-box" style="text-align:left;">
+      Block-linked: block당 (data 64·8 = 512 + prev 8 + next 8) = 528바이트<br>
+      → data:metadata 비율 = 512:16 = 32:1 (3% overhead)
+    </div>
+    <p>
+      20배 이상의 메모리 효율. 그리고 <strong>block 안의 64개 원소는 연속 메모리</strong>라 캐시 친화적.
+    </p>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원문 — _collectionsmodule.c 주석</div>
+    <p>
+      <em>"Data for deque objects is stored in a doubly-linked list of fixed-length blocks. ... Another advantage is that it completely avoids use of realloc(), resulting in more predictable performance. Textbook implementations of doubly-linked lists store one datum per link, but that gives them a 200% memory overhead (a prev and next link for each datum) and it costs one malloc() call per data element. By using fixed-length blocks instead, the memory overhead is significantly reduced."</em>
+    </p>
+    <p style="font-size:0.84rem;color:var(--text-secondary);margin-top:8px;">
+      — CPython 소스 주석, Raymond D. Hettinger 유지 보수.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 08. Block-Linked List ==================== -->
+<section id="block-linked">
+  <h2>08 — Block-Linked List: BLOCKLEN=64의 천재성</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Part A — 왜 64인가?</h3>
+    </div>
+    <p>
+      <strong>64 = 2⁶</strong> 선택의 이유:
+    </p>
+    <ul>
+      <li><strong>캐시 라인 정렬</strong>: 대부분 CPU의 캐시 라인이 64바이트. 64개 8바이트 포인터 = 512바이트 = 8 캐시 라인. 정렬이 깔끔.</li>
+      <li><strong>2의 거듭제곱</strong>: 나눗셈과 modulo가 비트 연산으로 고속화 (<code>i / 64 → i &gt;&gt; 6</code>, <code>i % 64 → i &amp; 63</code>).</li>
+      <li><strong>data:metadata 3%</strong>: 충분히 낮은 overhead.</li>
+      <li><strong>실측 최적</strong>: 너무 크면 (예: 1024) 작은 deque에서 과할당. 너무 작으면 (예: 8) overhead 증가. 64가 균형점.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Part B — append 연산의 흐름</h3>
+    </div>
+    <p>
+      <code>d.append(x)</code>를 호출하면:
+    </p>
+    <ol>
+      <li><code>rightindex</code>가 <code>BLOCKLEN − 1</code>이 아니면 (= rightblock 내 여유 있음): <code>rightblock-&gt;data[++rightindex] = x</code>. <strong>O(1)</strong>.</li>
+      <li>rightblock이 꽉 찼다면:
+        <ul>
+          <li>freeblocks에 여유 block이 있으면 하나 꺼냄.</li>
+          <li>없으면 <code>malloc</code>으로 새 block 할당.</li>
+          <li>rightblock의 rightlink로 연결.</li>
+          <li>새 block의 data[0]에 x 저장.</li>
+        </ul>
+      </li>
+    </ol>
+    <p>
+      <strong>핵심 관찰</strong>: list의 append와 달리 <em>realloc으로 전체 복사</em> 없음. 새 block만 추가. <em>"최악도 O(1)"</em> (amortized 아니라 단순 O(1)).
+    </p>
+
+    <div class="formula-box">
+      deque.append: 최악 <strong>O(1)</strong> (list는 amortized O(1))
+    </div>
+    <p>
+      이 차이는 실시간 시스템에서 중요: list의 "가끔 매우 느린 append"가 허용 안 되는 환경에서 deque는 예측 가능한 성능 제공.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Part C — indexing d[i]의 영리한 트릭</h3>
+    </div>
+    <p>
+      deque에서 <code>d[i]</code>의 복잡도는 원리적으로 <strong>O(min(i, n−i))</strong> — 양 끝에서 가까운 쪽부터 순회.
+      양 끝은 O(1), 중앙은 O(n/2) (여전히 선형). "상수가 작을" 뿐, O(1) 보장은 없습니다.
+    </p>
+    <p>
+      <strong>구현 세부</strong>: BLOCKLEN=64이고 block이 doubly-linked이므로:
+    </p>
+    <ul>
+      <li>block index = i / 64 (또는 가까운 끝 기준).</li>
+      <li>block 내부 offset = i % 64.</li>
+      <li>CPython은 <code>i &lt; n/2</code>이면 leftblock부터, 아니면 rightblock부터 순회 (소스의 <code>deque_item</code> 참조).</li>
+      <li>d[0], d[-1]은 block 순회 없이 즉시 접근 → O(1).</li>
+      <li>d[n/2]는 약 <strong>n/2 / 64 block</strong> 순회. 점근적으로 여전히 O(n)이지만 상수가 배열보다 64배 큼.</li>
+    </ul>
+    <p>
+      결론: <strong>random access는 list를 쓰세요</strong>. deque는 양 끝 O(1)이 목적이고, 중간 접근은 보조적. 중간 접근이 많은 패턴이면 자료구조 선택을 재고.
+    </p>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — Raymond Hettinger의 설계 철학</div>
+    <p>
+      Raymond Hettinger가 Python 2.4(2004)에 deque를 CPython에 추가하며 다음 원칙을 세웠습니다:
+    </p>
+    <ol>
+      <li><strong>양 끝 O(1)</strong>: append/appendleft/pop/popleft 모두 최악 O(1).</li>
+      <li><strong>예측 가능한 성능</strong>: realloc 없음. 가비지 컬렉션 spike 없음.</li>
+      <li><strong>메모리 효율</strong>: block overhead 최소화.</li>
+      <li><strong>캐시 친화</strong>: block 내부 64개는 연속 메모리.</li>
+      <li><strong>list와 구별</strong>: indexing은 list 쓰라고 유도 (O(1)이 아님을 명시).</li>
+    </ol>
+    <p>
+      이 설계가 20년 간 변하지 않은 이유 — 자료구조 설계의 교과서적 성공 사례.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 09. deque 연산 복잡도 ==================== -->
+<section id="deque-ops">
+  <h2>09 — deque 연산 복잡도: rotate, extend, indexing</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">전체 연산 비용 표</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>연산</th><th>복잡도</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>append(x)</code></td><td><strong>O(1)</strong></td><td>rightblock에 삽입</td></tr>
+        <tr><td><code>appendleft(x)</code></td><td><strong>O(1)</strong></td><td>leftblock에 삽입</td></tr>
+        <tr><td><code>pop()</code></td><td><strong>O(1)</strong></td><td>rightblock에서 제거</td></tr>
+        <tr><td><code>popleft()</code></td><td><strong>O(1)</strong></td><td>leftblock에서 제거</td></tr>
+        <tr><td><code>d[0], d[-1]</code></td><td><strong>O(1)</strong></td><td>양 끝</td></tr>
+        <tr><td><code>d[i]</code> (중간)</td><td>O(min(i, n-i))</td><td>가까운 끝부터 block 순회. 상수는 1/64로 작음</td></tr>
+        <tr><td><code>rotate(k)</code></td><td>O(min(k, n−k))</td><td>k칸 회전 (블록 단위 memmove). k &lt; 0이면 역방향</td></tr>
+        <tr><td><code>extend(iterable)</code></td><td>O(k)</td><td>k개 원소 추가</td></tr>
+        <tr><td><code>extendleft(iterable)</code></td><td>O(k)</td><td>앞쪽에 추가. <strong>순서 역전</strong>됨</td></tr>
+        <tr><td><code>len(d)</code></td><td>O(1)</td><td>저장된 count</td></tr>
+        <tr><td><code>x in d</code></td><td>O(n)</td><td>선형 탐색</td></tr>
+        <tr><td><code>d.count(x)</code></td><td>O(n)</td><td>전체 순회</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">rotate의 마법 — 스마트한 O(k)</h3>
+    </div>
+    <p>
+      <code>d.rotate(k)</code>: deque를 k칸 오른쪽으로 회전 (음수면 왼쪽). 예: <code>deque([1,2,3,4,5]).rotate(2)</code> → <code>[4,5,1,2,3]</code>.
+    </p>
+    <p>
+      순진한 구현은 O(n). CPython은 <strong>O(min(k, n−k))</strong> — block 단위(64원소)로 memmove하므로 상수가 매우 작지만, 원리적으로는 블록 일부를 실제로 이동합니다 (deque는 circular buffer가 아니라 block-doubly-linked list). 한 바퀴 가까운 rotate는 반대 방향이 더 쌉니다.
+    </p>
+    <p>
+      덕분에 <code>rotate</code>는 순환 이동, 큐 회전 등에 쓸 수 있는 강력한 연산. 고정 크기 deque에서 원형 버퍼 시뮬레이션(§10).
+    </p>
+  </div>
+
+  <div class="caution-box">
+    <div class="box-header">⚠️ <code>extendleft</code>의 함정</div>
+    <p>
+      <code>d.extendleft([1, 2, 3])</code>은 각 원소를 "왼쪽에 추가"하므로 <em>순서가 뒤바뀝니다</em>. 결과: <code>[3, 2, 1, ...]</code> 순서로 앞에 붙음.
+    </p>
+    <p>
+      "왼쪽에 <em>원래 순서로</em> 추가"하려면 <code>d.extendleft(reversed([1,2,3]))</code>을 써야 함.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. 원형 버퍼 ==================== -->
+<section id="circular-buffer">
+  <h2>10 — 원형 버퍼: <code>deque(maxlen=n)</code></h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">고정 크기 최신 N개 유지</h3>
+    </div>
+    <p>
+      <code>deque</code>에 <code>maxlen</code>을 주면 크기 한계가 설정됩니다. 한계 초과 시 <strong>반대편이 자동 제거</strong>.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">circular_buffer.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> collections <span class="hl-kw">import</span> deque
+
+<span class="hl-cmt"># 최신 5개만 유지</span>
+recent = deque(maxlen=<span class="hl-num">5</span>)
+<span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">10</span>):
+    recent.append(i)
+    <span class="hl-bi">print</span>(<span class="hl-bi">list</span>(recent))
+
+<span class="hl-cmt"># 출력:</span>
+<span class="hl-cmt"># [0]</span>
+<span class="hl-cmt"># [0, 1]</span>
+<span class="hl-cmt"># [0, 1, 2]</span>
+<span class="hl-cmt"># [0, 1, 2, 3]</span>
+<span class="hl-cmt"># [0, 1, 2, 3, 4]</span>
+<span class="hl-cmt"># [1, 2, 3, 4, 5]    ← 0 밀려남</span>
+<span class="hl-cmt"># [2, 3, 4, 5, 6]</span>
+<span class="hl-cmt"># ...</span></code></pre>
+    </div>
+    <p>
+      모든 append/appendleft가 O(1). 자동으로 한쪽 끝 제거 포함.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">실전 활용</h3>
+    </div>
+    <ul>
+      <li>
+        <strong>Moving average (이동 평균)</strong>: 최근 N개 값의 평균.
+<pre style="margin-top:8px;"><code>window = deque(maxlen=N)
+<span class="hl-kw">for</span> val <span class="hl-kw">in</span> stream:
+    window.append(val)
+    avg = <span class="hl-bi">sum</span>(window) / <span class="hl-bi">len</span>(window)   <span class="hl-cmt"># O(N)</span></code></pre>
+      </li>
+      <li>
+        <strong>Log rolling</strong>: 최근 N개 로그만 메모리에. 오래된 건 자동 폐기.
+      </li>
+      <li>
+        <strong>Undo history limit</strong>: "최근 50번의 undo만 저장".
+      </li>
+      <li>
+        <strong>Sliding window 문제</strong>: 스트림 데이터의 최근 N개에 대한 min/max (고급 문제: Algo 23).
+      </li>
+    </ul>
+
+    <div class="caution-box">
+      <div class="box-header">⚠️ Moving average는 <code>sum(window)</code>가 매번 O(N)</div>
+      <p>
+        이동 평균에서 매번 합을 다시 계산하면 총 O(N × stream_length). 최적화: "총합을 별도 변수로 유지 + pop되는 값을 빼고 새 값을 더함" → O(1) per update.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 11. LRU Cache ==================== -->
+<section id="lru-cache">
+  <h2>11 — LRU Cache: 이중 연결 리스트 + dict</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">LRU (Least Recently Used) 정책</h3>
+    </div>
+    <p>
+      고정 크기 캐시에서 <em>"가장 오래 사용 안 한 항목을 제거"</em> 정책. 캐시 hit 시 그 항목을 "가장 최근 사용"으로 이동.
+    </p>
+    <ul>
+      <li>O(1) get(key): 캐시에 있으면 반환 + 최근으로 이동.</li>
+      <li>O(1) put(key, value): 삽입. 크기 초과면 가장 오래된 것 제거.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">자료구조 조합 — "hashmap + doubly linked list"</h3>
+    </div>
+    <p>
+      "왜 둘 다 필요한가?"
+    </p>
+    <ul>
+      <li>
+        <strong>dict</strong>만: O(1) 조회 OK, 하지만 "가장 오래된 항목"을 O(1)에 찾을 수 없음.
+      </li>
+      <li>
+        <strong>linked list</strong>만: 순서는 유지 OK, 하지만 특정 key를 O(1)에 찾을 수 없음.
+      </li>
+      <li>
+        <strong>둘 다</strong>: dict가 key → linked list 노드 포인터 저장. 조회는 dict로, 순서 조작은 linked list 포인터로. <em>둘 다 O(1)</em>.
+      </li>
+    </ul>
+    <div class="formula-box" style="text-align:left;font-size:0.88rem;">
+      dict: {key_A → Node_A, key_B → Node_B, ...}<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ↓ 포인터<br>
+      DLL: [Node_A] ↔ [Node_B] ↔ [Node_C]<br>
+      (head = 가장 오래된, tail = 가장 최근)
+    </div>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Python 구현 (LeetCode #146)</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">lru_cache.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">Node</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self, key, val):
+        self.key, self.val = key, val
+        self.prev = self.next = <span class="hl-kw">None</span>
+
+
+<span class="hl-kw">class</span> <span class="hl-bi">LRUCache</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self, capacity):
+        self.capacity = capacity
+        self.cache = {}                 <span class="hl-cmt"># key → Node</span>
+        self.head = Node(<span class="hl-num">0</span>, <span class="hl-num">0</span>)        <span class="hl-cmt"># sentinel</span>
+        self.tail = Node(<span class="hl-num">0</span>, <span class="hl-num">0</span>)
+        self.head.next = self.tail
+        self.tail.prev = self.head
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_remove</span>(self, node):
+        node.prev.next = node.next
+        node.next.prev = node.prev
+
+    <span class="hl-kw">def</span> <span class="hl-bi">_add_to_back</span>(self, node):  <span class="hl-cmt"># tail 직전(= 최신)</span>
+        p = self.tail.prev
+        p.next = node; node.prev = p
+        node.next = self.tail; self.tail.prev = node
+
+    <span class="hl-kw">def</span> <span class="hl-bi">get</span>(self, key):
+        <span class="hl-kw">if</span> key <span class="hl-kw">not</span> <span class="hl-kw">in</span> self.cache:
+            <span class="hl-kw">return</span> -<span class="hl-num">1</span>
+        node = self.cache[key]
+        self._remove(node)              <span class="hl-cmt"># O(1)</span>
+        self._add_to_back(node)         <span class="hl-cmt"># O(1) — 최근으로 이동</span>
+        <span class="hl-kw">return</span> node.val
+
+    <span class="hl-kw">def</span> <span class="hl-bi">put</span>(self, key, val):
+        <span class="hl-kw">if</span> key <span class="hl-kw">in</span> self.cache:
+            self._remove(self.cache[key])
+        node = Node(key, val)
+        self.cache[key] = node
+        self._add_to_back(node)
+        <span class="hl-kw">if</span> <span class="hl-bi">len</span>(self.cache) &gt; self.capacity:
+            oldest = self.head.next     <span class="hl-cmt"># 가장 오래된</span>
+            self._remove(oldest)
+            <span class="hl-kw">del</span> self.cache[oldest.key]</code></pre>
+    </div>
+    <p>
+      모든 연산 O(1). 이게 인터뷰 단골 문제이자 — <strong><code>functools.lru_cache</code>의 내부 구조</strong>이기도 합니다 (C로 구현).
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title"><code>functools.lru_cache</code> — Python 표준</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">functools_lru.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> functools <span class="hl-kw">import</span> lru_cache
+
+<span class="hl-dec">@lru_cache</span>(maxsize=<span class="hl-num">128</span>)
+<span class="hl-kw">def</span> <span class="hl-bi">fib</span>(n):
+    <span class="hl-kw">if</span> n &lt; <span class="hl-num">2</span>: <span class="hl-kw">return</span> n
+    <span class="hl-kw">return</span> fib(n - <span class="hl-num">1</span>) + fib(n - <span class="hl-num">2</span>)
+
+fib(<span class="hl-num">100</span>)   <span class="hl-cmt"># 캐시 없이는 O(2^100). lru_cache로 O(n).</span></code></pre>
+    </div>
+    <p>
+      내부적으로 <strong>순환 이중 연결 리스트 + dict</strong>. C로 구현돼 Python 직접 구현보다 5~10배 빠름.
+    </p>
+    <p>
+      <code>@functools.cache</code>는 Python 3.9+의 <em>무한 크기</em> 변종 (dict만 사용, linked list 생략).
+    </p>
+
+    <div class="reading-box">
+      <div class="box-header">📖 CPython 소스 — Modules/_functoolsmodule.c</div>
+      <p>
+        <em>"The cache is implemented as a circular doubly-linked list. The list head is a sentinel that is always present. The dict maps keys to list nodes for O(1) access. This mirrors the classic LRU design."</em>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 12. AI와 linked list ==================== -->
+<section id="ai-linked">
+  <h2>12 — AI가 흔히 놓치는 linked list 함정</h2>
+
+  <div class="ai-box">
+    <div class="box-header">AI — "linked list 구현해줘"의 4가지 흔한 실수</div>
+    <ol>
+      <li>
+        <strong>sentinel 노드 생략</strong>: head가 None일 때의 특수 케이스를 매번 체크. 버그 천국. sentinel(가짜 head/tail)을 두면 모든 삽입/삭제가 uniform.
+      </li>
+      <li>
+        <strong>tail 포인터 없이 push_back O(1)</strong>: "append이니 O(1)" — tail 없으면 O(n). 쉬운 실수.
+      </li>
+      <li>
+        <strong>free된 노드 참조</strong>: C/C++라면 use-after-free. Python은 GC 덕에 괜찮지만 로직 버그는 여전.
+      </li>
+      <li>
+        <strong>Reverse에서 next를 덮어씀</strong>: <code>cur.next = prev</code> 전에 <code>next_node = cur.next</code> 저장 안 하면 chain 깨짐.
+      </li>
+    </ol>
+  </div>
+
+  <div class="ai-comparison">
+    <div class="ai-col human">
+      <div class="ai-col-header">경험 있는 개발자</div>
+<pre><code><span class="hl-cmt"># sentinel 사용, tail 유지</span>
+<span class="hl-kw">class</span> <span class="hl-bi">LinkedList</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self):
+        self.head = Node(<span class="hl-kw">None</span>)   <span class="hl-cmt"># sentinel</span>
+        self.tail = self.head      <span class="hl-cmt"># 빈 리스트는 head=tail</span>
+        self.size = <span class="hl-num">0</span>
+    <span class="hl-kw">def</span> <span class="hl-bi">append</span>(self, x):   <span class="hl-cmt"># O(1)</span>
+        self.tail.next = Node(x)
+        self.tail = self.tail.next
+        self.size += <span class="hl-num">1</span></code></pre>
+    </div>
+    <div class="ai-col ai">
+      <div class="ai-col-header">LLM의 흔한 답</div>
+<pre><code><span class="hl-cmt"># sentinel 없음, tail도 없음</span>
+<span class="hl-kw">class</span> <span class="hl-bi">LinkedList</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self):
+        self.head = <span class="hl-kw">None</span>       <span class="hl-cmt"># 매번 None 체크 필요</span>
+    <span class="hl-kw">def</span> <span class="hl-bi">append</span>(self, x):   <span class="hl-cmt"># O(n)! 매번 끝까지 순회</span>
+        <span class="hl-kw">if</span> <span class="hl-kw">not</span> self.head:
+            self.head = Node(x)
+            <span class="hl-kw">return</span>
+        cur = self.head
+        <span class="hl-kw">while</span> cur.next:
+            cur = cur.next
+        cur.next = Node(x)</code></pre>
+    </div>
+  </div>
+
+  <div class="why-box">
+    <div class="box-header">WHY — AI에게 "linked list 관련 코딩" 시킬 때 4가지 확인</div>
+    <ol>
+      <li>"sentinel 노드를 썼나? 왜/왜 안 썼나?"</li>
+      <li>"append의 복잡도는? tail 포인터 유지 여부?"</li>
+      <li>"reverse 구현 시 next 변수 저장 순서는?"</li>
+      <li>"그리고 — 진짜 linked list가 필요한가? Python list나 deque로 충분한가?"</li>
+    </ol>
+    <p>
+      <strong>4번이 가장 중요</strong>: Python 맥락에서 "linked list 구현"은 대부분 필요 없음. 진짜 필요한 건 LRU Cache 같은 특수 구조. 단순 리스트면 <code>list</code> 또는 <code>deque</code>.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 13. 실습 ==================== -->
+<section id="practice">
+  <h2>13 — 실습: LinkedList + reverse + cycle detection</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">실습 1 — Reverse a linked list (LeetCode #206)</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">reverse_list.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">reverse</span>(head):
+    prev = <span class="hl-kw">None</span>
+    cur = head
+    <span class="hl-kw">while</span> cur:
+        next_node = cur.next    <span class="hl-cmt"># 1) 다음 저장 (핵심!)</span>
+        cur.next = prev         <span class="hl-cmt"># 2) 현재의 next를 이전으로</span>
+        prev = cur              <span class="hl-cmt"># 3) prev 한 칸 전진</span>
+        cur = next_node         <span class="hl-cmt"># 4) cur 한 칸 전진</span>
+    <span class="hl-kw">return</span> prev                 <span class="hl-cmt"># 새 head</span></code></pre>
+    </div>
+    <p>
+      O(n) 시간, O(1) 공간. 반드시 <strong>next_node를 먼저 저장</strong>해야 chain이 안 깨짐.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">실습 2 — Floyd's Cycle Detection (Tortoise and Hare)</h3>
+    </div>
+    <p>
+      linked list에 사이클이 있는지 판단 (LeetCode #141). <em>토끼와 거북이</em> 알고리즘.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">cycle_detect.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">has_cycle</span>(head):
+    slow = fast = head
+    <span class="hl-kw">while</span> fast <span class="hl-kw">and</span> fast.next:
+        slow = slow.next         <span class="hl-cmt"># 1칸 이동</span>
+        fast = fast.next.next    <span class="hl-cmt"># 2칸 이동</span>
+        <span class="hl-kw">if</span> slow <span class="hl-kw">is</span> fast:         <span class="hl-cmt"># 만나면 사이클</span>
+            <span class="hl-kw">return</span> <span class="hl-kw">True</span>
+    <span class="hl-kw">return</span> <span class="hl-kw">False</span>                <span class="hl-cmt"># fast가 None에 도달 — 사이클 없음</span></code></pre>
+    </div>
+    <p>
+      <strong>왜 작동하는가</strong>: 사이클이 있으면 fast가 slow를 언젠가 따라잡음 (1칸씩 거리 좁혀짐). 사이클 없으면 fast가 먼저 None.
+    </p>
+    <p>
+      O(n) 시간, O(1) 공간. set으로 방문 확인하는 방법은 O(n) 공간. Floyd의 알고리즘이 공간 효율성에서 압도적.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">실습 3 — list vs deque vs 수제 LinkedList 벤치마크</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">benchmark_queues.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> collections <span class="hl-kw">import</span> deque
+<span class="hl-kw">import</span> timeit
+
+
+<span class="hl-kw">class</span> <span class="hl-bi">Node</span>:
+    __slots__ = (<span class="hl-str">'data'</span>, <span class="hl-str">'next'</span>)
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self, data):
+        self.data = data
+        self.next = <span class="hl-kw">None</span>
+
+
+<span class="hl-kw">class</span> <span class="hl-bi">SLL</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self):
+        self.head = self.tail = <span class="hl-kw">None</span>
+    <span class="hl-kw">def</span> <span class="hl-bi">push_back</span>(self, x):
+        node = Node(x)
+        <span class="hl-kw">if</span> <span class="hl-kw">not</span> self.head:
+            self.head = self.tail = node
+        <span class="hl-kw">else</span>:
+            self.tail.next = node
+            self.tail = node
+    <span class="hl-kw">def</span> <span class="hl-bi">pop_front</span>(self):
+        x = self.head.data
+        self.head = self.head.next
+        <span class="hl-kw">return</span> x
+    <span class="hl-kw">def</span> <span class="hl-bi">__bool__</span>(self): <span class="hl-kw">return</span> self.head <span class="hl-kw">is</span> <span class="hl-kw">not</span> <span class="hl-kw">None</span>
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">queue_ops</span>(container, n, push_method, pop_method):
+    <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n): push_method(container, i)
+    <span class="hl-kw">while</span> container: pop_method(container)
+
+
+n = <span class="hl-num">100_000</span>
+<span class="hl-bi">print</span>(<span class="hl-str">f"n = {n}"</span>)
+
+t1 = timeit.timeit(<span class="hl-kw">lambda</span>: queue_ops(deque(), n,
+                   <span class="hl-bi">lambda</span> c, i: c.append(i),
+                   <span class="hl-bi">lambda</span> c: c.popleft()), number=<span class="hl-num">1</span>)
+<span class="hl-bi">print</span>(<span class="hl-str">f"  deque:   {t1*1000:.0f}ms"</span>)
+
+t2 = timeit.timeit(<span class="hl-kw">lambda</span>: queue_ops(SLL(), n,
+                   <span class="hl-bi">lambda</span> c, i: c.push_back(i),
+                   <span class="hl-bi">lambda</span> c: c.pop_front()), number=<span class="hl-num">1</span>)
+<span class="hl-bi">print</span>(<span class="hl-str">f"  SLL(수제): {t2*1000:.0f}ms (deque의 {t2/t1:.1f}배)"</span>)</code></pre>
+    </div>
+    <div class="output-block">
+      <div class="output-label">예상 출력 (CPython 3.12):</div>
+      n = 100000<br>
+      &nbsp;&nbsp;deque:   &nbsp;&nbsp;&nbsp;8ms<br>
+      &nbsp;&nbsp;SLL(수제): 150ms (deque의 19배)
+    </div>
+    <p>
+      같은 O(1) 연산이지만 deque가 압도적으로 빠름 — C 구현 + block 캐시 지역성. 순수 파이썬 linked list는 객체 생성 overhead로 20배 느림.
+    </p>
+    <p>
+      <strong>교훈</strong>: Python에서 "실전 linked list"는 거의 항상 deque. 교육 목적이 아니면 직접 구현하지 말 것.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"linked list는 삽입이 O(1)이라서 배열보다 낫다"라는 주장이 실전에서 틀리는 두 가지 이유를 서술.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <ol>
+              <li><strong>캐시 지역성</strong>: linked list 순회는 포인터를 따라 임의 메모리로 점프, 캐시 미스 폭증. 배열은 연속 메모리 → 캐시 히트.</li>
+              <li><strong>"삽입 위치 찾기"가 O(n)</strong>: 중간 삽입 O(1)이라지만, 그 위치로 가는 데 O(n). 이미 포인터가 있는 경우만 O(1).</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">CPython deque의 BLOCKLEN=64 크기에서, 원소 1000개를 저장할 때 block 개수는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">풀이</div>
+            <p>⌈1000 / 64⌉ = ⌈15.625⌉ = <strong>16</strong> block. 메모리 overhead = 16 × 16바이트 (prev+next) = 256바이트 — 1000원소에 비하면 무시할 수준.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-fix">FIX</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 <code>reverse</code> 구현의 버그를 찾고 고치시오.</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">buggy_reverse.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">reverse</span>(head):
+    prev = <span class="hl-kw">None</span>
+    cur = head
+    <span class="hl-kw">while</span> cur:
+        cur.next = prev        <span class="hl-cmt"># 먼저 next를 덮어씀</span>
+        prev = cur
+        cur = cur.next         <span class="hl-cmt"># 이제 cur.next는 prev였던 것 — 다시 거꾸로!</span>
+    <span class="hl-kw">return</span> prev</code></pre>
+      </div>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">버그</div>
+            <p><code>cur.next = prev</code>로 원래 다음 노드 참조를 잃음. <code>cur = cur.next</code>가 prev로 돌아가 무한 루프.</p>
+            <p>수정: next_node를 먼저 저장.</p>
+<pre style="margin-top:8px;"><code>    <span class="hl-kw">while</span> cur:
+        next_node = cur.next    <span class="hl-cmt"># 먼저 저장!</span>
+        cur.next = prev
+        prev = cur
+        cur = next_node</code></pre>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt"><code>extendleft([1,2,3])</code>의 결과가 <code>[3,2,1]</code> 순서인 이유를 설명하고, "원래 순서로 왼쪽 추가"하는 방법을 한 줄로.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>각 원소를 차례로 <code>appendleft</code>. 먼저 1 → deque [1]. 2 appendleft → [2, 1]. 3 appendleft → [3, 2, 1]. 그래서 역순처럼 보임.</p>
+            <p>원래 순서 유지: <code>d.extendleft(reversed([1,2,3]))</code>.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt"><code>deque.rotate(k)</code>의 복잡도는? 왜 <code>rotate(n)</code>(n = len)이 O(1)이 아닌가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>O(k). 내부 leftindex/rightindex 조정 + block 경계 넘을 때 포인터 조정. k ≥ n이면 <strong>k mod n</strong>으로 환산하지만 여전히 O(k mod n).</p>
+            <p><code>rotate(n)</code>은 이론적으로 아무것도 안 바꿔야 하지만 구현상 k mod n = 0 최적화는 있음. 실제로 O(1) 가까움. 하지만 <code>rotate(n+1)</code>은 O(1) 일 수행.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">두 linked list의 k번째 노드 중 <strong>큰 값</strong>을 찾는 함수 작성 (두 리스트 정렬 X, 사이즈 n).</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="code-block"><div class="code-header"><span class="code-label">kth_max.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">kth_of_two</span>(head1, head2, k):
+    <span class="hl-kw">def</span> <span class="hl-bi">at</span>(h, k):
+        <span class="hl-kw">for</span> _ <span class="hl-kw">in</span> <span class="hl-bi">range</span>(k): h = h.next
+        <span class="hl-kw">return</span> h.data
+    <span class="hl-kw">return</span> <span class="hl-bi">max</span>(at(head1, k), at(head2, k))</code></pre>
+          </div>
+          <div class="answer-why">
+            <div class="answer-why-title">복잡도</div>
+            <p>O(k) × 2 = O(k). 배열이라면 O(1) — linked list 인덱싱의 대표적 비용 예.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">LRU cache에 <strong>dict만</strong> 쓰거나 <strong>linked list만</strong> 쓰면 어떤 연산이 O(n)이 되는가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <ul>
+              <li>dict만: "가장 오래된 항목 찾기"가 O(n). 삽입 순서 정보가 없거나 (구 Python), 있어도 "맨 앞" 접근 O(n).</li>
+              <li>linked list만: 특정 key 조회가 O(n). 노드를 head부터 선형 탐색.</li>
+            </ul>
+            <p>둘 다 써야만 O(1) get + O(1) put 달성. hashmap이 key → node 매핑으로 linked list에 O(1) 접근 제공.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt"><code>@functools.lru_cache</code>와 <code>@functools.cache</code>의 차이는?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <ul>
+              <li><code>lru_cache(maxsize=128)</code>: 크기 제한 있음. 초과 시 LRU로 제거. 이중 연결 리스트 + dict.</li>
+              <li><code>cache</code> (Python 3.9+): <strong>무한 크기</strong>. dict만. 제거 없음. 코드 더 단순, 빠름.</li>
+            </ul>
+            <p>메모리 걱정 없고 입력 다양성 제한적이면 <code>@cache</code>. 입력 공간이 크면 <code>@lru_cache</code>.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Floyd's cycle detection에서 <code>fast = fast.next.next</code>인데 <code>fast.next</code>가 None이면? 버그 없이 처리되는가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>while 조건 <code>fast and fast.next</code>가 먼저 검사됨. <code>fast.next</code>가 None이면 loop 종료 → <code>fast.next.next</code> 접근 안 함. Python의 단락 평가(short-circuit) 덕분.</p>
+            <p>만약 조건이 <code>fast</code>만이면 <code>AttributeError: 'NoneType' object has no attribute 'next'</code> 발생.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">`deque(maxlen=3)`으로 최근 3개 값의 평균을 <strong>O(1)</strong>에 계산하는 클래스 작성 (스트림 입력).</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="code-block"><div class="code-header"><span class="code-label">moving_avg.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> collections <span class="hl-kw">import</span> deque
+
+<span class="hl-kw">class</span> <span class="hl-bi">MovingAverage</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(self, window):
+        self.window = deque(maxlen=window)
+        self.total = <span class="hl-num">0</span>
+    <span class="hl-kw">def</span> <span class="hl-bi">next</span>(self, x):
+        <span class="hl-kw">if</span> <span class="hl-bi">len</span>(self.window) == self.window.maxlen:
+            self.total -= self.window[<span class="hl-num">0</span>]
+        self.window.append(x)
+        self.total += x
+        <span class="hl-kw">return</span> self.total / <span class="hl-bi">len</span>(self.window)</code></pre>
+          </div>
+          <div class="answer-why">
+            <div class="answer-why-title">복잡도</div>
+            <p>각 <code>next</code> 호출 O(1): deque 양 끝 접근 O(1), 합 갱신 O(1). 전체 스트림 길이 n에 대해 O(n).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "stack을 구현해달라"에 Node 기반 linked list로 답했다. 이 답에 무엇이 문제인가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Python 맥락에서 <strong>불필요한 오버엔지니어링</strong>. stack은 그냥 list로 — <code>append()</code> / <code>pop()</code>이 O(1). 수제 linked list는 객체 생성 overhead로 실측 10~20배 느림.</p>
+            <p>"교육용" 또는 "C/C++ 마인드로 접근" 외에는 안 씁니다. 올바른 질문: "Python stack 관용구는 뭐지?" → list.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">CPython deque의 block 크기가 64가 아니라 4 또는 1024라면 어떤 문제가 생기는가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <ul>
+              <li><strong>4</strong>: block overhead 비율 = 32/32 = 50%. 교과서 linked list 수준으로 비효율. 캐시 라인(64바이트)도 채우지 못함.</li>
+              <li><strong>1024</strong>: 작은 deque (예: 10원소)도 1024 × 8 = 8KB 할당. 메모리 낭비. 또한 L1 캐시 초과(32KB 제한)로 캐시 효율 감소.</li>
+              <li><strong>64</strong>: 캐시 라인 8개 정확히 맞음. overhead 3%. 작은 deque도 낭비 적음. 이론+실측의 스위트 스팟.</li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">🔗</div>
+      <h3>단일 Linked List</h3>
+      <p>교과서의 대표작. 실전에선 캐시 미스로 array에 밀림. Python 표준에 없음.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">↔️</div>
+      <h3>이중 Linked List</h3>
+      <p>양 끝 O(1). 실무 핵심: LRU cache, OrderedDict, Timsort의 pending runs.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🥞</div>
+      <h3>Stack ADT</h3>
+      <p>LIFO. Python은 그냥 list 사용 (append/pop O(1)).</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🚶</div>
+      <h3>Queue ADT</h3>
+      <p>FIFO. Python은 <strong>deque</strong> 필수 (list.pop(0)은 O(n) 지옥).</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🧱</div>
+      <h3>Block-Linked List</h3>
+      <p>BLOCKLEN=64. data:metadata = 32:1. 전통 linked list의 캐시 문제 해결.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">💨</div>
+      <h3>CPython deque</h3>
+      <p>Raymond Hettinger 2004 (Python 2.4). 최악 O(1) append (list는 amortized). 실시간 시스템 적합.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Linked List</div><div class="glossary-def">노드와 포인터로 연결된 자료구조. 중간 삽입 O(1) (포인터 있을 때).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Singly Linked List</div><div class="glossary-def">next 포인터만 있는 단일 방향. pop_front O(1), pop_back O(n).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Doubly Linked List</div><div class="glossary-def">prev + next 양방향. 양 끝 O(1). 메모리 2배.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Node</div><div class="glossary-def">데이터 + 포인터(들)의 기본 단위.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Head / Tail</div><div class="glossary-def">linked list의 첫/마지막 노드. tail 유지하면 push_back O(1).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Sentinel Node</div><div class="glossary-def">실제 데이터 없는 더미 노드. 경계 케이스(empty, head) 코드 제거.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Cache Locality</div><div class="glossary-def">연속 메모리 접근의 속도 이점. array가 linked list보다 실측에서 우위인 근본 이유.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Cache Line</div><div class="glossary-def">CPU가 메모리에서 한 번에 가져오는 단위. 보통 64바이트.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Stack</div><div class="glossary-def">LIFO 자료구조. push/pop. Python은 list로 구현.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Queue</div><div class="glossary-def">FIFO 자료구조. enqueue/dequeue. Python은 deque 사용.</div></div>
+    <div class="glossary-item"><div class="glossary-term">deque</div><div class="glossary-def">Double-ended queue. collections.deque. 양 끝 O(1).</div></div>
+    <div class="glossary-item"><div class="glossary-term">BLOCKLEN</div><div class="glossary-def">CPython deque의 block 크기. 64. 2⁶으로 비트 연산 최적화.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Block-Linked List</div><div class="glossary-def">block 단위로 쪼개 doubly-link. data:metadata 비율 개선.</div></div>
+    <div class="glossary-item"><div class="glossary-term">_collectionsmodule.c</div><div class="glossary-def">CPython의 deque 구현 C 파일. Raymond Hettinger 유지.</div></div>
+    <div class="glossary-item"><div class="glossary-term">rotate(k)</div><div class="glossary-def">deque의 k칸 회전. O(k). leftindex/rightindex 조정.</div></div>
+    <div class="glossary-item"><div class="glossary-term">extendleft</div><div class="glossary-def">왼쪽에 원소들 추가. 순서 역전됨. reversed 필요.</div></div>
+    <div class="glossary-item"><div class="glossary-term">maxlen</div><div class="glossary-def">deque의 고정 크기. 초과 시 반대편 자동 제거. 원형 버퍼 구현.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Circular Buffer</div><div class="glossary-def">고정 크기의 원형 큐. 최신 N개 유지 용도.</div></div>
+    <div class="glossary-item"><div class="glossary-term">LRU Cache</div><div class="glossary-def">Least Recently Used. dict + doubly linked list로 O(1) get/put.</div></div>
+    <div class="glossary-item"><div class="glossary-term">functools.lru_cache</div><div class="glossary-def">Python 표준 LRU 데코레이터. C 구현. 순환 이중 연결 리스트.</div></div>
+    <div class="glossary-item"><div class="glossary-term">functools.cache</div><div class="glossary-def">Python 3.9+. 무한 크기 캐시. dict만. lru_cache보다 빠름.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Floyd's Cycle Detection</div><div class="glossary-def">토끼와 거북이. O(n) 시간 O(1) 공간으로 linked list 사이클 감지.</div></div>
+    <div class="glossary-item"><div class="glossary-term">queue.Queue</div><div class="glossary-def">Python 표준 queue 모듈. 스레드 안전. deque보다 10~100배 느림.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Raymond Hettinger</div><div class="glossary-def">CPython 핵심 개발자. deque, Counter, OrderedDict 등 설계/유지.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Short-Circuit Evaluation</div><div class="glossary-def">Python의 단락 평가. <code>a and b</code>에서 a가 False면 b 미평가. Cycle detection의 안전장치.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 10</div>
+    <h3>해시 테이블 — Python dict의 비밀</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      Python에서 가장 많이 쓰는 자료구조 dict — 어떻게 O(1) 조회가 가능한가. CPython의 <em>open addressing + perturbation</em>과 SipHash13 해싱.
+    </p>
+    <ul>
+      <li><strong>Hash function</strong> — 무엇이 좋은 해시인가 (universal hashing)</li>
+      <li><strong>Collision resolution</strong> — chaining vs open addressing</li>
+      <li><strong>CPython dict</strong> — open addressing + <em>perturbation</em>의 영리함</li>
+      <li><strong>SipHash-1-3</strong> — DoS 방어용 해시 함수</li>
+      <li><strong>Resize 정책</strong> — load factor, rehashing</li>
+      <li><strong>Python 3.7+ insertion-ordered dict</strong> — 어떻게 순서 유지 O(1) 이룩했나 (Raymond Hettinger)</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo08.html">&larr; Algo 08 — 동적 배열</a>
+  <a href="algo10.html">Algo 10 — 해시 테이블 (Python dict) &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">CLRS 4판 §10, CPython _collectionsmodule.c, Raymond Hettinger 설계 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

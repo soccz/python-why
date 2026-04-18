@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
     <div class="header-nav">
       <a href="week05.html" class="nav-btn">&larr; 이전</a>
       <a href="week07.html" class="nav-btn">다음 &rarr;</a>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -963,7 +964,7 @@ print(lst[10:])      # [] ← 빈 리스트 반환</code></pre>
   <!-- 전공자 -->
   <div class="level-section expert">
     <span class="level-badge level-expert">전공자</span>
-    <h3>Part A: BINARY_SLICE — Python 3.11+의 슬라이싱 최적화</h3>
+    <h3>Part A: BINARY_SLICE — Python 3.12+의 슬라이싱 최적화</h3>
     <pre><code class="language-python">import dis
 
 def get_slice(lst):
@@ -997,11 +998,12 @@ dis.dis(get_step_slice)</code></pre>
     </div>
     <p>중요한 차이:</p>
     <ul>
-      <li>스텝 없는 슬라이스(<code>[a:b]</code>): Python 3.11+에서 <code>BINARY_SLICE</code> 사용 — slice 객체 생성 없이 직접 처리, 최적화됨</li>
+      <li>스텝 없는 슬라이스(<code>[a:b]</code>): Python 3.12+에서 <code>BINARY_SLICE</code> 사용 — slice 객체 생성 없이 직접 처리, 최적화됨</li>
       <li>스텝 있는 슬라이스(<code>[::step]</code>): <code>BUILD_SLICE</code>로 slice 객체 먼저 생성 후 <code>BINARY_SUBSCR</code></li>
     </ul>
     <p>
-      <code>BINARY_SLICE</code>는 Python 3.11 (PEP 659)에서 추가된 특화 명령어로,
+      <code>BINARY_SLICE</code>는 Python 3.12에서 추가된 전용 명령어로
+      (<code>BUILD_SLICE</code> + <code>BINARY_SUBSCR</code> 조합을 대체),
       가장 흔한 패턴(<code>[a:b]</code>)을 빠르게 처리합니다.
     </p>
   </div>
@@ -2347,7 +2349,7 @@ print("\nco_consts:", comprehension_func.__code__.co_consts)
         </tr>
         <tr>
           <td>슬라이싱</td>
-          <td>lst[a:b] → BINARY_SLICE (3.11+). 새 리스트 반환. 범위 초과 안전</td>
+          <td>lst[a:b] → BINARY_SLICE (3.12+). 새 리스트 반환. 범위 초과 안전</td>
           <td>Slicing, slice object, BINARY_SLICE</td>
         </tr>
         <tr>
@@ -2458,7 +2460,7 @@ GET_ITER  →  BUILD_LIST 0  →  FOR_ITER loop {
     </div>
     <div class="glossary-item">
       <h4>BINARY_SLICE</h4>
-      <p>Python 3.11+의 슬라이싱 전용 바이트코드. 스텝 없는 [a:b] 슬라이스에 최적화.</p>
+      <p>Python 3.12+의 슬라이싱 전용 바이트코드. 스텝 없는 [a:b] 슬라이스에 최적화.</p>
     </div>
     <div class="glossary-item">
       <h4>Timsort</h4>

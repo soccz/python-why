@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 2주차: 정확성 증명과 루프 불변식 | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="루프 불변식 — 모든 입력에 대해 알고리즘이 정말로 맞는 답을 낸다는 것을 수학적으로 증명하는 도구">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 2주차: 정확성 증명과 루프 불변식 | PyWhy">
+  <meta property="og:description" content="Hoare triple, 불변식 3속성, 종료성 — 테스트로는 보장할 수 없는 것을 증명한다">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo02.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A2">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<!-- ==================== HEADER ==================== -->
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo01.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo03.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<!-- ==================== WEEK HEADER ==================== -->
+<div class="week-header">
+  <div class="week-number">ALGO 02</div>
+  <h1 class="week-title">정확성 증명과 루프 불변식<br>"내 코드가 정말 맞는가"를 보장하는 방법</h1>
+  <p class="week-subtitle">
+    100번 테스트해서 통과해도 — <strong>101번째 입력</strong>에서 틀릴 수 있습니다.<br>
+    모든 입력에 대해 알고리즘이 옳다는 것을 보증하는 도구가 <strong>루프 불변식(loop invariant)</strong>입니다.<br>
+    이번 주의 핵심 질문: <em>"테스트가 아니라 증명으로 — 어떻게?"</em>
+  </p>
+</div>
+
+<!-- ==================== 목차 ==================== -->
+<details class="toc" open>
+  <summary>목차 — 알고리즘 2주차 전체 내용</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 100점이 아니라 만점</a>
+    </div>
+    <div class="toc-section">
+      <a href="#why-prove" class="toc-section-link"><span class="toc-num">02</span>왜 증명하는가? — 테스트의 한계</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#hoare" class="toc-section-link"><span class="toc-num">03</span>Hoare triple — {P} S {Q}</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#three-properties" class="toc-section-link"><span class="toc-num">04</span>루프 불변식의 3속성</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#case-sum" class="toc-section-link"><span class="toc-num">05</span>사례 1 — 합계 함수의 정확성</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot elem">초급</span>
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#case-search" class="toc-section-link"><span class="toc-num">06</span>사례 2 — 선형 탐색의 정확성</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#case-insertion" class="toc-section-link"><span class="toc-num">07</span>사례 3 — 삽입 정렬 (CLRS §2.1)</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#case-binary" class="toc-section-link"><span class="toc-num">08</span>사례 4 — 이분 탐색의 함정</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#termination" class="toc-section-link"><span class="toc-num">09</span>종료성과 변형 함수</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#recursion" class="toc-section-link"><span class="toc-num">10</span>재귀의 정확성 — 강귀납법</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot adv">고급</span>
+        <span class="toc-level-dot exp">전공자</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#ai-correctness" class="toc-section-link"><span class="toc-num">11</span>AI는 정확성을 어떻게 다루는가</a>
+    </div>
+    <div class="toc-section">
+      <a href="#practice" class="toc-section-link"><span class="toc-num">12</span>실습 — 깨진 코드 찾기</a>
+      <div class="toc-levels">
+        <span class="toc-level-dot inter">중급</span>
+        <span class="toc-level-dot adv">고급</span>
+      </div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">13</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary" class="toc-section-link"><span class="toc-num">14</span>이번 주 정리</a>
+    </div>
+    <div class="toc-section">
+      <a href="#glossary-next" class="toc-section-link"><span class="toc-num">15</span>용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이번 주 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 100점이 아니라 만점</h2>
+
+  <blockquote class="quote">
+    수학 시험에서 100점을 받았습니다. 다음 시험도 100점을 받을 거라고 확신할 수 있나요?<br>
+    <strong>없습니다.</strong> 운이 좋았을 수 있고, 시험 범위 밖 문제는 못 풀 수도 있습니다.<br>
+    "100점 받았다"는 사실은 <em>"앞으로 항상 맞다"</em>를 보장하지 않습니다.
+  </blockquote>
+
+  <p>
+    프로그래밍에서도 같습니다.
+  </p>
+  <ul>
+    <li>친구가 보낸 정렬 함수 <code>sort_clever()</code>를 받았습니다.</li>
+    <li>10개 입력으로 테스트 — 모두 통과.</li>
+    <li>100개 무작위 입력 — 모두 통과.</li>
+    <li>1만 개 입력 — 모두 통과.</li>
+    <li>그런데 정말 <em>모든 입력</em>에 대해 맞나요?</li>
+  </ul>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 테스트는 "버그가 있다"를 찾을 뿐 "버그가 없다"를 증명하지 못한다</div>
+    <p>
+      <em>"Testing shows the presence, not the absence of bugs."</em> — Edsger Dijkstra (1969)<br>
+      통과한 테스트가 100만 개여도, <strong>1만큼의 안 본 입력</strong>에서 틀릴 수 있습니다. <em>가능한 입력의 수는 무한</em>입니다.
+    </p>
+  </div>
+
+  <p>
+    이번 주의 도구는 <strong>루프 불변식(loop invariant)</strong>입니다. "이 알고리즘이 모든 입력에 대해 옳다"를 수학적으로 증명하는 방법입니다.<br>
+    이번 주의 핵심은 — <em>"테스트는 보충재이고, 증명이 본진"</em>이라는 시각의 전환입니다.
+  </p>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 540 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="루프 불변식의 3가지 속성">
+      <!-- 3개의 원형 노드 -->
+      <circle cx="100" cy="140" r="55" class="viz-node"/>
+      <circle cx="270" cy="140" r="55" class="viz-node"/>
+      <circle cx="440" cy="140" r="55" class="viz-node"/>
+      <!-- 화살표들 -->
+      <defs>
+        <marker id="arr-a02" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor" opacity="0.6"/>
+        </marker>
+      </defs>
+      <line x1="160" y1="140" x2="208" y2="140" stroke="currentColor" stroke-width="2" opacity="0.5" marker-end="url(#arr-a02)"/>
+      <line x1="330" y1="140" x2="378" y2="140" stroke="currentColor" stroke-width="2" opacity="0.5" marker-end="url(#arr-a02)"/>
+      <!-- 자기 루프 (Maintenance) -->
+      <path d="M 270 85 Q 270 50, 240 50 Q 210 50, 220 85" stroke="currentColor" stroke-width="2" opacity="0.5" fill="none" marker-end="url(#arr-a02)"/>
+      <text x="225" y="38" class="viz-label-small" text-anchor="middle">반복</text>
+      <!-- 라벨 -->
+      <text x="100" y="135" class="viz-label" text-anchor="middle">Init</text>
+      <text x="100" y="155" class="viz-label-small" text-anchor="middle">초기 성립</text>
+      <text x="270" y="135" class="viz-label" text-anchor="middle">Maintain</text>
+      <text x="270" y="155" class="viz-label-small" text-anchor="middle">유지됨</text>
+      <text x="440" y="135" class="viz-label" text-anchor="middle">Terminate</text>
+      <text x="440" y="155" class="viz-label-small" text-anchor="middle">결론 도출</text>
+      <!-- 하단 설명 -->
+      <text x="100" y="225" class="viz-label-small" text-anchor="middle">루프 시작 전</text>
+      <text x="100" y="240" class="viz-label-small" text-anchor="middle">불변식 P 성립</text>
+      <text x="270" y="225" class="viz-label-small" text-anchor="middle">반복 시작 직전</text>
+      <text x="270" y="240" class="viz-label-small" text-anchor="middle">P → 다음 직전 P</text>
+      <text x="440" y="225" class="viz-label-small" text-anchor="middle">루프 종료 시</text>
+      <text x="440" y="240" class="viz-label-small" text-anchor="middle">P + ¬B = 목표 Q</text>
+    </svg>
+    <div class="viz-caption"><strong>루프 불변식 3속성 = 수학적 귀납법.</strong> Init = base case, Maintain = inductive step, Terminate = 결론. 셋 모두 만족하면 루프의 모든 반복에 대해 P가 성립.</div>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a02-step { 0%,2%{opacity:0} 4%,13%{opacity:1} 15%,100%{opacity:0} }
+      .a02-S0{animation:a02-step 8s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a02-S1{animation:a02-step 8s linear infinite;animation-delay:1.2s;animation-fill-mode:backwards}
+      .a02-S2{animation:a02-step 8s linear infinite;animation-delay:2.4s;animation-fill-mode:backwards}
+      .a02-S3{animation:a02-step 8s linear infinite;animation-delay:3.6s;animation-fill-mode:backwards}
+      .a02-S4{animation:a02-step 8s linear infinite;animation-delay:4.8s;animation-fill-mode:backwards}
+      .a02-S5{animation:a02-step 8s linear infinite;animation-delay:6.0s;animation-fill-mode:backwards}
+      @keyframes a02-cell { 0%,4%{fill:var(--surface)} 6%,100%{fill:rgba(196,114,78,0.25)} }
+      .a02-c0{animation:a02-cell 8s linear infinite;animation-delay:1.2s;animation-fill-mode:backwards}
+      .a02-c1{animation:a02-cell 8s linear infinite;animation-delay:2.4s;animation-fill-mode:backwards}
+      .a02-c2{animation:a02-cell 8s linear infinite;animation-delay:3.6s;animation-fill-mode:backwards}
+      .a02-c3{animation:a02-cell 8s linear infinite;animation-delay:4.8s;animation-fill-mode:backwards}
+      .a02-c4{animation:a02-cell 8s linear infinite;animation-delay:6.0s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="합계 함수의 루프 불변식 단계별 추적">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">총합 구하기 — 매 반복 직전 "s = nums[0]+...+nums[i-1]" 유지하나?</text>
+
+      <!-- 입력 배열 -->
+      <text x="40" y="58" class="viz-label-small">nums:</text>
+      <g transform="translate(90, 40)" font-family="JetBrains Mono, monospace" font-size="14">
+        <rect class="a02-c0" x="0" y="0" width="48" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="24" y="20" text-anchor="middle">10</text>
+        <rect class="a02-c1" x="50" y="0" width="48" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="74" y="20" text-anchor="middle">20</text>
+        <rect class="a02-c2" x="100" y="0" width="48" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="124" y="20" text-anchor="middle">30</text>
+        <rect class="a02-c3" x="150" y="0" width="48" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="174" y="20" text-anchor="middle">40</text>
+        <rect class="a02-c4" x="200" y="0" width="48" height="32" stroke="var(--text-muted)" stroke-width="1.5"/><text x="224" y="20" text-anchor="middle">50</text>
+      </g>
+      <!-- 인덱스 -->
+      <g transform="translate(90, 75)" font-family="JetBrains Mono, monospace" font-size="11">
+        <text x="24" y="0" text-anchor="middle" class="viz-label-small">[0]</text>
+        <text x="74" y="0" text-anchor="middle" class="viz-label-small">[1]</text>
+        <text x="124" y="0" text-anchor="middle" class="viz-label-small">[2]</text>
+        <text x="174" y="0" text-anchor="middle" class="viz-label-small">[3]</text>
+        <text x="224" y="0" text-anchor="middle" class="viz-label-small">[4]</text>
+      </g>
+
+      <!-- 단계별 상태 (오른쪽에 큰 박스로) -->
+      <g transform="translate(380, 35)" font-family="JetBrains Mono, monospace" font-size="14">
+        <rect x="0" y="0" width="320" height="60" rx="6" fill="var(--surface)" stroke="var(--accent)" stroke-width="2" opacity="0.15"/>
+        <text class="a02-S0 viz-label" x="160" y="22" text-anchor="middle" font-weight="700">반복 직전 (i=0)</text>
+        <text class="a02-S0 viz-label" x="160" y="44" text-anchor="middle">s = 0 (빈 합)</text>
+        <text class="a02-S1 viz-label" x="160" y="22" text-anchor="middle" font-weight="700">i=1 직전 (10 더한 후)</text>
+        <text class="a02-S1 viz-label" x="160" y="44" text-anchor="middle">s = 10 = nums[0]</text>
+        <text class="a02-S2 viz-label" x="160" y="22" text-anchor="middle" font-weight="700">i=2 직전 (20 더한 후)</text>
+        <text class="a02-S2 viz-label" x="160" y="44" text-anchor="middle">s = 30 = nums[0]+nums[1]</text>
+        <text class="a02-S3 viz-label" x="160" y="22" text-anchor="middle" font-weight="700">i=3 직전 (30 더한 후)</text>
+        <text class="a02-S3 viz-label" x="160" y="44" text-anchor="middle">s = 60 = …+nums[2]</text>
+        <text class="a02-S4 viz-label" x="160" y="22" text-anchor="middle" font-weight="700">i=4 직전 (40 더한 후)</text>
+        <text class="a02-S4 viz-label" x="160" y="44" text-anchor="middle">s = 100 = …+nums[3]</text>
+        <text class="a02-S5 viz-label" x="160" y="22" text-anchor="middle" font-weight="700" fill="#3b9b6e">종료 (i=5)</text>
+        <text class="a02-S5 viz-label" x="160" y="44" text-anchor="middle" fill="#3b9b6e">s = 150 ✓ 정답</text>
+      </g>
+
+      <!-- 불변식 박스 -->
+      <g transform="translate(40, 130)">
+        <rect x="0" y="0" width="660" height="48" rx="6" fill="rgba(196,114,78,0.06)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="330" y="20" text-anchor="middle" class="viz-label" font-weight="700">불변식 I(i): s = nums[0] + nums[1] + … + nums[i-1]</text>
+        <text x="330" y="38" text-anchor="middle" class="viz-label-small">매 반복 직전 이 식이 성립 → 루프 끝나면 i=n이라 s = 전체 합</text>
+      </g>
+
+      <!-- 3속성 체크 -->
+      <g transform="translate(40, 200)">
+        <text x="0" y="0" class="viz-label" font-weight="700">✓ Init</text>
+        <text x="0" y="18" class="viz-label-small">i=0, s=0. 빈 합 = 0. ✓</text>
+        <text x="220" y="0" class="viz-label" font-weight="700">✓ Maintain</text>
+        <text x="220" y="18" class="viz-label-small">s += nums[i]; i++ → 새 식 성립 ✓</text>
+        <text x="460" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">✓ Terminate</text>
+        <text x="460" y="18" class="viz-label-small">i=n에서 s = 전체 합 = 정답 ✓</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>합계 함수의 루프가 옳다는 "증명"을 시각화.</strong> 매 반복 직전마다 s가 "지금까지 본 원소들의 합"임을 유지 → 루프 끝나면 자동으로 전체 합. 테스트 없이도 100% 확신.</div>
+  </div>
+
+  <p style="font-size:0.9em;color:var(--text-muted);">
+    출처: E. W. Dijkstra. "Notes on Structured Programming". EWD249, 1970, §3.
+  </p>
+</section>
+
+<!-- ==================== 02. 왜 증명하는가 ==================== -->
+<section id="why-prove">
+  <h2>02 — 왜 증명하는가? 테스트의 한계</h2>
+
+  <div class="level-section elementary">
+    <div class="level-badge level-elem">초급</div>
+    <h3>"내가 지금 안 본 입력"의 무게</h3>
+    <p>
+      배열 정렬 함수는 길이 n의 배열, 각 원소가 int 범위인 모든 경우에 동작해야 합니다.<br>
+      n=10, 각 원소가 0~99라면 — 가능한 입력은 100¹⁰ = 10²⁰ 개. 1초에 10억 개를 검사해도 <strong>3,000년</strong>.<br>
+      <strong>"테스트로 모든 경우 확인"은 물리적으로 불가능합니다.</strong>
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>유명한 사고 — 검증 안 된 정확성이 만든 재앙</h3>
+    <ol>
+      <li>
+        <strong>Ariane 5 (1996)</strong> — 발사 37초 후 폭발. 64-bit float를 16-bit int로 변환하는 코드가 오버플로우. 테스트는 통과했지만 <em>새 발사체의 가속도 범위에서</em> 처음 발생.
+      </li>
+      <li>
+        <strong>Therac-25 (1985~87)</strong> — 방사선 치료기가 정상 용량의 100배를 환자에게 투여, 사고 6건·환자 사망 발생. race condition (입력 편집과 단일 스케줄러 사이의 타이밍 버그) — <em>테스트로는 절대 잡히지 않는</em> 종류의 버그.
+      </li>
+      <li>
+        <strong>Pentium FDIV bug (1994)</strong> — Intel CPU의 나눗셈 회로 오류. Intel 손실 4.75억 달러. 1024개 셀의 lookup table 중 5개가 잘못. 테스트로 발견될 확률은 90억 분의 1.
+      </li>
+    </ol>
+    <p>
+      세 사고의 공통점: <strong>"이런 입력은 절대 안 들어올 거야"</strong>의 가정이 깨졌습니다.<br>
+      증명은 "그런 가정 자체를 만들지 않는" 방법입니다.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>증명 vs 테스트 — 보완 관계</h3>
+    <table class="dict-table">
+      <thead><tr><th>구분</th><th>테스트</th><th>증명</th></tr></thead>
+      <tbody>
+        <tr><td>커버 범위</td><td>유한한 입력</td><td>모든 입력 (∀)</td></tr>
+        <tr><td>찾는 것</td><td>버그 존재</td><td>버그 부재</td></tr>
+        <tr><td>비용</td><td>실행 시간</td><td>사고 시간</td></tr>
+        <tr><td>실패 시</td><td>"이 입력에서 틀림"</td><td>"가정이 틀림"</td></tr>
+        <tr><td>강점</td><td>실제 환경 확인</td><td>모든 경우 보장</td></tr>
+      </tbody>
+    </table>
+    <p>
+      현실의 프로젝트는 <em>"핵심 로직은 증명, 통합은 테스트"</em>로 둘을 섞습니다.
+      이번 주는 그 "증명" 쪽을 손에 익힙니다.
+    </p>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원서 인용 — CLRS, §2.1 "Insertion sort"</div>
+    <p>
+      "루프 불변식은 알고리즘이 왜 옳은지 이해하는 데 도움이 된다.
+      우리는 루프 불변식에 대해 세 가지를 보여야 한다: <em>초기성(initialization)</em>, <em>유지성(maintenance)</em>, <em>종료성(termination)</em>.
+      처음 둘이 성립하면 — 수학적 귀납법처럼 — 루프가 끝날 때까지 불변식이 유지된다."
+    </p>
+    <p style="font-size:0.92em;color:var(--text-muted);">
+      출처: Cormen, Leiserson, Rivest, Stein. <em>Introduction to Algorithms</em>, 4th ed., MIT Press, §2.1, p. 19.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. Hoare triple ==================== -->
+<section id="hoare">
+  <h2>03 — Hoare triple — {P} S {Q}</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>"코드의 정확성"이란 정확히 무엇인가</h3>
+    <p>
+      "코드가 맞다"는 막연한 표현입니다. 1969년 C. A. R. Hoare가 정확한 정의를 만들었습니다.
+    </p>
+    <div class="formula-box">
+      <strong>{P} S {Q}</strong>: "<em>P</em>가 참인 상태에서 <em>S</em>를 실행하면, 끝났을 때 <em>Q</em>가 참이다."
+    </div>
+    <ul>
+      <li><strong>P</strong> — 사전조건(precondition). 실행 전에 만족해야 할 가정.</li>
+      <li><strong>S</strong> — 명령문(statement). 실행할 코드.</li>
+      <li><strong>Q</strong> — 사후조건(postcondition). 실행 후에 만족해야 할 결과.</li>
+    </ul>
+    <p>
+      이걸 한 줄로 쓴 것이 <strong>호어 트리플(Hoare triple)</strong>입니다.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>예제 — 절댓값 함수</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">abs_simple</span><button class="copy-btn">복사</button></div>
+    <pre><code>def abs_simple(x):
+    # P: x is an integer
+    if x &lt; 0:
+        x = -x
+    # Q: x &gt;= 0 and (원래 x의 절댓값과 같다)
+    return x</code></pre></div>
+    <p>
+      호어 트리플로 쓰면:
+    </p>
+    <div class="formula-box">
+      <strong>{ x ∈ ℤ }</strong> &nbsp; if x&lt;0: x = -x &nbsp; <strong>{ x ≥ 0 ∧ x = |x₀| }</strong>
+    </div>
+    <p>
+      여기서 x₀는 <em>실행 전의</em> x를 가리키는 표기. 사후조건이 사전조건의 변수를 참조할 때 자주 씁니다.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>부분 정확성 vs 전체 정확성</h3>
+    <ul>
+      <li><strong>부분 정확성(partial correctness)</strong>: <em>S가 멈춘다면</em> Q가 성립.</li>
+      <li><strong>전체 정확성(total correctness)</strong>: S가 <em>반드시 멈추고</em> Q가 성립.</li>
+    </ul>
+    <p>
+      호어 트리플 <code>{P} S {Q}</code>는 보통 부분 정확성입니다. 종료성을 따로 증명해야 전체 정확성이 됩니다 (§09에서 다룸).
+    </p>
+    <p>
+      <em>왜 둘로 나누나?</em> — 종료성은 별도의 어려운 문제이기 때문입니다 (정지 문제는 일반적으로 결정 불가능). 두 단계로 나누면 각각을 따로 다룰 수 있습니다.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>호어 논리의 추론 규칙들</h3>
+    <p>
+      호어가 같은 1969년 논문에서 제시한 추론 규칙(일부):
+    </p>
+
+    <h4>대입 공리(Assignment axiom)</h4>
+    <div class="formula-box">
+      <strong>{ Q[x ← E] } &nbsp; x := E &nbsp; { Q }</strong>
+    </div>
+    <p>
+      "Q에서 x를 모두 E로 바꾼 식이 사전조건이면, 대입 후에 Q가 성립한다."<br>
+      예: Q가 <code>x &gt; 5</code>이면 사전조건은 <code>E &gt; 5</code>. 대입 <code>x := y+1</code> 후 <code>x &gt; 5</code>가 성립하려면 사전 <code>y+1 &gt; 5</code>가 필요.
+    </p>
+
+    <h4>순차 합성(Sequential composition)</h4>
+    <div class="formula-box">
+      <strong>{P} S₁ {R}, &nbsp; {R} S₂ {Q} &nbsp;⟹&nbsp; {P} S₁; S₂ {Q}</strong>
+    </div>
+
+    <h4>조건문(Conditional)</h4>
+    <div class="formula-box">
+      <strong>{P ∧ B} S₁ {Q}, &nbsp; {P ∧ ¬B} S₂ {Q} &nbsp;⟹&nbsp; {P} if B then S₁ else S₂ {Q}</strong>
+    </div>
+
+    <h4>반복문(Loop)</h4>
+    <div class="formula-box">
+      <strong>{I ∧ B} S {I} &nbsp;⟹&nbsp; {I} while B do S {I ∧ ¬B}</strong>
+    </div>
+    <p>
+      여기서 <strong>I</strong>가 바로 <em>루프 불변식</em>! 다음 절의 핵심.
+    </p>
+
+    <p style="font-size:0.92em;color:var(--text-muted);">
+      출처: C. A. R. Hoare. "An Axiomatic Basis for Computer Programming". <em>Communications of the ACM</em>, 12(10), 1969, pp. 576–583.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>가장 약한 사전조건 (weakest precondition, Dijkstra 1975)</h3>
+    <p>
+      Hoare 추론 규칙은 "사후조건 Q와 코드 S가 주어졌을 때, <em>가장 약한</em> 사전조건 P가 무엇인가"를 묻는 함수형으로 다시 쓸 수 있습니다.
+    </p>
+    <div class="formula-box">
+      <strong>wp(S, Q)</strong> = "S 실행 후 Q가 성립하기 위한, S 실행 전 가장 약한 조건"
+    </div>
+    <ul>
+      <li>wp(skip, Q) = Q</li>
+      <li>wp(x := E, Q) = Q[x ← E]</li>
+      <li>wp(S₁; S₂, Q) = wp(S₁, wp(S₂, Q))</li>
+      <li>wp(if B then S₁ else S₂, Q) = (B ⇒ wp(S₁, Q)) ∧ (¬B ⇒ wp(S₂, Q))</li>
+    </ul>
+    <p>
+      wp는 <strong>역방향(backward) 분석</strong>을 줍니다. 결과(Q)에서 출발해 사전 조건을 계산. 이게 정형 검증 도구(Dafny, Why3, Spark/Ada)의 핵심 엔진.
+    </p>
+    <p style="font-size:0.92em;color:var(--text-muted);">
+      출처: E. W. Dijkstra. "Guarded Commands, Nondeterminacy and Formal Derivation of Programs". <em>CACM</em>, 18(8), 1975.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 04. 루프 불변식의 3속성 ==================== -->
+<section id="three-properties">
+  <h2>04 — 루프 불변식의 3속성</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>한 줄 요약</h3>
+    <p>
+      <strong>루프 불변식 I</strong>은 <em>"루프의 매 반복 직전과 직후에 항상 참인 명제"</em>입니다.<br>
+      "이 루프가 무엇을 하고 있는지"를 한 문장으로 압축한 것이 좋은 불변식입니다.
+    </p>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>3속성 — Initialization · Maintenance · Termination</h3>
+    <p>
+      불변식 I가 정확성 증명에 쓰이려면, 다음 셋을 모두 보여야 합니다.
+    </p>
+    <ol>
+      <li>
+        <strong>초기성 (Initialization)</strong> — 루프 첫 반복 직전에 I가 참이다.
+      </li>
+      <li>
+        <strong>유지성 (Maintenance)</strong> — I가 참인 상태에서 한 번 반복하면, 다음 반복 직전에도 I가 참이다.
+      </li>
+      <li>
+        <strong>종료성 (Termination)</strong> — 루프가 끝날 때 I가 우리가 원하는 결과 Q를 알려준다.
+      </li>
+    </ol>
+    <p>
+      <strong>1과 2는 수학적 귀납법</strong>입니다. 기저(Initialization) + 귀납 단계(Maintenance) → I는 모든 반복에서 참.<br>
+      그리고 종료 시점에 I + 종료 조건이 합쳐져 우리가 원하던 Q가 나옵니다.
+    </p>
+
+    <div class="why-box">
+      <div class="box-header">WHY — 왜 "루프 직전"인가, "직후"가 아닌가?</div>
+      <p>
+        불변식은 보통 <em>"i번째 반복을 시작하기 직전의 상태"</em>에 대해 씁니다. 루프 본문이 끝나면 변수가 갱신된 상태로 다음 반복 직전이 됩니다.
+        그래서 "첫 반복 직전(=초기성)"부터 "마지막 반복 직후(=루프 종료 직전)"까지 같은 명제가 늘 참이어야 합니다.<br>
+        직후 기준으로 써도 본질은 같습니다 — 일관성만 지키면 됩니다.
+      </p>
+    </div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>증명 양식 — 4단</h3>
+    <p>
+      앞으로의 모든 사례 증명은 다음 4단으로 씁니다.
+    </p>
+    <ol>
+      <li><strong>불변식 I 명시</strong>: 매 반복 직전에 무엇이 참이어야 하는지 한 문장.</li>
+      <li><strong>초기성 (Initialization)</strong>: 첫 반복 직전(루프 진입 시) I 성립.</li>
+      <li><strong>유지성 (Maintenance)</strong>: I ∧ (루프 조건 B) 가정 → 본문 실행 후에도 I.</li>
+      <li><strong>종료성 (Termination)</strong>: 루프 종료 시 I ∧ ¬B → 사후조건 Q.</li>
+    </ol>
+    <p>
+      추가로 — 종료성의 "<em>루프가 정말로 멈춤</em>" 부분은 <strong>변형 함수(variant function)</strong>로 따로 보입니다 (§09).
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>좋은 불변식 vs 나쁜 불변식</h3>
+    <p>
+      불변식은 "참이기만 하면" 되는 게 아니라 — <strong>충분히 강해서 사후조건 Q를 함의</strong>해야 합니다.
+    </p>
+    <ul>
+      <li><strong>너무 약한 불변식</strong>: <code>I = True</code>. 항상 참이지만 정보가 없음. 종료 시 Q를 끌어낼 수 없음.</li>
+      <li><strong>너무 강한 불변식</strong>: 첫 반복 직전(초기성)에 거짓일 수도 있음. 증명 시작부터 막힘.</li>
+      <li><strong>좋은 불변식</strong>: "지금까지 처리한 부분에 대해 우리가 원하는 결과가 부분적으로 만들어져 있다"의 형태. <em>알고리즘의 진행 상태 그 자체</em>.</li>
+    </ul>
+    <p>
+      <strong>관용적 패턴</strong>: 불변식은 보통 "인덱스 i 시점에서, 부분 결과가 ___ 까지는 옳다"의 형태를 띱니다.
+    </p>
+    <ul>
+      <li>합계: <em>"s = sum(nums[0..i-1])"</em></li>
+      <li>최댓값: <em>"m = max(nums[0..i-1])"</em></li>
+      <li>선형 탐색: <em>"nums[0..i-1]에는 target이 없다"</em></li>
+      <li>삽입 정렬: <em>"nums[0..j-1]은 정렬된 상태로, 원래의 nums[0..j-1] 원소들의 순열"</em></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 05. 사례 1: 합계 ==================== -->
+<section id="case-sum">
+  <h2>05 — 사례 1: 합계 함수의 정확성</h2>
+
+  <div class="level-section elementary">
+    <div class="level-badge level-elem">초급</div>
+    <h3>증명할 코드</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">total</span><button class="copy-btn">복사</button></div>
+    <pre><code>def total(nums):
+    s = 0
+    for i in range(len(nums)):
+        s = s + nums[i]
+    return s</code></pre></div>
+    <p>
+      <strong>호어 트리플</strong>:
+    </p>
+    <div class="formula-box">
+      <strong>{ nums는 숫자 리스트, len(nums) = n }</strong> &nbsp; total(nums) &nbsp; <strong>{ 반환값 = nums[0] + nums[1] + … + nums[n-1] }</strong>
+    </div>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>불변식</h3>
+    <div class="formula-box">
+      <strong>I(i)</strong>: 매 반복 직전에 &nbsp; <strong>s = nums[0] + nums[1] + … + nums[i-1]</strong>
+    </div>
+    <p>
+      특수 약속: i=0이면 합은 빈 합 = 0.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>증명 (4단)</h3>
+
+    <h4>1. 초기성 (Initialization)</h4>
+    <p>
+      첫 반복 직전: i=0, s=0. I(0): s = (빈 합) = 0. ✓
+    </p>
+
+    <h4>2. 유지성 (Maintenance)</h4>
+    <p>
+      I(i)가 성립하고 (s = nums[0] + … + nums[i-1]), 본문 <code>s = s + nums[i]</code>를 실행하면:<br>
+      새로운 s = nums[0] + … + nums[i-1] + nums[i] = nums[0] + … + nums[i].<br>
+      그리고 i가 i+1로 갱신됨. 따라서 다음 반복 직전 (i' = i+1, s' = nums[0] + … + nums[i' - 1]). I(i+1) ✓.
+    </p>
+
+    <h4>3. 종료성 (Termination)</h4>
+    <p>
+      <code>range(n)</code>은 정확히 n번 반복 후 종료. 종료 직후 i = n.<br>
+      I(n): s = nums[0] + … + nums[n-1] = (전체 합).<br>
+      함수가 s를 반환 → 사후조건 Q 성립. ∎
+    </p>
+
+    <div class="why-box">
+      <div class="box-header">WHY — "for문이 정확히 n번 반복"의 근거</div>
+      <p>
+        Python의 <code>range(n)</code>은 0, 1, …, n-1을 차례로 내는 이터레이터 — 정확히 n번 반복 후 <code>StopIteration</code>으로 종료.<br>
+        이 자체가 또 하나의 작은 정확성 — Python <code>range</code>의 의미론에 우리가 의존하고 있습니다.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 06. 사례 2: 선형 탐색 ==================== -->
+<section id="case-search">
+  <h2>06 — 사례 2: 선형 탐색의 정확성</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>증명할 코드</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">linear_search</span><button class="copy-btn">복사</button></div>
+    <pre><code>def linear_search(nums, target):
+    for i in range(len(nums)):
+        if nums[i] == target:
+            return i
+    return -1</code></pre></div>
+    <p>
+      <strong>사후조건 Q</strong>: 반환값 r에 대해
+    </p>
+    <ul>
+      <li>r ≠ -1 ⇒ nums[r] = target</li>
+      <li>r = -1 ⇒ ∀j: nums[j] ≠ target</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>불변식과 증명</h3>
+
+    <div class="formula-box">
+      <strong>I(i)</strong>: 매 반복 직전에 &nbsp; <strong>nums[0..i-1] 안에는 target이 없다</strong>.
+    </div>
+
+    <h4>1. 초기성</h4>
+    <p>i=0. nums[0..-1] = 빈 슬라이스. 빈 집합에는 어떤 원소도 없음 → I(0) ✓ (vacuously true).</p>
+
+    <h4>2. 유지성</h4>
+    <p>
+      I(i) 성립 + 본문 진입. 두 분기:
+    </p>
+    <ol>
+      <li>nums[i] == target → return i. 이 경우 사후조건 Q 즉시 성립 (반환값 = i, nums[i] = target). ✓</li>
+      <li>nums[i] ≠ target → 다음 반복 진행. 다음 직전 i' = i+1, 그리고 I(i)에 의해 nums[0..i-1] 안에 target 없음. 게다가 nums[i] ≠ target도 알아냈음. 따라서 nums[0..i] = nums[0..i'-1] 안에 target 없음 → I(i') ✓.</li>
+    </ol>
+
+    <h4>3. 종료성</h4>
+    <p>
+      두 가지 종료 경로:
+    </p>
+    <ul>
+      <li>중간에 return i — 이미 위에서 Q 성립.</li>
+      <li>for문이 모두 끝남 → i = n. I(n): nums[0..n-1] 안에 target 없음 → ∀j ∈ [0, n): nums[j] ≠ target. 함수가 -1 반환 → Q 성립. ∎</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 07. 사례 3: 삽입 정렬 ==================== -->
+<section id="case-insertion">
+  <h2>07 — 사례 3: 삽입 정렬 (CLRS §2.1)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>증명할 코드 (CLRS 의사코드를 Python으로)</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">insertion_sort</span><button class="copy-btn">복사</button></div>
+    <pre><code>def insertion_sort(A):
+    n = len(A)
+    for j in range(1, n):           # 외부 루프 — j = 1, 2, ..., n-1
+        key = A[j]
+        i = j - 1
+        while i &gt;= 0 and A[i] &gt; key:    # 내부 루프 — key를 자리 찾기
+            A[i + 1] = A[i]
+            i = i - 1
+        A[i + 1] = key
+    return A</code></pre></div>
+
+    <p>
+      <strong>사후조건 Q</strong>: 반환된 A는 (a) 원래 A의 순열이고 (b) 비내림차순 정렬되어 있다.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>외부 루프 불변식 (CLRS의 표현 그대로)</h3>
+    <div class="formula-box">
+      <strong>I_outer(j)</strong>: j번째 반복 직전, &nbsp; <strong>A[0..j-1]</strong>은 원래 A[0..j-1]의 원소들로만 구성된 정렬된 부분배열이다.
+    </div>
+
+    <h4>1. 초기성</h4>
+    <p>
+      j=1. A[0..0] = [A[0]] — 원소 한 개는 정렬됨, 원래 A[0]과 같음. I_outer(1) ✓.
+    </p>
+
+    <h4>2. 유지성</h4>
+    <p>
+      I_outer(j) 성립 → A[0..j-1] 정렬됨. 본문은 key = A[j]를 A[0..j-1]의 적절한 자리에 끼워 넣고 큰 원소들은 한 칸씩 밀어냄.<br>
+      <strong>핵심 보조정리</strong>: while 루프가 끝났을 때 i+1은 key가 들어갈 자리이고, A[i+1+1..j]는 원래 A[i+1..j-1]을 한 칸씩 민 결과 = 정렬됨.<br>
+      key를 A[i+1]에 대입 → A[0..j]가 정렬됨, 그리고 원래 A[0..j]의 순열. I_outer(j+1) ✓.
+    </p>
+
+    <h4>3. 종료성</h4>
+    <p>
+      외부 루프가 j = n에서 끝남. I_outer(n): A[0..n-1] = A 전체가 정렬됨, 원래 A의 순열. → 사후조건 Q. ∎
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>내부 while의 불변식 (보조정리 증명)</h3>
+    <p>
+      "유지성 단계"에서 한 줄로 넘긴 보조정리를 풀어보면 — 내부 while 자체에도 불변식이 필요합니다.
+    </p>
+
+    <div class="formula-box">
+      <strong>I_inner(i)</strong>: 매 while 반복 직전,<br>
+      (a) A[i+2..j]는 정렬된 비내림차순,<br>
+      (b) A[i+2..j]의 모든 원소는 key보다 크다,<br>
+      (c) A[0..i]는 원래 A[0..j-1]의 처음 i+1개 원소와 같다 (이 영역은 손대지 않았음).
+    </div>
+
+    <h4>초기성</h4>
+    <p>i = j-1. A[i+2..j] = A[j+1..j] = 빈 슬라이스 → (a)(b) 자동. (c) i+1 = j, 처음 j개는 변경 없음 → ✓.</p>
+
+    <h4>유지성</h4>
+    <p>
+      I_inner(i) ∧ (i ≥ 0 ∧ A[i] &gt; key). <code>A[i+1] = A[i]</code> 실행 후, A[i+1] = (옛 A[i]) &gt; key. A[i+2..j]는 그대로 (정렬+key보다 큼).<br>
+      따라서 새 영역 A[i+1..j] = A[(i')+2..j] (i' = i-1)도 (a)(b) 만족. (c) 외부 영역 안 건드림. I_inner(i-1) ✓.
+    </p>
+
+    <h4>종료 + 삽입</h4>
+    <p>
+      while 종료 조건: i &lt; 0 ∨ A[i] ≤ key.<br>
+      <code>A[i+1] = key</code> 실행 후, A[0..i]는 ≤ key (모두 정렬되어 있고 마지막 원소가 key 이하), A[i+2..j]는 &gt; key, A[i+1] = key. 따라서 A[0..j] 전체가 정렬됨.
+    </p>
+    <p>
+      (a) 원래 A[0..j-1]의 모든 원소가 보존됨 (한 칸 밀려있을 뿐) + key 추가 → A[0..j]는 원래 A[0..j]의 순열.
+    </p>
+    <p>
+      이로써 보조정리 성립 → 외부 유지성도 정식으로 증명됨. ∎
+    </p>
+
+    <div class="reading-box">
+      <div class="box-header">📖 원서 인용 — CLRS §2.1</div>
+      <p>
+        "외부 for 루프의 시작 시점에서, A[1..j-1]은 원래 A[1..j-1]에 있던 원소들로 구성되며 정렬된 순서로 있다.
+        이 성질을 형식적인 명제로 만들면 <em>루프 불변식</em>이 된다."
+      </p>
+      <p style="font-size:0.92em;color:var(--text-muted);">
+        출처: CLRS 4th ed., §2.1 "Insertion sort", pp. 19–20. (CLRS는 1-인덱스를 사용; 본 문서는 Python의 0-인덱스로 변환.)
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 08. 사례 4: 이분 탐색 ==================== -->
+<section id="case-binary">
+  <h2>08 — 사례 4: 이분 탐색의 함정</h2>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>증명할 코드</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">binary_search</span><button class="copy-btn">복사</button></div>
+    <pre><code>def binary_search(A, target):
+    # P: A는 비내림차순 정렬된 배열
+    lo, hi = 0, len(A) - 1
+    while lo &lt;= hi:
+        mid = (lo + hi) // 2
+        if A[mid] == target:
+            return mid
+        elif A[mid] &lt; target:
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return -1</code></pre></div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>불변식</h3>
+    <div class="formula-box">
+      <strong>I</strong>: 매 반복 직전, &nbsp; <strong>target이 A 안에 있다면 반드시 A[lo..hi] 안에 있다</strong>.<br>
+      (즉: A[0..lo-1]에도 없고 A[hi+1..n-1]에도 없다.)
+    </div>
+
+    <h4>초기성</h4>
+    <p>
+      lo=0, hi=n-1. A[lo..hi] = A 전체. "있다면 A 안에 있다" — 자명히 ✓.
+    </p>
+
+    <h4>유지성</h4>
+    <p>
+      I 성립 + 루프 조건 (lo ≤ hi). mid = (lo+hi)//2 ∈ [lo, hi]. 세 분기:
+    </p>
+    <ul>
+      <li>A[mid] = target → return mid. 사후조건 Q 즉시 성립.</li>
+      <li>A[mid] &lt; target → A는 정렬됨, 따라서 A[lo..mid] 모든 원소 ≤ A[mid] &lt; target. 즉 target이 A[lo..mid]에는 없음. lo' = mid+1로 갱신 → I 유지 (A[lo'..hi] 안에만 있을 가능성).</li>
+      <li>A[mid] &gt; target → 대칭적으로 A[mid..hi] 안에 없음. hi' = mid-1로 갱신 → I 유지.</li>
+    </ul>
+
+    <h4>종료성</h4>
+    <p>
+      종료 조건: lo &gt; hi → A[lo..hi]가 빈 영역. I에 의해 "target이 있다면 빈 영역에 있다" — <em>없다</em>는 의미. -1 반환 → 사후조건 ✓.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>"왜 mid = (lo + hi) // 2가 위험한가" — Java/C에서는 버그</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">Java/C 스타일 (Python에서는 안전)</span><button class="copy-btn">복사</button></div>
+    <pre><code>// Java
+int mid = (lo + hi) / 2;  // ⚠️ lo + hi가 int 오버플로우</code></pre></div>
+    <p>
+      <strong>JDK의 Arrays.binarySearch</strong>가 9년간 이 버그를 지니고 있었습니다 (Joshua Bloch, 2006).<br>
+      lo + hi가 Integer.MAX_VALUE를 넘으면 음수로 wrap-around → mid가 음수 → ArrayIndexOutOfBoundsException.<br>
+      해결: <code>mid = lo + (hi - lo) / 2</code>. 이건 절대 오버플로우 안 남.
+    </p>
+    <p>
+      <strong>Python에서는 무관</strong>. <code>int</code>가 임의 정밀도라 오버플로우 자체가 없음. 그래도 코드 이식할 때 알아두면 좋음.
+    </p>
+    <p style="font-size:0.92em;color:var(--text-muted);">
+      출처: J. Bloch. "Extra, Extra — Read All About It: Nearly All Binary Searches and Mergesorts are Broken". <em>Google Research Blog</em>, 2006-06-02.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>off-by-one 함정 — 2가지 주요 변형 비교</h3>
+    <p>
+      이분 탐색은 인덱스 표기에 크게 <strong>2가지 주요 변형</strong>이 있습니다 (닫힘 vs 반열림). 각각 불변식이 다릅니다.
+    </p>
+    <table class="dict-table">
+      <thead><tr><th>구간</th><th>초기 (lo, hi)</th><th>루프 조건</th><th>이동</th></tr></thead>
+      <tbody>
+        <tr><td>[lo, hi] (닫힘)</td><td>(0, n-1)</td><td>lo ≤ hi</td><td>lo=mid+1, hi=mid-1</td></tr>
+        <tr><td>[lo, hi) (반열림)</td><td>(0, n)</td><td>lo &lt; hi</td><td>lo=mid+1, hi=mid</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>가장 자주 틀리는 곳</strong>: 루프 조건의 ≤ vs &lt;, hi의 갱신값 mid vs mid-1. 불변식을 명시적으로 적으면 이 함정이 보입니다.
+    </p>
+    <p>
+      Python 표준 라이브러리 <code>bisect</code>는 [lo, hi) 변형을 사용합니다. <code>bisect.bisect_left(a, x)</code>의 사후조건: "<em>a[i-1] &lt; x ≤ a[i] for i = bisect_left(a, x)</em>" — 즉, x를 끼워 넣어도 정렬이 유지되는 가장 왼쪽 위치.
+    </p>
+    <p style="font-size:0.92em;color:var(--text-muted);">
+      참조: Python 3.14 docs — <code>library/bisect.html</code>.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 09. 종료성과 변형 함수 ==================== -->
+<section id="termination">
+  <h2>09 — 종료성과 변형 함수</h2>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>"정말 멈추는가"는 별도의 문제다</h3>
+    <p>
+      불변식의 3속성 중 종료성은 사실 두 가지를 합친 것입니다.
+    </p>
+    <ol>
+      <li><strong>(a) 멈춘다</strong> — 루프가 무한히 돌지 않는다.</li>
+      <li><strong>(b) 멈췄을 때 Q</strong> — 종료 시점의 상태가 사후조건을 함의한다.</li>
+    </ol>
+    <p>
+      앞 사례들에서 (a)는 "<em>for문은 정확히 n번 반복</em>" 같은 자명한 사실에 의존했습니다. 그런데 while문에서는 자명하지 않습니다.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>변형 함수 (Variant Function)</h3>
+    <p>
+      종료성의 (a)를 보이는 표준 도구가 <strong>변형 함수 V</strong>입니다.
+    </p>
+    <div class="formula-box">
+      변형 함수 V는 다음 두 조건을 만족하는 자연수 값 함수:<br>
+      (1) 매 반복마다 V가 <strong>엄격하게 감소</strong> (V_new &lt; V_old)<br>
+      (2) V는 <strong>아래로 유계</strong> (보통 V ≥ 0)
+    </div>
+    <p>
+      자연수의 정렬된 집합에 무한 감소 수열은 없으므로(<em>well-foundedness</em>) — 루프는 유한 번 반복 후 종료. ∎
+    </p>
+
+    <h4>예제: 이분 탐색의 변형 함수</h4>
+    <p>
+      V = hi - lo + 1 (현재 탐색 영역 크기). 매 반복마다 lo가 ≥ mid+1이 되거나 hi가 ≤ mid-1이 됨 → 영역 크기가 최소 1만큼 감소. 그리고 V ≥ 0 (lo &gt; hi가 되면 종료).<br>
+      따라서 이분 탐색은 반드시 종료 (구체적으로 ≤ ⌈log₂(n+1)⌉ 번 반복).
+    </p>
+
+    <h4>예제: 삽입 정렬 내부 while의 변형 함수</h4>
+    <p>
+      V = i + 1. 매 반복마다 i가 1씩 감소 → V가 1씩 감소. 종료 조건 i &lt; 0 → V = 0 도달. ✓
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>well-founded ordering — 자연수가 아니어도 된다</h3>
+    <p>
+      변형 함수의 치역이 꼭 ℕ일 필요는 없습니다. <strong>well-founded(정렬된, 무한 하강 사슬이 없는)</strong> 부분 순서면 충분.
+    </p>
+    <ul>
+      <li>ℕ — 표준</li>
+      <li>ℕ × ℕ (사전순) — 이중 루프의 종료 증명에 사용 (외부 i 감소가 우선, 같은 i면 내부 j 감소)</li>
+      <li>유한 집합의 부분집합들의 ⊂ 순서</li>
+      <li>유한 트리의 구조적 순서</li>
+    </ul>
+    <p>
+      Ackermann 함수의 종료 증명은 ℕ 만으로는 안 되고 — 다중 변형 (m, n) 사전순으로 증명합니다.
+    </p>
+
+    <h4>정지 문제와의 관계</h4>
+    <p>
+      <strong>정지 문제(Halting Problem)는 일반적으로 결정 불가능</strong>합니다 (Turing 1936) — 임의의 프로그램이 멈추는지 자동으로 판별하는 알고리즘은 존재하지 않음.<br>
+      그러나 <em>특정 알고리즘</em>이 멈추는지를 사람이 변형 함수로 증명하는 것은 가능. 정형 검증 도구(Dafny, Coq)는 사용자에게 변형 함수를 명시할 것을 요구합니다.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. 재귀의 정확성 ==================== -->
+<section id="recursion">
+  <h2>10 — 재귀의 정확성: 강귀납법</h2>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>재귀에는 루프 불변식이 안 통한다 — 대신 귀납법</h3>
+    <p>
+      재귀 함수의 정확성은 <strong>입력 크기에 대한 수학적 귀납법</strong>으로 증명합니다.
+    </p>
+    <ol>
+      <li><strong>기저(base case)</strong>: 가장 작은 입력에서 옳다.</li>
+      <li><strong>귀납 단계(inductive step)</strong>: <em>n보다 작은 모든 입력에 대해 옳다</em>고 가정하고, n에서도 옳음을 보인다 (강귀납법 / strong induction).</li>
+    </ol>
+
+    <h4>예: factorial</h4>
+    <div class="code-block"><div class="code-header"><span class="code-label">factorial</span><button class="copy-btn">복사</button></div>
+    <pre><code>def factorial(n):
+    if n == 0:
+        return 1
+    return n * factorial(n - 1)</code></pre></div>
+    <p>
+      <strong>주장</strong>: factorial(n) = n! (모든 n ≥ 0에 대해).
+    </p>
+    <p>
+      <em>기저</em>: n=0. 코드 반환 1 = 0! ✓.<br>
+      <em>귀납</em>: n &gt; 0 가정하에 factorial(n-1) = (n-1)! (귀납 가설). 코드 반환 n × factorial(n-1) = n × (n-1)! = n!. ✓ ∎
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>예: 병합 정렬</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">merge_sort</span><button class="copy-btn">복사</button></div>
+    <pre><code>def merge_sort(A):
+    if len(A) &lt;= 1:
+        return A
+    mid = len(A) // 2
+    left = merge_sort(A[:mid])
+    right = merge_sort(A[mid:])
+    return merge(left, right)</code></pre></div>
+    <p>
+      <strong>주장</strong>: merge_sort(A) = sorted(A) (정렬된 결과).
+    </p>
+    <p>
+      <em>기저</em>: len(A) ≤ 1 → A 그대로 반환. 길이 0 또는 1은 자명히 정렬됨. ✓<br>
+      <em>귀납</em>: len(A) = n &gt; 1. 부분 호출의 입력 크기 n/2 &lt; n. 강귀납 가설로 left와 right는 정렬됨. <code>merge</code>가 두 정렬 배열을 정렬된 하나로 합친다는 별도 보조정리가 있다면 → 결과는 정렬됨. ✓ ∎
+    </p>
+    <p>
+      <code>merge</code> 자체의 정확성은 따로 루프 불변식으로 증명 — 이게 "큰 증명을 작은 증명으로 분해"하는 표준 양식.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-badge level-expert">전공자</div>
+    <h3>구조적 귀납법 (Structural Induction)</h3>
+    <p>
+      트리, 리스트 같은 재귀적 자료구조에는 자연수 귀납법 대신 <strong>구조적 귀납법</strong>을 씁니다.
+    </p>
+    <p>
+      <strong>이진 트리에 대한 명제 P</strong>: 모든 이진 트리 T에 대해 P(T) 성립함을 보이려면:
+    </p>
+    <ol>
+      <li>P(빈 트리) 성립</li>
+      <li>P(left), P(right) 성립을 가정하고 P(Node(v, left, right)) 성립</li>
+    </ol>
+    <p>
+      예: 이진 트리의 노드 수와 잎 수의 관계 — "내부 노드 i개를 가진 이진 트리는 잎 i+1개를 가진다"는 구조적 귀납으로 증명.
+    </p>
+    <p>
+      이는 "well-founded 집합 위의 귀납법"의 한 형태이며, 자연수 귀납과 본질이 같음.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 11. AI는 정확성을 어떻게 다루는가 ==================== -->
+<section id="ai-correctness">
+  <h2>11 — AI는 정확성을 어떻게 다루는가</h2>
+
+  <h3>AI의 일반적 한계</h3>
+  <p>
+    LLM에게 "이 함수가 옳은가?"를 물으면 — 보통 <em>"코드가 합리적으로 보입니다"</em> 류의 답을 합니다. 이는 <strong>증명이 아니라 "비슷해 보임"</strong>입니다.
+  </p>
+  <ul>
+    <li>AI는 학습 데이터에서 본 비슷한 코드 패턴과 매칭해 "이건 정렬 코드 같다"고 답합니다.</li>
+    <li>그러나 <strong>off-by-one</strong>, <strong>경계값</strong>, <strong>빈 입력</strong>, <strong>중복 키</strong> 같은 함정에 약합니다.</li>
+    <li>"이 코드의 루프 불변식을 명시해줘"라고 요청하면 — 그럴듯한 명제를 내지만 <em>증명까지 검증된 것은 아님</em>.</li>
+  </ul>
+
+  <div class="why-box">
+    <div class="box-header">WHY — 우리가 직접 불변식을 적어야 하는 이유</div>
+    <p>
+      AI에게 코드만 주면 그럴듯한 답이 옵니다. 그러나 AI에게 <em>"이 불변식이 맞는지 검증해줘"</em>로 묻는 순간, 우리가 제안한 불변식의 사고 흐름이 들어갑니다.<br>
+      <strong>좋은 사용 패턴</strong>: 사람이 불변식을 적고 → AI에게 "이 불변식이 초기/유지/종료 3속성을 만족하는지 한 단계씩 검토" 요청. 이러면 AI가 정형 증명의 보조 도구가 됩니다.
+    </p>
+  </div>
+
+  <h3>증명 보조 도구 — AI 시대의 새 풍경</h3>
+  <ul>
+    <li><strong>Coq</strong>, <strong>Lean 4</strong> — 수학 정리의 기계 검증. 페르마 소정리부터 연속체 가설까지.</li>
+    <li><strong>Dafny</strong>, <strong>Why3</strong>, <strong>Spark/Ada</strong> — 실용 코드의 정확성 검증. 사용자가 사전/사후조건과 불변식을 명시하면 SMT solver가 자동 검증.</li>
+    <li><strong>seL4</strong> — 운영체제 마이크로커널 전체를 Isabelle로 정형 증명한 사례. 약 1만 줄 코드, 20만 줄 증명.</li>
+  </ul>
+  <p>
+    AI가 "Lean 증명을 자동 생성"하는 연구도 활발합니다 (DeepMind FunSearch, OpenAI o1 등). 그러나 사람이 <em>무엇을 증명할 것인가</em> — 명제와 불변식 — 를 명확히 정의해야 합니다. <strong>이 부분은 외주 불가</strong>.
+  </p>
+</section>
+
+<!-- ==================== 12. 실습 — 깨진 코드 찾기 ==================== -->
+<section id="practice">
+  <h2>12 — 실습: 깨진 코드 찾기</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-badge level-inter">중급</div>
+    <h3>실습 1: 이 함수는 어디서 틀리는가?</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">find_max_buggy</span><button class="copy-btn">복사</button></div>
+    <pre><code>def find_max_buggy(nums):
+    m = 0
+    for x in nums:
+        if x &gt; m:
+            m = x
+    return m</code></pre></div>
+    <p>
+      불변식 후보: <em>"매 반복 직전, m = max(nums[0..i-1] ∪ {0})"</em>. 그런데 사후조건 Q는 "<em>m = max(nums)</em>"입니다.<br>
+      <strong>입력 [-3, -1, -2]</strong>에서 코드 반환 0, 정답 -1. <strong>실패!</strong> 불변식과 사후조건이 어긋남 — m의 초기값 0이 max에 안 들어가는 입력에서 깨짐.
+    </p>
+    <p>
+      <strong>수정</strong>: <code>m = nums[0]</code>로 초기화하고 빈 리스트는 별도 처리. 새 불변식: <em>"m = max(nums[0..i-1])" (i ≥ 1)</em>.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>실습 2: 무한 루프를 만들어보기</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">binary_search_buggy</span><button class="copy-btn">복사</button></div>
+    <pre><code>def binary_search_buggy(A, target):
+    lo, hi = 0, len(A) - 1
+    while lo &lt;= hi:
+        mid = (lo + hi) // 2
+        if A[mid] == target:
+            return mid
+        elif A[mid] &lt; target:
+            lo = mid              # ⚠️ +1 빠짐
+        else:
+            hi = mid - 1
+    return -1</code></pre></div>
+    <p>
+      변형 함수 V = hi - lo + 1. lo = mid 분기에서 — mid = (lo+hi)//2이므로 lo = mid가 lo &lt; mid+1을 의미하지 않을 수 있음. 특히 lo+1 = hi인 경우 mid = lo, lo := mid = lo → V 변화 없음 → <strong>무한 루프</strong>.<br>
+      예: A = [1, 3], target = 2 → 영원히 안 멈춤.<br>
+      <strong>교훈</strong>: 변형 함수가 모든 분기에서 엄격히 감소하는지 항상 확인.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-badge level-adv">고급</div>
+    <h3>실습 3: 불변식이 너무 약한 사례</h3>
+    <div class="code-block"><div class="code-header"><span class="code-label">remove_duplicates</span><button class="copy-btn">복사</button></div>
+    <pre><code># 정렬된 배열에서 중복을 제거 (in-place, 새 길이 반환)
+def remove_dup(A):
+    if not A: return 0
+    k = 1
+    for i in range(1, len(A)):
+        if A[i] != A[i-1]:    # 직전 원소와 비교
+            A[k] = A[i]
+            k += 1
+    return k</code></pre></div>
+    <p>
+      <strong>약한 불변식</strong>: "k ≤ i". 이건 사실이지만 사후조건을 함의 못 함.<br>
+      <strong>좋은 불변식</strong>: "A[0..k-1]은 원래 A[0..i-1]의 모든 서로 다른 원소를 정렬된 순서로 담고 있다." 이게 종료 시 (i = n) "A[0..k-1] = unique elements of A"를 줌.<br>
+      <em>"맞는 코드 + 약한 불변식"</em>이면 — 코드는 옳지만 우리는 그걸 모르는 상태. 강한 불변식을 찾는 게 증명의 본질.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 13. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>13 — 연습문제 (12문제)</h2>
+
+  <!-- 초급 1 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-explain">개념 확인</span>
+      <span class="level-badge level-elem">초급</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"테스트가 100개 통과했으니 코드는 옳다." — 이 주장이 왜 잘못된 추론인지 한 문장으로.</p>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <p>가능한 입력은 무한이므로, 유한한 테스트 통과는 일부 입력에서의 성공일 뿐 — 안 본 입력에서의 실패 가능성을 배제하지 못한다. (Dijkstra 1969)</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 초급 2 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">호어 트리플</span>
+      <span class="level-badge level-elem">초급</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 코드의 사후조건 Q를 정수 변수 a, b로 작성하시오.</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">swap</span><button class="copy-btn">복사</button></div>
+      <pre><code>tmp = a
+a = b
+b = tmp</code></pre></div>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <p><strong>Q: a = b₀ ∧ b = a₀</strong> (a₀, b₀는 실행 전 값)</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 초급 3 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-explain">개념</span>
+      <span class="level-badge level-elem">초급</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">루프 불변식의 3속성을 적고 각각이 수학적 귀납법의 어느 부분에 해당하는지 답하시오.</p>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <ul>
+            <li>초기성 — 귀납의 <strong>기저</strong></li>
+            <li>유지성 — 귀납의 <strong>귀납 단계</strong></li>
+            <li>종료성 — 귀납에는 직접 대응 없음. 종료 조건과 불변식이 합쳐져 사후조건을 함의.</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 중급 4 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">불변식 작성</span>
+      <span class="level-badge level-inter">중급</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 함수의 루프 불변식을 작성하시오.</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">count_pos</span><button class="copy-btn">복사</button></div>
+      <pre><code>def count_pos(nums):
+    c = 0
+    for i in range(len(nums)):
+        if nums[i] &gt; 0:
+            c += 1
+    return c</code></pre></div>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <p><strong>I(i): c = | { j ∈ [0, i) : nums[j] &gt; 0 } |</strong> &nbsp; ("c는 nums[0..i-1] 중 양수의 개수")</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 중급 5 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">정확성 증명</span>
+      <span class="level-badge level-inter">중급</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">문제 4의 함수에 대해 4단 증명(불변식, 초기, 유지, 종료)을 완성하시오.</p>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <ul>
+            <li><strong>I(i)</strong>: c = nums[0..i-1] 중 양수 개수.</li>
+            <li><strong>초기</strong>: i=0, c=0. 빈 슬라이스 양수 개수 = 0. ✓</li>
+            <li><strong>유지</strong>: I(i) 가정. nums[i]&gt;0이면 c↑(1 증가) → 새 양수 카운트 = 옛 카운트 + 1 = nums[0..i] 양수 개수. nums[i]≤0이면 c 그대로 = nums[0..i] 양수 개수 (마지막이 양수 아니므로). 어느 분기든 I(i+1) ✓.</li>
+            <li><strong>종료</strong>: i=n. I(n): c = nums 전체 양수 개수. 반환 → Q 성립. ∎</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 중급 6 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-debug">버그 찾기</span>
+      <span class="level-badge level-inter">중급</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 평균 함수가 어떤 입력에서 틀리는지 답하고, 정확성 증명을 막는 가정 누락이 무엇인지 답하시오.</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">avg_buggy</span><button class="copy-btn">복사</button></div>
+      <pre><code>def avg(nums):
+    return sum(nums) / len(nums)</code></pre></div>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <p>입력 <code>[]</code>에서 ZeroDivisionError. 사전조건 P에 "<em>nums가 비어있지 않다</em>"가 있어야 함. 호어 트리플의 P를 명시하지 않았기 때문에 검증이 실패.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 고급 7 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">변형 함수</span>
+      <span class="level-badge level-adv">고급</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">다음 코드에 대한 변형 함수를 제시하고 종료성을 증명하시오.</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">collatz-like</span><button class="copy-btn">복사</button></div>
+      <pre><code>def f(n):
+    while n &gt; 1:
+        if n % 2 == 0:
+            n = n // 2
+        else:
+            n = n - 1
+    return n</code></pre></div>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <p>
+            V = n. 두 분기 모두 n이 엄격히 감소 (짝수: n→n/2 &lt; n, 홀수: n→n-1 &lt; n). n ≥ 1 (시작값) → 1 도달 후 종료. ∎
+          </p>
+          <p style="font-size:0.9em;color:var(--text-muted);">
+            (참고: 진짜 Collatz는 n홀수일 때 3n+1로 — 종료성이 미해결의 난제. 이 변형은 단순 감소형이라 자명히 종료.)
+          </p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 고급 8 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">불변식 + 증명</span>
+      <span class="level-badge level-adv">고급</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">반전 함수(reverse)에 대해 in-place 구현의 불변식을 적고 정확성을 증명하시오.</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">reverse_inplace</span><button class="copy-btn">복사</button></div>
+      <pre><code>def reverse(A):
+    lo, hi = 0, len(A) - 1
+    while lo &lt; hi:
+        A[lo], A[hi] = A[hi], A[lo]
+        lo += 1
+        hi -= 1
+    return A</code></pre></div>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <p><strong>I</strong>: A[0..lo-1]은 원래 A[n-1..n-lo]의 역순 ∧ A[hi+1..n-1]은 원래 A[n-1-hi..0]의 역순 ∧ A[lo..hi]는 원래 A[lo..hi] 그대로.</p>
+          <p><strong>변형 함수</strong>: V = hi - lo. 매 반복 V가 2 감소.</p>
+          <p>초기: lo=0, hi=n-1 → 양 끝이 빈 영역, 가운데가 원본 = ✓. 유지: 한 쌍 교환 + lo,hi 이동 → 새 양 끝 영역에 한 쌍씩 추가됨. 종료: lo ≥ hi → 가운데 영역이 비거나 1원소 → 전체가 역순. ∎</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 고급 9 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">재귀 증명</span>
+      <span class="level-badge level-adv">고급</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">power(x, n) = xⁿ 의 정확성을 강귀납법으로 증명하시오.</p>
+      <div class="code-block"><div class="code-header"><span class="code-label">power</span><button class="copy-btn">복사</button></div>
+      <pre><code>def power(x, n):
+    if n == 0:
+        return 1
+    half = power(x, n // 2)
+    if n % 2 == 0:
+        return half * half
+    else:
+        return half * half * x</code></pre></div>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <p><strong>주장</strong>: power(x, n) = xⁿ (모든 n ≥ 0).</p>
+          <p><em>기저</em>: n=0 → 1 = x⁰ ✓.</p>
+          <p><em>귀납</em>: n &gt; 0. n//2 &lt; n이므로 강귀납 가설로 power(x, n//2) = x^(n//2). 짝수 n: half² = x^(2(n/2)) = xⁿ ✓. 홀수 n: half²·x = x^(2((n-1)/2)) · x = x^(n-1) · x = xⁿ ✓. ∎</p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 전공자 10 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">호어 논리</span>
+      <span class="level-badge level-expert">전공자</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">대입 공리 <strong>{Q[x ← E]} x := E {Q}</strong>를 사용해, {y &gt; 5} x := y + 1 {x &gt; 5}가 성립함을 보이시오.</p>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <p>
+            Q = (x &gt; 5). Q[x ← y+1] = (y+1 &gt; 5) = (y &gt; 4).<br>
+            대입 공리에 의해 <strong>{y &gt; 4} x := y+1 {x &gt; 5}</strong> 성립.<br>
+            우리에게 주어진 사전조건은 (y &gt; 5)인데, y &gt; 5 ⇒ y &gt; 4 이므로 <strong>강화 규칙(rule of consequence)</strong>으로 {y &gt; 5} x := y+1 {x &gt; 5} 성립. ∎
+          </p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 전공자 11 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-prove">wp 계산</span>
+      <span class="level-badge level-expert">전공자</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">wp("if x &gt; 0 then y := x else y := -x", y ≥ 0)을 계산하시오.</p>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <p>
+            wp(if-then-else) = (B ⇒ wp(S₁, Q)) ∧ (¬B ⇒ wp(S₂, Q)).<br>
+            wp(y := x, y ≥ 0) = (x ≥ 0).<br>
+            wp(y := -x, y ≥ 0) = (-x ≥ 0) = (x ≤ 0).<br>
+            ∴ wp = (x &gt; 0 ⇒ x ≥ 0) ∧ (x ≤ 0 ⇒ x ≤ 0) = <strong>True</strong>.<br>
+            즉, 어떤 x에 대해서도 사후조건이 성립 — 그래서 이 함수가 절댓값 함수의 정확한 구현. ∎
+          </p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 전공자 12 -->
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-explain">실제 사례 분석</span>
+      <span class="level-badge level-expert">전공자</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">
+        Joshua Bloch (2006)가 발견한 Java <code>Arrays.binarySearch</code> 버그 — <code>(low + high) / 2</code> — 가 Python에서는 왜 발생하지 않는지, 그리고 발생하지 않는다고 해서 Python 코드가 "정확성이 보장된" 코드인지 답하시오.
+      </p>
+      <details class="answer">
+        <summary>정답</summary>
+        <div class="answer-content">
+          <p>
+            <strong>왜 안 일어나는가</strong>: Python <code>int</code>는 임의 정밀도(arbitrary precision). low + high가 어떤 값이든 정확한 정수로 계산되므로 wrap-around가 없음. CPython 내부적으로는 PyLongObject가 자릿수에 비례한 메모리를 자동 할당.
+          </p>
+          <p>
+            <strong>"정확성이 보장된" 코드인가</strong>: 부분 정확성과 종료성은 별개. Python 자체의 오버플로우는 없지만, 알고리즘 로직(루프 조건, 인덱스 갱신 등)에 다른 종류의 off-by-one 버그가 있을 수 있음. <em>"이 언어는 안전하다"는 명제는 "이 코드가 옳다"를 함의하지 않음</em>. 정확성 증명은 여전히 별도로 필요.
+          </p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 14. 정리 ==================== -->
+<section id="summary">
+  <h2>14 — 이번 주 정리</h2>
+  <ol>
+    <li>테스트는 버그 <em>존재</em>를 찾고, 증명은 버그 <em>부재</em>를 보장한다 (Dijkstra).</li>
+    <li>코드의 정확성은 <strong>호어 트리플 {P} S {Q}</strong>로 표현된다.</li>
+    <li>루프의 정확성은 <strong>루프 불변식 I</strong>의 3속성으로 보인다: 초기성, 유지성, 종료성.</li>
+    <li>3속성 중 1, 2는 <em>수학적 귀납법</em>의 기저/귀납. 3은 종료 조건 + I → 사후조건.</li>
+    <li>"멈춤" 자체는 <strong>변형 함수 V</strong>로 별도 증명 — 매 반복 엄격히 감소 + 아래로 유계.</li>
+    <li>재귀의 정확성은 입력 크기에 대한 <strong>강귀납법</strong>으로.</li>
+    <li>좋은 불변식은 <em>"지금까지 처리한 부분에 대해 옳다"</em>의 형태. 너무 약하면 사후조건을 함의하지 못한다.</li>
+    <li>AI는 패턴 매칭으로 그럴듯한 답을 주지만, <em>증명의 검증</em>은 사람이 불변식을 명시해야 한다.</li>
+  </ol>
+</section>
+
+<!-- ==================== 15. 용어 + 다음 주 ==================== -->
+<section id="glossary-next">
+  <h2>15 — 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>용어 사전 (20개)</h3>
+  <table class="dict-table">
+    <thead><tr><th>용어</th><th>의미</th></tr></thead>
+    <tbody>
+      <tr><td><strong>정확성 (Correctness)</strong></td><td>모든 입력에 대해 알고리즘이 올바른 출력을 내는 성질.</td></tr>
+      <tr><td><strong>사전조건 (Precondition, P)</strong></td><td>실행 전에 만족해야 할 가정.</td></tr>
+      <tr><td><strong>사후조건 (Postcondition, Q)</strong></td><td>실행 후에 만족해야 할 결과.</td></tr>
+      <tr><td><strong>호어 트리플 {P} S {Q}</strong></td><td>P 상태에서 S 실행 시 Q를 보장한다는 명제. Hoare 1969.</td></tr>
+      <tr><td><strong>부분 정확성</strong></td><td>S가 멈춘다면 Q가 성립.</td></tr>
+      <tr><td><strong>전체 정확성</strong></td><td>S가 반드시 멈추고 Q가 성립.</td></tr>
+      <tr><td><strong>루프 불변식 (Loop invariant, I)</strong></td><td>루프의 매 반복 직전에 항상 참인 명제.</td></tr>
+      <tr><td><strong>초기성 (Initialization)</strong></td><td>첫 반복 직전 I가 참.</td></tr>
+      <tr><td><strong>유지성 (Maintenance)</strong></td><td>I와 루프 조건을 가정하면, 한 반복 후에도 I가 참.</td></tr>
+      <tr><td><strong>종료성 (Termination)</strong></td><td>(a) 루프가 멈추고, (b) 종료 시 I + ¬B → Q.</td></tr>
+      <tr><td><strong>변형 함수 (Variant function, V)</strong></td><td>매 반복 엄격 감소 + 아래로 유계인 자연수 함수. 종료 보장.</td></tr>
+      <tr><td><strong>well-founded ordering</strong></td><td>무한 하강 사슬이 없는 순서 — 종료성의 기반.</td></tr>
+      <tr><td><strong>대입 공리 (Assignment axiom)</strong></td><td>{Q[x←E]} x := E {Q}. Hoare 논리의 기본 규칙.</td></tr>
+      <tr><td><strong>가장 약한 사전조건 wp(S, Q)</strong></td><td>S 실행 후 Q 성립을 위한 최소 사전 조건. Dijkstra 1975.</td></tr>
+      <tr><td><strong>강귀납법 (Strong induction)</strong></td><td>n보다 작은 모든 경우를 가정하고 n을 증명. 재귀 함수에 사용.</td></tr>
+      <tr><td><strong>구조적 귀납법</strong></td><td>재귀 자료구조 (트리 등)에 대한 귀납.</td></tr>
+      <tr><td><strong>강화 규칙 (Rule of consequence)</strong></td><td>P가 더 강하고 Q가 더 약한 호어 트리플로 약화.</td></tr>
+      <tr><td><strong>정형 검증 (Formal verification)</strong></td><td>수학적 도구로 코드 정확성을 보증. Coq, Dafny, seL4.</td></tr>
+      <tr><td><strong>정지 문제 (Halting problem)</strong></td><td>임의 프로그램의 종료 여부를 자동 판별 — 결정 불가능 (Turing 1936).</td></tr>
+      <tr><td><strong>off-by-one</strong></td><td>경계 인덱스(0 vs 1, n vs n-1)에서의 흔한 오류. 불변식으로 잡힘.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:32px;">다음 주 맛보기 — 분할 정복 패러다임</h3>
+  <blockquote class="quote">
+    이번 주는 <em>"옳은가"</em>를 봤습니다. 다음 주는 <em>"빠르게 하면서도 옳을 수 있는가"</em>를 봅니다.<br>
+    한 문제를 작은 두 부분으로 나누고 → 각각 풀고 → 합치면, 왜 빨라질까요?<br>
+    병합 정렬, 최대 부분배열 합, Strassen 행렬 곱 — 모두 같은 사고 패턴: <strong>분할 정복(Divide & Conquer)</strong>.<br>
+    그리고 그 정확성은 — 이번 주에 배운 강귀납법으로.
+  </blockquote>
+</section>
+
+<!-- ==================== FOOTER NAV ==================== -->
+<nav class="week-nav">
+  <a href="algo01.html">&larr; 1주차: 빅오 표기법</a>
+  <a href="algo03.html">3주차: 분할 정복 &rarr;</a>
+</nav>
+
+</main>
+</div>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

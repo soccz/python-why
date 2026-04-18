@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,8 +31,8 @@
       </div>
     <div class="header-nav">
       <a href="week09.html" class="nav-btn">&larr; 이전</a>
-      <span class="nav-btn" style="opacity:0.3; pointer-events:none;">다음 &rarr;</span>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <span class="nav-btn" aria-disabled="true" style="opacity:0.3;pointer-events:none;">다음 &rarr;</span>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -687,7 +688,7 @@ sys.hash_info(width=64, modulus=2305843009213693951, inf=314159, nan=0, imag=100
     </div>
     <p>
       <code>modulus = 2^61 - 1</code> (Mersenne prime) — 나머지 연산이 비트 조작으로 최적화됩니다.<br>
-      문자열·바이트는 <strong>SipHash</strong>를 사용합니다 (Python 3.4에서 SipHash-2-4 도입(PEP 456), Python 3.11+에서 SipHash-1-3으로 변경 — 속도와 보안의 균형).
+      문자열·바이트는 <strong>SipHash</strong>를 사용합니다 (Python 3.4에서 SipHash-2-4 도입(PEP 456), Python 3.12부터 SipHash-1-3으로 변경 — 속도와 보안의 균형).
     </p>
     <pre><code class="language-python"># 해시 일관성 검증 (Python Data Model 규칙)
 # 규칙: a == b → hash(a) == hash(b) (역은 성립 안 해도 됨)

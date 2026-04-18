@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 17주차: 최소 신장 트리 (MST) — Prim, Kruskal, Borůvka | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="MST — 1926년 체코 전력망에서 시작, Borůvka/Jarník/Kruskal/Prim. Cut Property 증명, Union-Find, heap. CLRS 4판 §21.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 17주차: MST | PyWhy">
+  <meta property="og:description" content="그래프 전체를 가장 싸게 연결하는 방법 — 네 명의 수학자가 독립적으로 발견한 그리디">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo17.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A17">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo16.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo18.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 17</div>
+  <h1 class="week-title">최소 신장 트리 (MST)<br>1926년 체코 전력망에서 태어난 그리디</h1>
+  <p class="week-subtitle">
+    1926년, 체코 모라비아 지방 전력망을 최저 비용으로 설계해달라는 요청을 받은 수학자 <strong>Otakar Borůvka</strong>는 최초의 MST 알고리즘을 발표합니다. 4년 뒤 같은 체코의 <strong>Jarník</strong>이 정점 중심 버전을, 1956년 Bell Labs의 <strong>Kruskal</strong>이 간선 정렬 버전을, 1957년 같은 Bell Labs의 <strong>Prim</strong>이 Jarník의 방법을 재발견.<br>
+    <em>네 명이 독립적으로 같은 그리디 원리에 도달</em>. 그 원리는 지금도 네트워크 설계, 클러스터링, 이미지 segmentation의 기반.<br>
+    핵심 질문: <em>"왜 '가장 싼 간선만 욕심내는' 전략이 전역 최적을 보장하는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — 네 수학자의 동시 발견</a>
+    </div>
+    <div class="toc-section">
+      <a href="#problem" class="toc-section-link"><span class="toc-num">02</span>MST란 — 문제 정의와 응용</a>
+      <div class="toc-levels"><span class="toc-level-dot elem">초</span><span class="toc-level-dot inter">중</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#cut-property" class="toc-section-link"><span class="toc-num">03</span>Cut Property — 모든 증명의 기반</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#kruskal-idea" class="toc-section-link"><span class="toc-num">04</span>Kruskal — 간선 정렬 + Union-Find</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#kruskal-python" class="toc-section-link"><span class="toc-num">05</span>Kruskal Python 구현</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#prim-idea" class="toc-section-link"><span class="toc-num">06</span>Prim — 정점에서 트리 확장</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#prim-python" class="toc-section-link"><span class="toc-num">07</span>Prim Python 구현 (heapq)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#correctness" class="toc-section-link"><span class="toc-num">08</span>정확성 증명 — Cut Property의 위력</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#boruvka" class="toc-section-link"><span class="toc-num">09</span>Borůvka — 병렬 MST의 원조</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#complexity" class="toc-section-link"><span class="toc-num">10</span>복잡도 비교</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#variants" class="toc-section-link"><span class="toc-num">11</span>변종 — 2nd-best MST, Bottleneck</a>
+      <div class="toc-levels"><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#real-world" class="toc-section-link"><span class="toc-num">12</span>실무 — 네트워크 설계, 클러스터링</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#ai-mst" class="toc-section-link"><span class="toc-num">13</span>AI와 MST</a>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: 네 수학자의 동시 발견</h2>
+
+  <blockquote>
+    <em>"In 1926, I was asked by a friend working for the West Moravian Electric Power Company to solve a problem: how to connect a given set of points in a region by a network of least total length?"</em>
+    <br>— Otakar Borůvka, 회고 (1977)
+  </blockquote>
+
+  <div class="story-block">
+    <h3>1926 — Otakar Borůvka, 체코 브르노</h3>
+    <p>
+      모라비아 지역 전력회사가 "작은 마을 N개를 최저 전선 길이로 잇는 방법"을 의뢰. Borůvka의 답은 <em>"O jistém problému minimálním"</em>(Práce Moravské Přírodovědecké Společnosti 3:37-58, 1926). 체코어 논문이라 세계에 알려지지 않음.
+    </p>
+    <p>
+      Borůvka의 아이디어: <strong>모든 정점이 동시에 자기 최소 간선을 선택하고 merge</strong>. <em>병렬(parallel)</em> 관점 — 현대 병렬 MST의 원조.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1930 — Vojtěch Jarník, 체코 프라하</h3>
+    <p>
+      Borůvka의 지도학생이 아니었지만 같은 체코에서 <em>정점 중심</em> 접근을 독립 발견. "한 정점에서 시작, 가장 싼 이웃 간선으로 확장, 반복". 하지만 영어권에 전달되지 못함.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1956 — Joseph Kruskal, Bell Labs</h3>
+    <p>
+      AT&T Bell Labs 소속. 네트워크 설계 맥락에서 <em>간선 중심</em> 접근 제안: "간선을 비용 오름차순으로 정렬, 사이클 만들지 않으면 추가". 논문 <em>"On the Shortest Spanning Subtree of a Graph and the Traveling Salesman Problem"</em>(Proc. AMS 7:48-50, 1956). 수학자 Harold W. Kuhn(TSP 연구자)이 제시한 문제에서 출발 — Kruskal은 Borůvka 1926을 원 논문 작성 시점에는 몰랐고, 후대 문헌 정리에서 체코 원조가 드러남.
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>1957 — Robert C. Prim, Bell Labs</h3>
+    <p>
+      같은 Bell Labs이지만 Kruskal과 독립적으로. Jarník의 정점 기반 알고리즘을 재발견. 논문 <em>"Shortest Connection Networks and Some Generalizations"</em>(Bell Syst. Tech. J. 36:1389-1401, 1957). 미국 교재가 "Prim's algorithm"으로 명명해 Jarník의 이름이 묻힘.
+    </p>
+    <p>
+      <strong>Dijkstra 1959</strong>도 Prim과 독립적으로 같은 알고리즘을 세 번째로 발견. 그래서 유럽권에선 <em>Jarník–Prim–Dijkstra</em>로 부르기도.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MST 역사 타임라인">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📜 MST 알고리즘 역사 — 30년에 걸친 네 번의 독립 발견</text>
+
+      <!-- 타임라인 축 -->
+      <line x1="60" y1="130" x2="680" y2="130" stroke="var(--text-muted)" stroke-width="2"/>
+      <polygon points="680,130 670,126 670,134" fill="var(--text-muted)"/>
+
+      <!-- 연도 마커 -->
+      <g font-family="JetBrains Mono, monospace" font-size="12">
+        <!-- Borůvka 1926 -->
+        <circle cx="100" cy="130" r="8" fill="#d4930c" stroke="var(--accent)" stroke-width="2"/>
+        <line x1="100" y1="122" x2="100" y2="70" stroke="#d4930c" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="35" y="40" width="135" height="32" rx="4" fill="rgba(212,147,12,0.1)" stroke="#d4930c" stroke-width="1"/>
+        <text x="102" y="57" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Borůvka 1926</text>
+        <text x="102" y="68" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">체코, 전력망 설계</text>
+        <text x="100" y="155" text-anchor="middle" class="viz-label-small">1926</text>
+        <text x="100" y="175" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">병렬</text>
+
+        <!-- Jarník 1930 -->
+        <circle cx="175" cy="130" r="7" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <line x1="175" y1="138" x2="175" y2="200" stroke="#3b9b6e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="112" y="200" width="125" height="30" rx="4" fill="rgba(59,155,110,0.1)" stroke="#3b9b6e" stroke-width="1"/>
+        <text x="175" y="218" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Jarník 1930</text>
+        <text x="175" y="228" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">체코, 정점 중심</text>
+        <text x="175" y="155" text-anchor="middle" class="viz-label-small">1930</text>
+
+        <!-- Kruskal 1956 -->
+        <circle cx="430" cy="130" r="8" fill="#196aa1" stroke="#196aa1" stroke-width="2"/>
+        <line x1="430" y1="122" x2="430" y2="70" stroke="#196aa1" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="365" y="40" width="135" height="32" rx="4" fill="rgba(25,106,161,0.1)" stroke="#196aa1" stroke-width="1"/>
+        <text x="432" y="57" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Kruskal 1956</text>
+        <text x="432" y="68" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">Bell Labs, 간선 정렬</text>
+        <text x="430" y="155" text-anchor="middle" class="viz-label-small">1956</text>
+
+        <!-- Prim 1957 -->
+        <circle cx="495" cy="130" r="7" fill="#c23b5e" stroke="#c23b5e" stroke-width="2"/>
+        <line x1="495" y1="138" x2="495" y2="200" stroke="#c23b5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="430" y="200" width="135" height="30" rx="4" fill="rgba(194,59,94,0.1)" stroke="#c23b5e" stroke-width="1"/>
+        <text x="497" y="218" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Prim 1957</text>
+        <text x="497" y="228" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">Bell Labs, Jarník 재발견</text>
+        <text x="495" y="155" text-anchor="middle" class="viz-label-small">1957</text>
+
+        <!-- Dijkstra 1959 -->
+        <circle cx="555" cy="130" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="555" y="108" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="10">Dijkstra 1959</text>
+        <text x="555" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1959</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>30년간 4번 독립 발견된 알고리즘</strong>. 체코 수학자들(Borůvka, Jarník)이 먼저였지만, 영어권 저널에 늦게 알려져 Kruskal/Prim 이름으로 교재에 남음. 현대 병렬 컴퓨팅은 Borůvka의 원안으로 돌아옴.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. 문제 정의 ==================== -->
+<section id="problem">
+  <h2>02 — MST란 — 문제 정의와 응용</h2>
+
+  <div class="level-section elementary">
+    <div class="level-section-header">
+      <span class="level-badge level-elem">초급</span>
+      <h3 class="level-section-title">MST = "전봇대 잇기"</h3>
+    </div>
+    <p>
+      마을 N개를 전선으로 이어야 합니다. 전선은 비싸니까 최소 길이로. 단, <strong>모든 마을이 연결</strong>되어야 하고 <strong>루프(사이클)는 낭비</strong>. 답: <em>N-1개의 전선으로 이루어진 "트리"</em>.
+    </p>
+    <ul>
+      <li>N개 정점 → 정확히 <strong>N-1개 간선</strong>으로 된 트리.</li>
+      <li>모든 정점이 서로 도달 가능.</li>
+      <li>사이클 없음 (있으면 하나 빼도 여전히 연결됨).</li>
+      <li>총 비용 최소.</li>
+    </ul>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">형식적 정의</h3>
+    </div>
+    <p>
+      무방향 가중 그래프 G = (V, E, w)에서, 모든 정점을 포함하고 사이클이 없는 부분그래프 T = (V, E') 중 <code>∑<sub>e∈E'</sub> w(e)</code>가 최소인 것.
+    </p>
+    <ul>
+      <li>T는 <em>신장 트리(spanning tree)</em>. 정점이 V 전부, 간선 수 |V|−1.</li>
+      <li>Minimum → 총 가중치 최소.</li>
+      <li>해는 유일하지 않을 수 있음 (동일 가중치 간선이 있으면).</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MST 예시 — 6 노드 그래프">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🌳 6개 마을을 잇는 MST — 총 비용 최소화</text>
+
+      <!-- 왼쪽: 원본 그래프 -->
+      <g transform="translate(60, 55)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="130" y="0" text-anchor="middle" class="viz-label" font-weight="700">원본 그래프 (9 간선)</text>
+
+        <!-- 정점 -->
+        <circle cx="40" cy="50" r="18" class="viz-node"/>
+        <text x="40" y="55" text-anchor="middle" class="viz-label" font-weight="700">A</text>
+        <circle cx="140" cy="30" r="18" class="viz-node"/>
+        <text x="140" y="35" text-anchor="middle" class="viz-label" font-weight="700">B</text>
+        <circle cx="240" cy="50" r="18" class="viz-node"/>
+        <text x="240" y="55" text-anchor="middle" class="viz-label" font-weight="700">C</text>
+        <circle cx="40" cy="160" r="18" class="viz-node"/>
+        <text x="40" y="165" text-anchor="middle" class="viz-label" font-weight="700">D</text>
+        <circle cx="140" cy="180" r="18" class="viz-node"/>
+        <text x="140" y="185" text-anchor="middle" class="viz-label" font-weight="700">E</text>
+        <circle cx="240" cy="160" r="18" class="viz-node"/>
+        <text x="240" y="165" text-anchor="middle" class="viz-label" font-weight="700">F</text>
+
+        <!-- 간선 (9개) -->
+        <line x1="58" y1="50" x2="122" y2="32" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="85" y="35" class="viz-label-small" fill="var(--text-muted)">4</text>
+
+        <line x1="158" y1="32" x2="222" y2="50" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="195" y="35" class="viz-label-small" fill="var(--text-muted)">8</text>
+
+        <line x1="40" y1="68" x2="40" y2="142" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="28" y="108" class="viz-label-small" fill="var(--text-muted)">2</text>
+
+        <line x1="140" y1="48" x2="140" y2="162" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="128" y="110" class="viz-label-small" fill="var(--text-muted)">7</text>
+
+        <line x1="240" y1="68" x2="240" y2="142" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="250" y="108" class="viz-label-small" fill="var(--text-muted)">5</text>
+
+        <line x1="58" y1="160" x2="122" y2="180" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="85" y="175" class="viz-label-small" fill="var(--text-muted)">3</text>
+
+        <line x1="158" y1="180" x2="222" y2="160" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="195" y="175" class="viz-label-small" fill="var(--text-muted)">6</text>
+
+        <line x1="58" y1="60" x2="122" y2="170" stroke="var(--text-muted)" stroke-width="1.4" stroke-dasharray="3,3"/>
+        <text x="70" y="120" class="viz-label-small" fill="var(--text-muted)">9</text>
+
+        <line x1="158" y1="170" x2="222" y2="60" stroke="var(--text-muted)" stroke-width="1.4" stroke-dasharray="3,3"/>
+        <text x="200" y="120" class="viz-label-small" fill="var(--text-muted)">10</text>
+      </g>
+
+      <!-- 오른쪽: MST 강조 -->
+      <g transform="translate(400, 55)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="130" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">MST (5 간선, 합=20)</text>
+
+        <circle cx="40" cy="50" r="18" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="40" y="55" text-anchor="middle" class="viz-label" font-weight="700">A</text>
+        <circle cx="140" cy="30" r="18" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="140" y="35" text-anchor="middle" class="viz-label" font-weight="700">B</text>
+        <circle cx="240" cy="50" r="18" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="240" y="55" text-anchor="middle" class="viz-label" font-weight="700">C</text>
+        <circle cx="40" cy="160" r="18" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="40" y="165" text-anchor="middle" class="viz-label" font-weight="700">D</text>
+        <circle cx="140" cy="180" r="18" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="140" y="185" text-anchor="middle" class="viz-label" font-weight="700">E</text>
+        <circle cx="240" cy="160" r="18" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2.5"/>
+        <text x="240" y="165" text-anchor="middle" class="viz-label" font-weight="700">F</text>
+
+        <!-- MST 간선 (A-B=4, A-D=2, D-E=3, C-F=5, E-F=6) — total 20 -->
+        <line x1="58" y1="50" x2="122" y2="32" stroke="#3b9b6e" stroke-width="3"/>
+        <text x="85" y="30" class="viz-label-small" fill="#3b9b6e" font-weight="700">4</text>
+
+        <line x1="40" y1="68" x2="40" y2="142" stroke="#3b9b6e" stroke-width="3"/>
+        <text x="24" y="108" class="viz-label-small" fill="#3b9b6e" font-weight="700">2</text>
+
+        <line x1="58" y1="160" x2="122" y2="180" stroke="#3b9b6e" stroke-width="3"/>
+        <text x="85" y="178" class="viz-label-small" fill="#3b9b6e" font-weight="700">3</text>
+
+        <line x1="240" y1="68" x2="240" y2="142" stroke="#3b9b6e" stroke-width="3"/>
+        <text x="252" y="108" class="viz-label-small" fill="#3b9b6e" font-weight="700">5</text>
+
+        <line x1="158" y1="180" x2="222" y2="160" stroke="#3b9b6e" stroke-width="3"/>
+        <text x="195" y="178" class="viz-label-small" fill="#3b9b6e" font-weight="700">6</text>
+
+        <text x="130" y="240" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">A-B(4) + A-D(2) + D-E(3) + C-F(5) + E-F(6) = <tspan font-weight="700" fill="#3b9b6e">20</tspan></text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>MST = 5개 간선(V-1), 사이클 없음, 모든 정점 연결, 총 비용 최소</strong>. 회색 점선 간선(9, 10)과 파란색 굵은 간선(7, 8)은 제외 — 더 싼 대안이 있기 때문.</div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">응용 분야</h3>
+    </div>
+    <ul>
+      <li><strong>네트워크 설계</strong>: 전력망, 통신망, 도로망 최저 비용 구축. MST 문제의 원형.</li>
+      <li><strong>클러스터링</strong>: Single-Link Clustering. 가장 싼 간선부터 이어가다 특정 임계값에서 멈추면 자연스런 클러스터.</li>
+      <li><strong>이미지 segmentation</strong>: 픽셀 간 그래프 MST → 유사 영역 탐지.</li>
+      <li><strong>TSP 근사</strong>: MST의 2배가 Traveling Salesman의 상한.</li>
+      <li><strong>데이터 압축</strong>: 유전자 거리 행렬에서 계통수(phylogenetic tree) 추정.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 03. Cut Property ==================== -->
+<section id="cut-property">
+  <h2>03 — Cut Property — 모든 증명의 기반 (CLRS §21.1)</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">"컷(cut)"이란</h3>
+    </div>
+    <p>
+      <strong>컷</strong>(S, V\S): 정점 집합 V를 두 부분 S와 V\S로 가르는 분할. 한쪽 끝이 S에, 다른 끝이 V\S에 있는 간선을 <em>"컷을 건너는 간선"</em>(crossing edge)이라 부름.
+    </p>
+    <p>
+      <strong>Cut Property (안전 간선 정리)</strong>: 임의의 컷을 하나 잡았을 때, 그 컷을 건너는 간선 중 <em>가장 가벼운(최소 가중치)</em> 간선은 <strong>반드시</strong> 어떤 MST에 포함된다. 이 간선을 <em>"safe edge"</em>라 부름.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a17cut-show { 0%,2%{opacity:0} 4%,18%{opacity:1} 20%,100%{opacity:0} }
+      .a17cut-F0{animation:a17cut-show 10s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a17cut-F1{animation:a17cut-show 10s linear infinite;animation-delay:2.5s;animation-fill-mode:backwards}
+      .a17cut-F2{animation:a17cut-show 10s linear infinite;animation-delay:5s;animation-fill-mode:backwards}
+      .a17cut-F3{animation:a17cut-show 10s linear infinite;animation-delay:7.5s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cut Property 애니메이션">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">✂️ Cut Property — "컷 건너는 가장 싼 간선은 safe"</text>
+
+      <!-- 그래프 -->
+      <g transform="translate(80, 55)" font-family="JetBrains Mono, monospace" font-size="12">
+        <!-- S쪽 정점 (왼쪽) -->
+        <circle cx="0" cy="40" r="18" class="viz-node"/>
+        <text x="0" y="45" text-anchor="middle" class="viz-label" font-weight="700">A</text>
+        <circle cx="0" cy="150" r="18" class="viz-node"/>
+        <text x="0" y="155" text-anchor="middle" class="viz-label" font-weight="700">B</text>
+        <circle cx="90" cy="95" r="18" class="viz-node"/>
+        <text x="90" y="100" text-anchor="middle" class="viz-label" font-weight="700">C</text>
+
+        <!-- V\S쪽 정점 (오른쪽) -->
+        <circle cx="240" cy="40" r="18" class="viz-node"/>
+        <text x="240" y="45" text-anchor="middle" class="viz-label" font-weight="700">D</text>
+        <circle cx="240" cy="150" r="18" class="viz-node"/>
+        <text x="240" y="155" text-anchor="middle" class="viz-label" font-weight="700">E</text>
+        <circle cx="330" cy="95" r="18" class="viz-node"/>
+        <text x="330" y="100" text-anchor="middle" class="viz-label" font-weight="700">F</text>
+
+        <!-- S 내부 간선 -->
+        <line x1="0" y1="58" x2="0" y2="132" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="-15" y="98" class="viz-label-small" fill="var(--text-muted)">2</text>
+        <line x1="16" y1="52" x2="78" y2="82" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="40" y="62" class="viz-label-small" fill="var(--text-muted)">3</text>
+        <line x1="16" y1="138" x2="78" y2="108" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="40" y="135" class="viz-label-small" fill="var(--text-muted)">4</text>
+
+        <!-- V\S 내부 간선 -->
+        <line x1="240" y1="58" x2="240" y2="132" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="253" y="98" class="viz-label-small" fill="var(--text-muted)">1</text>
+        <line x1="252" y1="52" x2="314" y2="82" stroke="var(--text-muted)" stroke-width="1.4"/>
+        <text x="285" y="62" class="viz-label-small" fill="var(--text-muted)">2</text>
+
+        <!-- 컷 건너는 간선 (초기에 회색) -->
+        <line x1="18" y1="40" x2="222" y2="40" stroke="var(--text-muted)" stroke-width="1.4" class="cut-edge-base"/>
+        <text x="120" y="32" class="viz-label-small" fill="var(--text-muted)">8 (A-D)</text>
+
+        <line x1="106" y1="92" x2="224" y2="45" stroke="var(--text-muted)" stroke-width="1.4" class="cut-edge-base"/>
+        <text x="150" y="60" class="viz-label-small" fill="var(--text-muted)">5 (C-D)</text>
+
+        <line x1="106" y1="98" x2="224" y2="148" stroke="var(--text-muted)" stroke-width="1.4" class="cut-edge-base"/>
+        <text x="150" y="135" class="viz-label-small" fill="var(--text-muted)">9 (C-E)</text>
+
+        <line x1="18" y1="150" x2="222" y2="150" stroke="var(--text-muted)" stroke-width="1.4" class="cut-edge-base"/>
+        <text x="120" y="166" class="viz-label-small" fill="var(--text-muted)">7 (B-E)</text>
+      </g>
+
+      <!-- 컷 선 (프레임 1부터 등장) -->
+      <g class="a17cut-F1 a17cut-F2 a17cut-F3">
+        <line x1="250" y1="55" x2="250" y2="270" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="8,4"/>
+        <text x="250" y="48" text-anchor="middle" class="viz-label-small" fill="var(--accent)" font-weight="700">CUT</text>
+      </g>
+
+      <!-- safe edge 강조 (프레임 3) -->
+      <g class="a17cut-F3">
+        <line x1="186" y1="147" x2="304" y2="100" stroke="#3b9b6e" stroke-width="4" opacity="0.9"/>
+      </g>
+
+      <!-- 프레임별 캡션 -->
+      <g transform="translate(420, 60)" font-size="12" font-family="JetBrains Mono, monospace">
+        <g class="a17cut-F0">
+          <text x="0" y="0" class="viz-label" font-weight="700">단계 0</text>
+          <text x="0" y="22" class="viz-label-small">원본 그래프. V={A,B,C,D,E,F}</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">총 10개 간선.</text>
+        </g>
+        <g class="a17cut-F1">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="var(--accent)">단계 1: 컷 긋기</text>
+          <text x="0" y="22" class="viz-label-small">S = {A, B, C}</text>
+          <text x="0" y="42" class="viz-label-small">V\S = {D, E, F}</text>
+          <text x="0" y="62" class="viz-label-small" fill="var(--text-muted)">컷을 임의로 선택.</text>
+        </g>
+        <g class="a17cut-F2">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="var(--accent)">단계 2: 건너는 간선</text>
+          <text x="0" y="22" class="viz-label-small">A-D: 8, C-D: 5,</text>
+          <text x="0" y="42" class="viz-label-small">C-E: 9, B-E: 7</text>
+          <text x="0" y="62" class="viz-label-small" fill="var(--text-muted)">컷을 건너는 4개 간선.</text>
+        </g>
+        <g class="a17cut-F3">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 3: Safe Edge</text>
+          <text x="0" y="22" class="viz-label-small">건너는 간선 가중치: {5, 7, 8, 9}</text>
+          <text x="0" y="42" class="viz-label-small">최소 = <tspan font-weight="700" fill="#3b9b6e">C-D (5)</tspan></text>
+          <text x="0" y="62" class="viz-label-small" fill="#3b9b6e" font-weight="700">→ 반드시 어떤 MST에 포함 (safe)</text>
+          <text x="0" y="82" class="viz-label-small" fill="var(--text-muted)">Cut Property의 결론</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>4프레임 Cut Property</strong>: 컷을 임의로 긋고 → 건너는 간선을 찾고 → 그중 최소 = 반드시 MST에 포함됨. <em>이 하나의 정리가 Kruskal, Prim, Borůvka 모두의 정당성을 증명</em>.</div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">증명 (교환 논증, exchange argument)</h3>
+    </div>
+    <p>
+      컷 (S, V\S)를 건너는 최소 간선을 e라 하자. 어떤 MST T가 e를 포함하지 않는다고 가정.
+    </p>
+    <ol>
+      <li>T는 모든 정점을 연결하므로, T 안에도 컷을 건너는 간선 e'가 반드시 존재 (그렇지 않으면 S와 V\S가 분리됨 → T가 연결 트리 아님).</li>
+      <li>T에 e를 추가하면 사이클 C가 생김. C는 컷을 짝수번 건너야 하므로 C에 또 다른 crossing edge가 있음 — 바로 e'.</li>
+      <li>T에서 e'를 빼고 e를 넣은 T' = T − e' + e도 여전히 spanning tree.</li>
+      <li>w(e) ≤ w(e') (e가 건너는 간선 중 최소)이므로 w(T') ≤ w(T).</li>
+      <li>T가 MST였으니 등호 성립 → T'도 MST이고 e 포함. □</li>
+    </ol>
+    <p>
+      이 논증은 <em>exchange argument</em>의 교과서적 예. 그리디 알고리즘 정당성 증명의 표준 기법.
+    </p>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원서 인용 — CLRS 4판, Theorem 21.1</div>
+    <p>
+      <em>"Let G = (V, E) be a connected, undirected graph with a real-valued weight function w defined on E. Let A be a subset of E that is included in some minimum spanning tree for G, let (S, V−S) be any cut of G that respects A, and let (u,v) be a light edge crossing (S, V−S). Then, edge (u,v) is safe for A."</em>
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 04. Kruskal ==================== -->
+<section id="kruskal-idea">
+  <h2>04 — Kruskal — 간선 정렬 + Union-Find</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">아이디어 — "가장 싼 것부터, 사이클 피해서"</h3>
+    </div>
+    <ol>
+      <li>모든 간선을 가중치 오름차순으로 정렬.</li>
+      <li>순서대로 간선을 하나씩 보면서:
+        <ul>
+          <li>두 끝점이 <strong>다른 컴포넌트</strong>에 있으면 → MST에 추가하고 두 컴포넌트 merge.</li>
+          <li>같은 컴포넌트면 → 사이클 유발 → 건너뛰기.</li>
+        </ul>
+      </li>
+      <li>V-1개 간선을 골랐으면 완료.</li>
+    </ol>
+    <p>
+      <strong>왜 Cut Property와 연결되나</strong>: 현재까지 선택한 간선들이 이룬 컴포넌트 하나를 S, 나머지를 V\S로 보면, 정렬된 간선 중 가장 먼저 <em>"S를 V\S와 잇는"</em> 것이 건너는 최소 간선 = safe edge.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a17kr-show { 0%,2%{opacity:0} 4%,13%{opacity:1} 15%,100%{opacity:0} }
+      .a17kr-S0{animation:a17kr-show 12s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a17kr-S1{animation:a17kr-show 12s linear infinite;animation-delay:2s;animation-fill-mode:backwards}
+      .a17kr-S2{animation:a17kr-show 12s linear infinite;animation-delay:4s;animation-fill-mode:backwards}
+      .a17kr-S3{animation:a17kr-show 12s linear infinite;animation-delay:6s;animation-fill-mode:backwards}
+      .a17kr-S4{animation:a17kr-show 12s linear infinite;animation-delay:8s;animation-fill-mode:backwards}
+      .a17kr-S5{animation:a17kr-show 12s linear infinite;animation-delay:10s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kruskal 단계별">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🔗 Kruskal 6단계 — 간선 오름차순으로 merge</text>
+
+      <!-- 그래프 (5노드 A B C D E) -->
+      <g transform="translate(60, 60)" font-family="JetBrains Mono, monospace" font-size="12">
+        <circle cx="50" cy="30" r="18" class="viz-node"/>
+        <text x="50" y="35" text-anchor="middle" class="viz-label" font-weight="700">A</text>
+        <circle cx="200" cy="30" r="18" class="viz-node"/>
+        <text x="200" y="35" text-anchor="middle" class="viz-label" font-weight="700">B</text>
+        <circle cx="125" cy="100" r="18" class="viz-node"/>
+        <text x="125" y="105" text-anchor="middle" class="viz-label" font-weight="700">C</text>
+        <circle cx="50" cy="180" r="18" class="viz-node"/>
+        <text x="50" y="185" text-anchor="middle" class="viz-label" font-weight="700">D</text>
+        <circle cx="200" cy="180" r="18" class="viz-node"/>
+        <text x="200" y="185" text-anchor="middle" class="viz-label" font-weight="700">E</text>
+
+        <!-- 간선 (회색) 7개 -->
+        <!-- A-B:7, A-C:3, A-D:6, B-C:4, B-E:2, C-D:1, C-E:5 -->
+        <line x1="68" y1="30" x2="182" y2="30" stroke="var(--text-muted)" stroke-width="1.2" id="kr-e-AB"/>
+        <text x="125" y="22" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">7</text>
+
+        <line x1="62" y1="45" x2="112" y2="85" stroke="var(--text-muted)" stroke-width="1.2" id="kr-e-AC"/>
+        <text x="78" y="62" class="viz-label-small" fill="var(--text-muted)">3</text>
+
+        <line x1="50" y1="48" x2="50" y2="162" stroke="var(--text-muted)" stroke-width="1.2" id="kr-e-AD"/>
+        <text x="38" y="110" class="viz-label-small" fill="var(--text-muted)">6</text>
+
+        <line x1="138" y1="85" x2="188" y2="45" stroke="var(--text-muted)" stroke-width="1.2" id="kr-e-BC"/>
+        <text x="170" y="62" class="viz-label-small" fill="var(--text-muted)">4</text>
+
+        <line x1="200" y1="48" x2="200" y2="162" stroke="var(--text-muted)" stroke-width="1.2" id="kr-e-BE"/>
+        <text x="212" y="110" class="viz-label-small" fill="var(--text-muted)">2</text>
+
+        <line x1="112" y1="115" x2="62" y2="165" stroke="var(--text-muted)" stroke-width="1.2" id="kr-e-CD"/>
+        <text x="80" y="148" class="viz-label-small" fill="var(--text-muted)">1</text>
+
+        <line x1="138" y1="115" x2="188" y2="165" stroke="var(--text-muted)" stroke-width="1.2" id="kr-e-CE"/>
+        <text x="170" y="148" class="viz-label-small" fill="var(--text-muted)">5</text>
+
+        <!-- 각 단계에서 추가될 MST 간선 (누적 색상) -->
+        <!-- S1: C-D(1) -->
+        <line class="a17kr-S1 a17kr-S2 a17kr-S3 a17kr-S4 a17kr-S5" x1="112" y1="115" x2="62" y2="165" stroke="#3b9b6e" stroke-width="4"/>
+        <!-- S2: B-E(2) -->
+        <line class="a17kr-S2 a17kr-S3 a17kr-S4 a17kr-S5" x1="200" y1="48" x2="200" y2="162" stroke="#3b9b6e" stroke-width="4"/>
+        <!-- S3: A-C(3) -->
+        <line class="a17kr-S3 a17kr-S4 a17kr-S5" x1="62" y1="45" x2="112" y2="85" stroke="#3b9b6e" stroke-width="4"/>
+        <!-- S4: B-C(4) -->
+        <line class="a17kr-S4 a17kr-S5" x1="138" y1="85" x2="188" y2="45" stroke="#3b9b6e" stroke-width="4"/>
+        <!-- 거부: C-E(5) 빨간 X -->
+      </g>
+
+      <!-- 단계별 설명 + 정렬 리스트 -->
+      <g transform="translate(400, 60)" font-size="12" font-family="JetBrains Mono, monospace">
+        <g class="a17kr-S0">
+          <text x="0" y="0" class="viz-label" font-weight="700">단계 0: 간선 정렬</text>
+          <text x="0" y="22" class="viz-label-small">[CD:1, BE:2, AC:3, BC:4,</text>
+          <text x="0" y="40" class="viz-label-small"> CE:5, AD:6, AB:7]</text>
+          <text x="0" y="62" class="viz-label-small" fill="var(--text-muted)">컴포넌트: {A}{B}{C}{D}{E}</text>
+        </g>
+        <g class="a17kr-S1">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 1: CD(1) ✓</text>
+          <text x="0" y="22" class="viz-label-small">C,D 다른 컴포넌트 → 추가</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">컴포넌트: {A}{B}{CD}{E}</text>
+          <text x="0" y="62" class="viz-label-small" fill="#3b9b6e">MST 합: 1</text>
+        </g>
+        <g class="a17kr-S2">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 2: BE(2) ✓</text>
+          <text x="0" y="22" class="viz-label-small">B,E 다른 → 추가</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">컴포넌트: {A}{BE}{CD}</text>
+          <text x="0" y="62" class="viz-label-small" fill="#3b9b6e">MST 합: 3</text>
+        </g>
+        <g class="a17kr-S3">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 3: AC(3) ✓</text>
+          <text x="0" y="22" class="viz-label-small">A,C 다른 → 추가 (merge)</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">컴포넌트: {ACD}{BE}</text>
+          <text x="0" y="62" class="viz-label-small" fill="#3b9b6e">MST 합: 6</text>
+        </g>
+        <g class="a17kr-S4">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 4: BC(4) ✓</text>
+          <text x="0" y="22" class="viz-label-small">B,C 다른 → 추가 (merge)</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">컴포넌트: {ABCDE}</text>
+          <text x="0" y="62" class="viz-label-small" fill="#3b9b6e">MST 합: 10 · 완성!</text>
+        </g>
+        <g class="a17kr-S5">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="var(--accent)">단계 5: CE(5) ✗</text>
+          <text x="0" y="22" class="viz-label-small">C,E 같은 컴포넌트 → skip</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">이미 V-1=4개 추가됨</text>
+          <text x="0" y="62" class="viz-label-small" fill="#3b9b6e">최종 MST: 10</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>6단계 Kruskal 진행</strong>: 간선을 가중치 오름차순으로 처리 → <em>다른 컴포넌트면 merge, 같으면 skip</em>. 4번째 간선 선택 후 V-1=4개 완료. Union-Find로 컴포넌트 merge를 빠르게.</div>
+  </div>
+</section>
+
+<!-- ==================== 05. Kruskal Python ==================== -->
+<section id="kruskal-python">
+  <h2>05 — Kruskal Python 구현 (Union-Find)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Union-Find (DSU) 자료구조</h3>
+    </div>
+    <p>
+      Kruskal의 핵심은 "두 정점이 같은 컴포넌트인가"를 빠르게 답하기. 이를 위한 자료구조가 <strong>Disjoint Set Union (DSU)</strong>, 별칭 <strong>Union-Find</strong>.
+    </p>
+    <ul>
+      <li><code>find(x)</code>: x의 컴포넌트 대표(루트) 반환.</li>
+      <li><code>union(x, y)</code>: x와 y가 속한 두 컴포넌트 합침.</li>
+      <li>두 최적화:
+        <ul>
+          <li><strong>Path Compression</strong>: <code>find</code> 중 만난 노드를 전부 루트로 직접 연결 (다음 find를 O(1)에).</li>
+          <li><strong>Union by Rank</strong>: 작은 트리를 큰 트리 밑에 붙이기 (트리 높이 제한).</li>
+        </ul>
+      </li>
+      <li>둘 다 쓰면 거의 <strong>O(α(N))</strong> (Ackermann 역함수 — 실질 상수).</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Python 구현</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">kruskal.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">class</span> <span class="hl-bi">DSU</span>:
+    <span class="hl-kw">def</span> <span class="hl-bi">__init__</span>(<span class="hl-kw">self</span>, n):
+        <span class="hl-kw">self</span>.parent = <span class="hl-bi">list</span>(<span class="hl-bi">range</span>(n))
+        <span class="hl-kw">self</span>.rank = [<span class="hl-num">0</span>] * n
+
+    <span class="hl-kw">def</span> <span class="hl-bi">find</span>(<span class="hl-kw">self</span>, x):
+        <span class="hl-kw">while</span> <span class="hl-kw">self</span>.parent[x] != x:
+            <span class="hl-kw">self</span>.parent[x] = <span class="hl-kw">self</span>.parent[<span class="hl-kw">self</span>.parent[x]]    <span class="hl-cmt"># path halving (compression의 변형, 동일 O(α))</span>
+            x = <span class="hl-kw">self</span>.parent[x]
+        <span class="hl-kw">return</span> x
+
+    <span class="hl-kw">def</span> <span class="hl-bi">union</span>(<span class="hl-kw">self</span>, x, y):
+        rx, ry = <span class="hl-kw">self</span>.find(x), <span class="hl-kw">self</span>.find(y)
+        <span class="hl-kw">if</span> rx == ry: <span class="hl-kw">return</span> <span class="hl-kw">False</span>    <span class="hl-cmt"># 이미 같은 컴포넌트</span>
+        <span class="hl-kw">if</span> <span class="hl-kw">self</span>.rank[rx] &lt; <span class="hl-kw">self</span>.rank[ry]:
+            rx, ry = ry, rx
+        <span class="hl-kw">self</span>.parent[ry] = rx
+        <span class="hl-kw">if</span> <span class="hl-kw">self</span>.rank[rx] == <span class="hl-kw">self</span>.rank[ry]:
+            <span class="hl-kw">self</span>.rank[rx] += <span class="hl-num">1</span>
+        <span class="hl-kw">return</span> <span class="hl-kw">True</span>
+
+
+<span class="hl-kw">def</span> <span class="hl-bi">kruskal</span>(V, edges):
+    <span class="hl-cmt">"""edges: [(u, v, w), ...]. 반환: (MST 간선 리스트, 총 가중치)."""</span>
+    dsu = DSU(V)
+    edges_sorted = <span class="hl-bi">sorted</span>(edges, key=<span class="hl-kw">lambda</span> e: e[<span class="hl-num">2</span>])
+    mst = []
+    total = <span class="hl-num">0</span>
+
+    <span class="hl-kw">for</span> u, v, w <span class="hl-kw">in</span> edges_sorted:
+        <span class="hl-kw">if</span> dsu.union(u, v):
+            mst.append((u, v, w))
+            total += w
+            <span class="hl-kw">if</span> <span class="hl-bi">len</span>(mst) == V - <span class="hl-num">1</span>:
+                <span class="hl-kw">break</span>    <span class="hl-cmt"># 조기 종료</span>
+
+    <span class="hl-kw">return</span> mst, total
+
+
+<span class="hl-cmt"># 테스트</span>
+edges = [(<span class="hl-num">0</span>,<span class="hl-num">1</span>,<span class="hl-num">7</span>),(<span class="hl-num">0</span>,<span class="hl-num">2</span>,<span class="hl-num">3</span>),(<span class="hl-num">0</span>,<span class="hl-num">3</span>,<span class="hl-num">6</span>),
+         (<span class="hl-num">1</span>,<span class="hl-num">2</span>,<span class="hl-num">4</span>),(<span class="hl-num">1</span>,<span class="hl-num">4</span>,<span class="hl-num">2</span>),
+         (<span class="hl-num">2</span>,<span class="hl-num">3</span>,<span class="hl-num">1</span>),(<span class="hl-num">2</span>,<span class="hl-num">4</span>,<span class="hl-num">5</span>)]
+mst, total = kruskal(<span class="hl-num">5</span>, edges)
+<span class="hl-bi">print</span>(total, mst)
+<span class="hl-cmt"># 10 [(2,3,1),(1,4,2),(0,2,3),(1,2,4)]</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>복잡도</strong>: 정렬 O(E log E) + V번의 Union-Find ≈ O(E log E). 정렬이 병목.</li>
+      <li><strong>간선 리스트</strong>가 입력으로 자연스러움. 인접 리스트 안 필요.</li>
+      <li><strong>조기 종료</strong>: V-1개 추가되면 그만.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 06. Prim 아이디어 ==================== -->
+<section id="prim-idea">
+  <h2>06 — Prim — 정점에서 트리 확장</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">아이디어 — "씨앗에서 싹트는 트리"</h3>
+    </div>
+    <ol>
+      <li>임의의 정점 r에서 시작. 트리 T = {r}.</li>
+      <li>T에 포함된 정점 중 하나에서 T 밖 정점으로 가는 간선 중 <strong>가장 싼 것</strong>을 찾아 T에 추가.</li>
+      <li>V-1번 반복.</li>
+    </ol>
+    <p>
+      <strong>Cut Property와의 연결</strong>: 현재 T를 S, 나머지를 V\S로 보면, 컷을 건너는 간선 중 최소 = 바로 safe edge. 이게 Prim의 그리디 선택.
+    </p>
+    <p>
+      <strong>Dijkstra와의 놀라운 유사성</strong>: 구현이 거의 동일 — heap, 완화, extract-min. 차이는 오직 하나:
+    </p>
+    <ul>
+      <li><strong>Dijkstra</strong>: dist[v] = "시작점 s에서 v까지의 <em>누적</em> 거리".</li>
+      <li><strong>Prim</strong>: key[v] = "T 밖 정점 v를 T에 잇는 <em>단일 간선</em> 최소 비용".</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a17pr-show { 0%,2%{opacity:0} 4%,14%{opacity:1} 16%,100%{opacity:0} }
+      .a17pr-S0{animation:a17pr-show 12s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a17pr-S1{animation:a17pr-show 12s linear infinite;animation-delay:2.4s;animation-fill-mode:backwards}
+      .a17pr-S2{animation:a17pr-show 12s linear infinite;animation-delay:4.8s;animation-fill-mode:backwards}
+      .a17pr-S3{animation:a17pr-show 12s linear infinite;animation-delay:7.2s;animation-fill-mode:backwards}
+      .a17pr-S4{animation:a17pr-show 12s linear infinite;animation-delay:9.6s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Prim 단계별">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🌱 Prim 5단계 — A에서 시작, 매 단계 light edge로 확장</text>
+
+      <!-- 그래프 (같은 5노드) -->
+      <g transform="translate(60, 60)" font-family="JetBrains Mono, monospace" font-size="12">
+        <!-- 간선들 (회색, 배경) -->
+        <line x1="68" y1="30" x2="182" y2="30" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="125" y="22" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">7</text>
+        <line x1="62" y1="45" x2="112" y2="85" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="78" y="62" class="viz-label-small" fill="var(--text-muted)">3</text>
+        <line x1="50" y1="48" x2="50" y2="162" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="38" y="110" class="viz-label-small" fill="var(--text-muted)">6</text>
+        <line x1="138" y1="85" x2="188" y2="45" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="170" y="62" class="viz-label-small" fill="var(--text-muted)">4</text>
+        <line x1="200" y1="48" x2="200" y2="162" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="212" y="110" class="viz-label-small" fill="var(--text-muted)">2</text>
+        <line x1="112" y1="115" x2="62" y2="165" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="80" y="148" class="viz-label-small" fill="var(--text-muted)">1</text>
+        <line x1="138" y1="115" x2="188" y2="165" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="170" y="148" class="viz-label-small" fill="var(--text-muted)">5</text>
+
+        <!-- 정점 -->
+        <circle cx="50" cy="30" r="18" class="viz-node"/>
+        <text x="50" y="35" text-anchor="middle" class="viz-label" font-weight="700">A</text>
+        <circle cx="200" cy="30" r="18" class="viz-node"/>
+        <text x="200" y="35" text-anchor="middle" class="viz-label" font-weight="700">B</text>
+        <circle cx="125" cy="100" r="18" class="viz-node"/>
+        <text x="125" y="105" text-anchor="middle" class="viz-label" font-weight="700">C</text>
+        <circle cx="50" cy="180" r="18" class="viz-node"/>
+        <text x="50" y="185" text-anchor="middle" class="viz-label" font-weight="700">D</text>
+        <circle cx="200" cy="180" r="18" class="viz-node"/>
+        <text x="200" y="185" text-anchor="middle" class="viz-label" font-weight="700">E</text>
+
+        <!-- 트리에 포함된 정점 강조 -->
+        <!-- S0: A만 -->
+        <circle class="a17pr-S0" cx="50" cy="30" r="18" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="3"/>
+        <text class="viz-label a17pr-S0" x="50" y="35" text-anchor="middle" font-weight="700">A</text>
+
+        <!-- S1: A, C (간선 AC=3 추가) -->
+        <g class="a17pr-S1 a17pr-S2 a17pr-S3 a17pr-S4">
+          <line x1="62" y1="45" x2="112" y2="85" stroke="#3b9b6e" stroke-width="4"/>
+        </g>
+
+        <!-- S2: +D (간선 CD=1) -->
+        <g class="a17pr-S2 a17pr-S3 a17pr-S4">
+          <line x1="112" y1="115" x2="62" y2="165" stroke="#3b9b6e" stroke-width="4"/>
+        </g>
+
+        <!-- S3: +B (간선 BC=4) -->
+        <g class="a17pr-S3 a17pr-S4">
+          <line x1="138" y1="85" x2="188" y2="45" stroke="#3b9b6e" stroke-width="4"/>
+        </g>
+
+        <!-- S4: +E (간선 BE=2) -->
+        <g class="a17pr-S4">
+          <line x1="200" y1="48" x2="200" y2="162" stroke="#3b9b6e" stroke-width="4"/>
+        </g>
+      </g>
+
+      <!-- 설명 -->
+      <g transform="translate(400, 60)" font-size="12" font-family="JetBrains Mono, monospace">
+        <g class="a17pr-S0">
+          <text x="0" y="0" class="viz-label" font-weight="700">단계 0: 씨앗</text>
+          <text x="0" y="22" class="viz-label-small">T = {A}</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">heap: [(3,A,C),(6,A,D),(7,A,B)]</text>
+          <text x="0" y="64" class="viz-label-small">key[C]=3, key[D]=6, key[B]=7</text>
+        </g>
+        <g class="a17pr-S1">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 1: +C (key=3)</text>
+          <text x="0" y="22" class="viz-label-small">T = {A, C}</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">C의 이웃 relax:</text>
+          <text x="0" y="58" class="viz-label-small">key[D]=min(6,1)=1, key[B]=min(7,4)=4</text>
+          <text x="0" y="80" class="viz-label-small" fill="#3b9b6e">MST 합: 3</text>
+        </g>
+        <g class="a17pr-S2">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 2: +D (key=1)</text>
+          <text x="0" y="22" class="viz-label-small">T = {A, C, D}</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">D는 밖으로 새 간선 없음</text>
+          <text x="0" y="64" class="viz-label-small" fill="#3b9b6e">MST 합: 4</text>
+        </g>
+        <g class="a17pr-S3">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 3: +B (key=4)</text>
+          <text x="0" y="22" class="viz-label-small">T = {A, C, D, B}</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">B→E relax: key[E]=min(5,2)=2</text>
+          <text x="0" y="64" class="viz-label-small" fill="#3b9b6e">MST 합: 8</text>
+        </g>
+        <g class="a17pr-S4">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 4: +E (key=2) ✓</text>
+          <text x="0" y="22" class="viz-label-small">T = {A, B, C, D, E}</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">V-1=4 간선 완료</text>
+          <text x="0" y="64" class="viz-label-small" fill="#3b9b6e">MST 합: 10 · 동일!</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>5단계 Prim 진행</strong>: A에서 시작 → 매 단계 T에서 밖으로 가는 가장 싼 간선 선택. <em>Kruskal과 선택 순서는 다르지만 최종 합은 동일</em> (10). 둘 다 MST이므로.</div>
+  </div>
+</section>
+
+<!-- ==================== 07. Prim Python ==================== -->
+<section id="prim-python">
+  <h2>07 — Prim Python 구현 (heapq)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Dijkstra와 구현 쌍둥이</h3>
+    </div>
+    <p>
+      Prim은 Dijkstra와 <em>거의 같은 코드</em>. 차이는 heap 우선순위로 "누적 거리" 대신 "단일 간선 비용"을 쓰는 것.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">prim.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">import</span> heapq
+
+<span class="hl-kw">def</span> <span class="hl-bi">prim</span>(V, graph, start=<span class="hl-num">0</span>):
+    <span class="hl-cmt">"""graph: {u: [(v, w), ...]} 인접 리스트."""</span>
+    in_tree = [<span class="hl-kw">False</span>] * V
+    parent = [<span class="hl-kw">None</span>] * V
+    key = [<span class="hl-bi">float</span>(<span class="hl-str">'inf'</span>)] * V
+    key[start] = <span class="hl-num">0</span>
+
+    pq = [(<span class="hl-num">0</span>, start)]    <span class="hl-cmt"># (간선 비용, 정점)</span>
+    mst_edges = []
+    total = <span class="hl-num">0</span>
+
+    <span class="hl-kw">while</span> pq:
+        k, u = heapq.heappop(pq)
+        <span class="hl-kw">if</span> in_tree[u]: <span class="hl-kw">continue</span>    <span class="hl-cmt"># stale entry skip</span>
+        in_tree[u] = <span class="hl-kw">True</span>
+        total += k
+        <span class="hl-kw">if</span> parent[u] <span class="hl-kw">is</span> <span class="hl-kw">not</span> <span class="hl-kw">None</span>:
+            mst_edges.append((parent[u], u, k))
+
+        <span class="hl-kw">for</span> v, w <span class="hl-kw">in</span> graph.get(u, []):
+            <span class="hl-kw">if</span> <span class="hl-kw">not</span> in_tree[v] <span class="hl-kw">and</span> w &lt; key[v]:
+                key[v] = w
+                parent[v] = u
+                heapq.heappush(pq, (w, v))
+
+    <span class="hl-kw">return</span> mst_edges, total
+
+
+<span class="hl-cmt"># 테스트</span>
+graph = {
+    <span class="hl-num">0</span>: [(<span class="hl-num">1</span>,<span class="hl-num">7</span>),(<span class="hl-num">2</span>,<span class="hl-num">3</span>),(<span class="hl-num">3</span>,<span class="hl-num">6</span>)],
+    <span class="hl-num">1</span>: [(<span class="hl-num">0</span>,<span class="hl-num">7</span>),(<span class="hl-num">2</span>,<span class="hl-num">4</span>),(<span class="hl-num">4</span>,<span class="hl-num">2</span>)],
+    <span class="hl-num">2</span>: [(<span class="hl-num">0</span>,<span class="hl-num">3</span>),(<span class="hl-num">1</span>,<span class="hl-num">4</span>),(<span class="hl-num">3</span>,<span class="hl-num">1</span>),(<span class="hl-num">4</span>,<span class="hl-num">5</span>)],
+    <span class="hl-num">3</span>: [(<span class="hl-num">0</span>,<span class="hl-num">6</span>),(<span class="hl-num">2</span>,<span class="hl-num">1</span>)],
+    <span class="hl-num">4</span>: [(<span class="hl-num">1</span>,<span class="hl-num">2</span>),(<span class="hl-num">2</span>,<span class="hl-num">5</span>)],
+}
+mst, total = prim(<span class="hl-num">5</span>, graph, start=<span class="hl-num">0</span>)
+<span class="hl-bi">print</span>(total, mst)
+<span class="hl-cmt"># 10 [(0,2,3),(2,3,1),(2,1,4),(1,4,2)]</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>lazy deletion</strong> 패턴 (Algo 15 §05와 동일): 같은 정점의 옛 entry는 pop 시 <code>in_tree</code> 체크로 skip.</li>
+      <li><strong>복잡도</strong>: binary heap으로 O((V+E) log V). Fibonacci heap이면 O(E + V log V).</li>
+      <li><strong>Kruskal vs Prim</strong>:
+        <ul>
+          <li>Kruskal: 간선 리스트에 자연스러움. 병렬화 어려움.</li>
+          <li>Prim: 인접 리스트에 자연스러움. dense 그래프에 유리.</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <div class="reading-box">
+    <div class="box-header">📖 원서 인용 — CLRS 4판, §21.2 "The algorithms of Kruskal and Prim"</div>
+    <p>
+      <em>"Both algorithms can easily be made to run in time O(E lg V) using ordinary binary heaps. By using Fibonacci heaps, Prim's algorithm runs in time O(E + V lg V), which is an improvement over the binary-heap implementation if |V| is much smaller than |E|."</em>
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 08. 정확성 ==================== -->
+<section id="correctness">
+  <h2>08 — 정확성 증명: Cut Property의 위력</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Kruskal 정당성</h3>
+    </div>
+    <p>
+      <strong>불변식</strong>: 현재까지 선택한 간선 집합 A는 어떤 MST의 부분집합.
+    </p>
+    <ul>
+      <li>Base: A = ∅은 빈 집합 → 임의 MST의 부분집합. ✓</li>
+      <li>Step: 다음에 추가할 최소 가중치 간선 e = (u,v)가 다른 컴포넌트 연결이라면:
+        <ul>
+          <li>컷 정의: S = u가 속한 컴포넌트, V\S = 나머지. 이 컷은 A를 존중(respect) — A의 어떤 간선도 이 컷을 건너지 않음 (모두 A의 컴포넌트 내부).</li>
+          <li>e는 이 컷을 건너는 최소 가중치 간선 (정렬 순서). Cut Property → e는 safe.</li>
+          <li>A ∪ {e}도 어떤 MST의 부분집합. ✓</li>
+        </ul>
+      </li>
+      <li>V-1 번 반복 후 A = MST. □</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Prim 정당성</h3>
+    </div>
+    <p>
+      <strong>불변식</strong>: 현재 트리 T는 어떤 MST의 부분트리.
+    </p>
+    <ul>
+      <li>컷: S = T의 정점 집합, V\S = 나머지.</li>
+      <li>Prim은 이 컷을 건너는 최소 간선을 추가 → Cut Property.</li>
+      <li>Kruskal과 완전히 같은 논리. □</li>
+    </ul>
+    <p>
+      <strong>핵심 메시지</strong>: Kruskal, Prim, Borůvka는 모두 Cut Property의 서로 다른 실행 방식. 차이는 <em>어느 컷을 고르는가</em>:
+    </p>
+    <ul>
+      <li><strong>Kruskal</strong>: 간선 순서에 따라 "암묵적으로" 컷이 결정됨.</li>
+      <li><strong>Prim</strong>: (현재 트리, 나머지)로 컷이 명시적.</li>
+      <li><strong>Borůvka</strong>: 각 컴포넌트를 S로 보고 병렬로 safe edge 선택.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 09. Borůvka ==================== -->
+<section id="boruvka">
+  <h2>09 — Borůvka — 병렬 MST의 원조</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">1926년의 병렬 아이디어</h3>
+    </div>
+    <p>
+      Borůvka는 "각 정점(컴포넌트)이 <em>동시에</em> 자기 최소 간선을 고르고 merge"라는 아이디어. 현대 병렬/분산 컴퓨팅에 딱 맞음.
+    </p>
+    <ol>
+      <li>각 정점을 별도 컴포넌트로 시작.</li>
+      <li>모든 컴포넌트가 병렬로 자기 밖으로 나가는 최소 간선 고름.</li>
+      <li>선택된 간선들을 모두 MST에 추가, 해당 컴포넌트들 merge.</li>
+      <li>컴포넌트가 1개가 될 때까지 반복.</li>
+    </ol>
+    <ul>
+      <li>한 <em>phase</em>마다 컴포넌트 수가 최소 절반 → <strong>O(log V) phase</strong>.</li>
+      <li>각 phase 내 간선 검사: O(E). 총 <strong>O(E log V)</strong>.</li>
+      <li>1976년 Cheriton & Tarjan (SIAM J. Comput. 5:724-742)이 Prim/Borůvka 혼합으로 O(E log log V) 달성.</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a17bo-show { 0%,2%{opacity:0} 4%,22%{opacity:1} 24%,100%{opacity:0} }
+      .a17bo-F0{animation:a17bo-show 8s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a17bo-F1{animation:a17bo-show 8s linear infinite;animation-delay:2s;animation-fill-mode:backwards}
+      .a17bo-F2{animation:a17bo-show 8s linear infinite;animation-delay:4s;animation-fill-mode:backwards}
+      .a17bo-F3{animation:a17bo-show 8s linear infinite;animation-delay:6s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Borůvka 병렬 단계">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🔀 Borůvka — 각 컴포넌트가 동시에 자기 light edge 선택</text>
+
+      <!-- 그래프 (4노드 정사각형 + 추가 간선) -->
+      <g transform="translate(120, 60)" font-family="JetBrains Mono, monospace" font-size="12">
+        <circle cx="0" cy="30" r="18" class="viz-node"/>
+        <text x="0" y="35" text-anchor="middle" class="viz-label" font-weight="700">A</text>
+        <circle cx="200" cy="30" r="18" class="viz-node"/>
+        <text x="200" y="35" text-anchor="middle" class="viz-label" font-weight="700">B</text>
+        <circle cx="0" cy="180" r="18" class="viz-node"/>
+        <text x="0" y="185" text-anchor="middle" class="viz-label" font-weight="700">C</text>
+        <circle cx="200" cy="180" r="18" class="viz-node"/>
+        <text x="200" y="185" text-anchor="middle" class="viz-label" font-weight="700">D</text>
+
+        <!-- 간선들 -->
+        <!-- A-B:3, A-C:1, B-D:5, C-D:2, A-D:8, B-C:7 -->
+        <line x1="18" y1="30" x2="182" y2="30" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="100" y="22" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">3</text>
+        <line x1="0" y1="48" x2="0" y2="162" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="-15" y="108" class="viz-label-small" fill="var(--text-muted)">1</text>
+        <line x1="200" y1="48" x2="200" y2="162" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="212" y="108" class="viz-label-small" fill="var(--text-muted)">5</text>
+        <line x1="18" y1="180" x2="182" y2="180" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="100" y="195" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">2</text>
+        <line x1="18" y1="48" x2="182" y2="162" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="90" y="90" class="viz-label-small" fill="var(--text-muted)">8</text>
+        <line x1="18" y1="162" x2="182" y2="48" stroke="var(--text-muted)" stroke-width="1.2"/>
+        <text x="90" y="135" class="viz-label-small" fill="var(--text-muted)">7</text>
+
+        <!-- Phase 1 선택: A→AC(1), B→AB(3), C→AC(1), D→CD(2) -->
+        <!-- 실제 추가되는 간선: AC(1), AB(3), CD(2) — AB는 B 선택 = 3, 하지만 A는 AC=1 -->
+        <!-- Wait: A의 최소 = AC(1), B의 최소 = AB(3), C의 최소 = AC(1), D의 최소 = CD(2) -->
+        <!-- 선택 edges (중복 제거): AC(1), AB(3), CD(2) -->
+        <g class="a17bo-F1 a17bo-F2 a17bo-F3">
+          <line x1="0" y1="48" x2="0" y2="162" stroke="#3b9b6e" stroke-width="4"/>
+          <line x1="18" y1="30" x2="182" y2="30" stroke="#3b9b6e" stroke-width="4"/>
+          <line x1="18" y1="180" x2="182" y2="180" stroke="#3b9b6e" stroke-width="4"/>
+        </g>
+        <!-- Phase 2: 두 컴포넌트 {A,B,C} vs {D} ...wait merged: {A,B,C} and {C,D} share C -->
+        <!-- actually after phase 1: edges AC, AB, CD form connected ABCD directly? -->
+        <!-- AC merges A-C: {A,C}, AB merges A-B: {A,B,C}, CD merges C-D: {A,B,C,D} all one -->
+        <!-- So only 1 phase needed -->
+
+      </g>
+
+      <!-- 프레임별 텍스트 -->
+      <g transform="translate(400, 55)" font-size="12" font-family="JetBrains Mono, monospace">
+        <g class="a17bo-F0">
+          <text x="0" y="0" class="viz-label" font-weight="700">Phase 0: 초기</text>
+          <text x="0" y="22" class="viz-label-small">컴포넌트 4개: {A}{B}{C}{D}</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">각자 자기 최소 간선 찾기</text>
+        </g>
+        <g class="a17bo-F1">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="var(--accent)">Phase 1: 병렬 선택</text>
+          <text x="0" y="20" class="viz-label-small">A의 최소: AC(1)</text>
+          <text x="0" y="38" class="viz-label-small">B의 최소: AB(3)</text>
+          <text x="0" y="56" class="viz-label-small">C의 최소: AC(1) — 동일</text>
+          <text x="0" y="74" class="viz-label-small">D의 최소: CD(2)</text>
+          <text x="0" y="96" class="viz-label-small" fill="var(--text-muted)">선택: {AC, AB, CD}</text>
+        </g>
+        <g class="a17bo-F2">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">Phase 1: merge</text>
+          <text x="0" y="22" class="viz-label-small">AC merge → {A,C}</text>
+          <text x="0" y="40" class="viz-label-small">AB merge → {A,B,C}</text>
+          <text x="0" y="58" class="viz-label-small">CD merge → {A,B,C,D}</text>
+          <text x="0" y="80" class="viz-label-small" fill="#3b9b6e">한 phase에 완성!</text>
+        </g>
+        <g class="a17bo-F3">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">✓ MST 완성</text>
+          <text x="0" y="22" class="viz-label-small">{AC(1), AB(3), CD(2)}</text>
+          <text x="0" y="42" class="viz-label-small">총 합: 6</text>
+          <text x="0" y="62" class="viz-label-small" fill="var(--text-muted)">log₂(4)=2 phase 상한 내</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>Borůvka = 병렬 MST</strong>: 각 컴포넌트가 독립적으로 자기 light edge 선택 → 동시에 merge. 한 phase마다 컴포넌트 수 ≥ 절반 감소. 분산·GPU 환경에 자연스러움.</div>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">왜 한 phase에 컴포넌트 수가 절반 이하가 되나</h3>
+    </div>
+    <p>
+      각 컴포넌트는 자기 light edge를 "투표"로 고름. 모든 컴포넌트가 최소 1개의 외부 간선을 선택 → 병합 그래프에서 각 컴포넌트는 최소 1개의 이웃과 연결. 따라서 새 컴포넌트 수 ≤ 원래 컴포넌트 수 / 2.
+    </p>
+    <p>
+      → <strong>O(log V) phase</strong>로 수렴. 병렬로 phase를 돌리면 이론적으로 O(log V × E/P) 시간 (P는 프로세서 수).
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. 복잡도 ==================== -->
+<section id="complexity">
+  <h2>10 — 복잡도 비교</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">세 알고리즘 복잡도 표</h3>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>알고리즘</th>
+          <th>시간 복잡도</th>
+          <th>자료구조</th>
+          <th>언제 유리</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Kruskal</td>
+          <td>O(E log E) = O(E log V)</td>
+          <td>정렬 + Union-Find</td>
+          <td>sparse, 간선 리스트 입력</td>
+        </tr>
+        <tr>
+          <td>Prim (binary heap)</td>
+          <td>O((V+E) log V)</td>
+          <td>heapq + 인접 리스트</td>
+          <td>dense, 인접 리스트 입력</td>
+        </tr>
+        <tr>
+          <td>Prim (Fibonacci)</td>
+          <td>O(E + V log V)</td>
+          <td>Fibonacci heap</td>
+          <td>이론상 최고, 실측 느림</td>
+        </tr>
+        <tr>
+          <td>Borůvka</td>
+          <td>O(E log V)</td>
+          <td>Union-Find</td>
+          <td>병렬 / 분산</td>
+        </tr>
+        <tr>
+          <td>Borůvka-Prim 혼합</td>
+          <td>O(E log log V)</td>
+          <td>MST-REDUCE</td>
+          <td>sparse, 경진 대회</td>
+        </tr>
+        <tr>
+          <td>Chazelle 2000</td>
+          <td>O(E · α(V, E))</td>
+          <td>soft heap</td>
+          <td>이론적 하한 근접</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>참고</strong>: MST의 이론적 하한은 여전히 미제(open problem). Chazelle의 O(Eα)는 deterministic 최고, Karger-Klein-Tarjan 1995은 randomized O(E) 달성.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">실무에서의 선택</h3>
+    </div>
+    <ul>
+      <li><strong>경진 대회</strong>: 대부분 Kruskal + DSU. 코드 짧고 디버깅 쉬움.</li>
+      <li><strong>dense 그래프 (E ≈ V²)</strong>: Prim이 유리. Kruskal은 정렬만 O(V² log V).</li>
+      <li><strong>분산 환경 (맵리듀스)</strong>: Borůvka. 각 worker가 자기 컴포넌트 독립 처리.</li>
+      <li><strong>GPU / 병렬</strong>: Borůvka의 현대 변종 (Bader & Cong 2006).</li>
+      <li><strong>Python 라이브러리</strong>: <code>networkx.minimum_spanning_tree</code> 기본은 Kruskal, <code>scipy.sparse.csgraph.minimum_spanning_tree</code>는 sparse matrix 위의 Prim 계열 변형 (scipy 소스 <code>_min_spanning_tree.pyx</code>).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 11. 변종 ==================== -->
+<section id="variants">
+  <h2>11 — 변종 — 2nd-best MST, Bottleneck</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Second-Best MST</h3>
+    </div>
+    <p>
+      "MST 다음으로 싼 스패닝 트리". MST와 정확히 하나의 간선만 다름.
+    </p>
+    <p>
+      <strong>알고리즘</strong>: MST 구한 뒤, MST에 없는 각 간선 e = (u,v)를 삽입했을 때 만들어지는 사이클에서 <em>가장 무거운 간선</em>을 뺌. 후보들 중 최소 교체 비용이 답. O(V² + E) with DFS.
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Bottleneck Spanning Tree</h3>
+    </div>
+    <p>
+      <em>최대 간선 가중치</em>를 최소화하는 신장 트리. 일반 MST와 다른 목적 함수지만, <strong>모든 MST는 bottleneck spanning tree</strong>다 (역은 성립 안 함).
+    </p>
+    <p>
+      증명 아이디어: 임의의 신장 트리 T를 잡고 그 최대 간선을 e<sub>max</sub>(T)라 하자. MST를 T*, 그 최대 간선을 e*라 할 때 <code>e* ≤ e<sub>max</sub>(T)</code>를 보이면 충분. T ≠ T*이면 T에 있고 T*에 없는 간선 f를 하나 잡고, f를 T*에 넣어 생긴 사이클에서 T*의 간선 g를 뺀 T*' = T* − g + f. <em>T*가 MST였으므로 w(f) ≥ w(g)</em>, 따라서 <code>e* ≤ max(w(f), e*) ≤ e<sub>max</sub>(T)</code>. 즉 모든 신장 트리의 최대 간선은 MST의 최대 간선 이상. □
+    </p>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">Steiner Tree (NP-hard)</h3>
+    </div>
+    <p>
+      "부분 정점만 연결하되 중간 정점(Steiner point)을 추가로 쓸 수 있는" MST. MST와 달리 NP-hard. 2-approximation은 MST로 얻어짐.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 12. 실무 ==================== -->
+<section id="real-world">
+  <h2>12 — 실무 — 네트워크 설계, 클러스터링</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">전력망 / 통신망 설계</h3>
+    </div>
+    <p>
+      원래 Borůvka 1926의 문제 그대로. 모라비아 전력망은 실제로 Borůvka 알고리즘으로 설계됨. 현대에도 해저 케이블, 5G 백홀 네트워크 등에서 MST 변형이 사용.
+    </p>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Single-Link Clustering</h3>
+    </div>
+    <p>
+      데이터 포인트 사이 거리를 그래프로 모델링. Kruskal을 돌리되 <em>특정 임계값보다 큰 간선은 추가하지 않으면</em> 자연스런 클러스터가 형성됨.
+    </p>
+    <ul>
+      <li><code>scipy.cluster.hierarchy.linkage</code>의 <code>method='single'</code>이 이 방법.</li>
+      <li>Chameleon, CURE 등 계층적 클러스터링 알고리즘의 기본 빌딩 블록.</li>
+      <li>한계: "체인 효과"(chaining) — 긴 가느다란 클러스터에 약함. Ward, complete-link가 보완.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">이미지 Segmentation</h3>
+    </div>
+    <p>
+      픽셀을 정점, 이웃 픽셀 사이 색 차이를 간선 가중치로. Felzenszwalb-Huttenlocher 2004 알고리즘이 MST 기반. OpenCV의 <code>cv2.ximgproc.createGraphSegmentation</code> 내부.
+    </p>
+    <ul>
+      <li>Kruskal 돌리면서 컴포넌트 내부 최대 간선(internal difference) 추적.</li>
+      <li>두 컴포넌트를 이을 간선이 internal difference보다 크면 merge 안 함 → 자연스런 영역 분리.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 13. AI와 MST ==================== -->
+<section id="ai-mst">
+  <h2>13 — AI와 MST</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">MST는 어디 쓰이나</h3>
+    </div>
+    <ul>
+      <li><strong>k-means 초기화</strong>: MST 기반 분할로 초기 centroid 선정 (k-means++의 변형).</li>
+      <li><strong>계통수 추론</strong>: 유전자 거리 → MST → phylogenetic tree 근사.</li>
+      <li><strong>그래프 기반 반지도 학습</strong>: MST로 라벨 전파의 backbone 구성.</li>
+      <li><strong>이상 탐지</strong>: MST 평균 간선 길이 대비 이상한 간선은 outlier.</li>
+      <li><strong>임베딩 시각화</strong>: t-SNE, UMAP 결과의 백본을 MST로 그리기.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">AI가 MST를 잘못 쓰는 패턴</h3>
+    </div>
+    <ul>
+      <li><strong>DAG에 MST</strong>: MST는 <em>무방향 그래프</em>에 정의. 방향 그래프는 <em>Edmonds 알고리즘</em>(arborescence)이 별개.</li>
+      <li><strong>음수 가중치 + MST</strong>: 문제 없음 (음수 사이클이 MST에 영향 없음) — 하지만 AI가 혼동해 BF를 쓰라고 할 때 주의.</li>
+      <li><strong>Union-Find 생략</strong>: "사이클 검사는 DFS로"라고 제안 → O(VE) 폭발.</li>
+      <li><strong>정렬 O(n²) 버전 Kruskal</strong>: 초보가 bubble sort 쓰는 경우. 반드시 O(E log E) 정렬 쓰라고 강조.</li>
+    </ul>
+    <p>
+      <strong>교정 질문</strong>: "MST 정의에 방향성 있나?", "Union-Find 없이 사이클 체크는 얼마나 느려지나?"
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">왜 MST는 항상 정확히 V-1개 간선을 갖나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>트리의 정의: "V개 정점을 사이클 없이 연결". 유도: V개 정점을 연결하려면 최소 V-1개 간선 필요 (안 그러면 분리됨). V-1개 초과하면 반드시 사이클 (단순한 귀납 증명). 따라서 정확히 V-1.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">간선 가중치가 모두 다르다면 MST는 유일한가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>유일하다</strong>. 증명: MST가 둘(T₁, T₂)이라고 가정. T₁에만 있는 최소 간선 e를 잡으면, T₂에 e를 넣으면 사이클 C. C 중 T₂에만 있는 간선 f를 빼고 e를 넣으면 T₂'는 더 가벼움 → T₂가 MST가 아니라는 모순 (가중치 유일하므로 w(e) ≠ w(f)).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Union-Find에서 path compression 없이 union by rank만 쓰면 find의 최악 시간은?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>O(log N)</strong>. Union by rank만으로도 트리 높이가 log N으로 제한됨 (작은 것을 큰 것에 붙이므로). Path compression을 추가하면 amortized O(α(N)) (실질 상수).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Prim과 Dijkstra의 코드는 왜 이렇게 비슷한가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>둘 다 "heap에서 현재 key 최소 정점 꺼내기 + 이웃 relax"의 구조. 차이는 key의 의미: Dijkstra는 <em>dist[v] = s에서 v까지 누적 거리</em>, Prim은 <em>key[v] = v를 T에 잇는 단일 간선 최소 비용</em>. relax 식도 Dijkstra는 <code>dist[u]+w(u,v)</code>, Prim은 그냥 <code>w(u,v)</code>. 구조적으로 쌍둥이 — 둘 다 heap 기반 그리디.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">MST에 음수 가중치 간선이 있어도 알고리즘 작동하나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>문제 없음</strong>. MST는 "간선을 V-1개 고르는" 문제라 가중치의 부호와 무관. Cut Property도 부호와 무관. Dijkstra와 달리 <em>MST는 음수 간선에도 안전</em>. (직관: 음수 간선은 거의 반드시 MST에 들어감 — 작을수록 좋으니까.)</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Maximum Spanning Tree (MaxST) 구하는 법.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>모든 간선 가중치 부호 반전 후 MST → 원복. 또는 Kruskal을 내림차순 정렬. Prim도 max-heap으로 바꾸면 됨. 응용: 신뢰도 네트워크에서 "가장 튼튼한 경로"의 핵심.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">V=10⁶, E=10⁷ 그래프에 Kruskal과 Prim — 어느 게 빠를까?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>둘 다 O(E log V) = 10⁷ × 20 = 2×10⁸. 비슷함. 하지만 Kruskal은 정렬 상수가 작아 실측 약간 빠름. 단 메모리: Prim은 인접 리스트 O(V+E), Kruskal은 간선 리스트 O(E)만. 입력 형식이 결정 요인.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Borůvka의 각 phase에서 컴포넌트 수가 최소 절반으로 줄어드는 이유.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>각 컴포넌트가 ≥ 1개의 외부 간선 선택. 선택된 간선들이 만드는 그래프에서 각 컴포넌트의 degree ≥ 1. 따라서 이 "phase 그래프"의 각 컴포넌트는 최소 2개의 원래 컴포넌트를 합침 → 새 컴포넌트 수 ≤ 원래/2.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">그래프가 연결되어 있지 않으면 Kruskal은 어떻게 동작하나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>연결 컴포넌트 개수 k라면 MST 대신 <strong>Minimum Spanning Forest</strong>가 됨. 간선 V-k개. Kruskal 그대로 돌리면 자연스럽게 이런 forest가 나옴. Prim은 하나의 컴포넌트만 커버 — 시작점이 속한 컴포넌트만.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Cut Property가 "최소 light edge를 여러 개 고르면" 어떻게 되나? (동률 간선)</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>동률이 있으면 서로 다른 MST가 존재할 수 있음. Cut Property는 "<em>어떤</em> 최소 간선 하나는 safe"를 보장 (모두가 아님). 동률을 어떻게 tie-break 하느냐에 따라 다른 MST가 나올 수 있지만 총 합은 같음.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "유향 그래프에 Kruskal 추천"했다. 어떻게 교정?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">질문</div>
+            <ol>
+              <li>"MST의 정의가 무향 그래프인지 확인해봐."</li>
+              <li>"유향 MST = Minimum Arborescence. Edmonds 알고리즘(Chu-Liu 1965)이 별개로 존재."</li>
+              <li>"Edmonds는 기본 O(VE). Gabow-Galil-Spencer-Tarjan 1986이 Fibonacci heap으로 O(E + V log V)까지 개선."</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Single-link clustering이 왜 "체인 효과"에 약한가?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>Kruskal은 "가장 짧은 간선"만 봄 → 긴 가느다란 클러스터가 한 점으로 연결돼도 merge. 예: 두 뚜렷한 클러스터 사이에 점 하나만 중간에 있어도 전체가 한 클러스터로 합쳐짐. complete-link (최대 거리)나 Ward (분산 증가 최소)가 이 문제에 강함.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">🏭</div>
+      <h3>Borůvka 1926</h3>
+      <p>체코 전력망에서 시작. 병렬 MST의 원조. O(E log V).</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">✂️</div>
+      <h3>Cut Property</h3>
+      <p>컷을 건너는 최소 간선은 safe. 모든 MST 알고리즘의 정당성 근거.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔗</div>
+      <h3>Kruskal</h3>
+      <p>간선 정렬 + Union-Find. O(E log E). 간단한 코드.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🌱</div>
+      <h3>Prim</h3>
+      <p>정점에서 시작 + heap으로 확장. Dijkstra와 쌍둥이 구현.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🎯</div>
+      <h3>세 알고리즘의 통일</h3>
+      <p>모두 Cut Property의 다른 순서/병렬 실행. 차이는 "어느 컷을 고르는가".</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🧠</div>
+      <h3>AI 응용</h3>
+      <p>클러스터링, 이미지 segmentation, 계통수, 임베딩 백본.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">MST (Minimum Spanning Tree)</div><div class="glossary-def">그래프의 모든 정점을 연결하는 최소 비용 트리. 간선 V-1개.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Spanning Tree</div><div class="glossary-def">모든 정점을 포함하는 사이클 없는 부분 그래프.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Cut</div><div class="glossary-def">정점 집합 V를 두 부분 (S, V−S)로 나눔.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Crossing Edge</div><div class="glossary-def">컷의 한쪽 끝은 S, 다른 쪽 끝은 V−S인 간선.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Light Edge</div><div class="glossary-def">컷을 건너는 간선 중 최소 가중치.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Safe Edge</div><div class="glossary-def">어떤 MST에 반드시 포함되는 간선 (Cut Property의 결론).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Cut Property</div><div class="glossary-def">컷 (S,V−S)를 존중하는 집합 A에 대해, 건너는 최소 간선은 safe. CLRS Theorem 21.1.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Otakar Borůvka</div><div class="glossary-def">1899-1995. 체코 수학자. 1926년 MST 알고리즘 최초 발표.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Vojtěch Jarník</div><div class="glossary-def">1897-1970. 체코 수학자. 1930년 정점 중심 MST (Prim에 앞섬).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Joseph Kruskal</div><div class="glossary-def">1928-2010. 1956년 간선 기반 MST. Bell Labs.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Robert C. Prim</div><div class="glossary-def">1921-2009. 1957년 Jarník 재발견. Bell Labs.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Kruskal's Algorithm</div><div class="glossary-def">간선 정렬 + Union-Find. O(E log E).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Prim's Algorithm</div><div class="glossary-def">정점 확장 + heap. O((V+E) log V) with binary heap.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Borůvka's Algorithm</div><div class="glossary-def">병렬 MST. 각 컴포넌트가 자기 light edge 선택. O(log V) phase.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Union-Find (DSU)</div><div class="glossary-def">Disjoint Set Union. find, union 연산. O(α(N)) with 두 최적화.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Path Compression</div><div class="glossary-def">find 중 만난 노드를 루트 직접 연결. Union-Find 최적화.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Union by Rank</div><div class="glossary-def">작은 트리를 큰 트리 밑에. 트리 높이 제한.</div></div>
+    <div class="glossary-item"><div class="glossary-term">α(N) (Ackermann 역함수)</div><div class="glossary-def">실질적 상수 (N ≤ 2⁶⁵⁵³⁶에서 α ≤ 4).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Exchange Argument</div><div class="glossary-def">그리디 정당성 증명 기법. "기존 해와 e를 교환해도 손해 없음".</div></div>
+    <div class="glossary-item"><div class="glossary-term">Minimum Spanning Forest</div><div class="glossary-def">연결되지 않은 그래프의 각 컴포넌트 MST의 합.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Bottleneck Spanning Tree</div><div class="glossary-def">최대 간선 가중치를 최소화. MST의 성질.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Second-Best MST</div><div class="glossary-def">MST와 간선 하나만 다른 차선 MST.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Edmonds' Algorithm</div><div class="glossary-def">유향 그래프 MST (arborescence). Chu-Liu-Edmonds 1965.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Single-Link Clustering</div><div class="glossary-def">Kruskal 기반 계층적 클러스터링. scipy linkage method='single'.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Felzenszwalb-Huttenlocher</div><div class="glossary-def">2004 이미지 segmentation. MST + internal difference 기반.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 18</div>
+    <h3>네트워크 플로우 — Ford-Fulkerson, Edmonds-Karp</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      "파이프로 물을 얼마나 흘릴 수 있는가" — 최단 경로와 MST를 넘어선 그래프 세 번째 축.
+    </p>
+    <ul>
+      <li><strong>Ford-Fulkerson (1956)</strong> — 증가 경로(augmenting path). 같은 Ford가 BF도.</li>
+      <li><strong>Edmonds-Karp (1972)</strong> — BFS로 증가 경로 선택. O(VE²).</li>
+      <li><strong>Max-Flow Min-Cut 정리</strong> — 쌍대성의 아름다움.</li>
+      <li><strong>응용</strong> — 이분 매칭, 이미지 segmentation (graph cut), 스포츠 순위 결정.</li>
+      <li><strong>Dinic (1970)</strong> — O(V²E)로 빠름.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo16.html">&larr; Algo 16 — Bellman-Ford, Floyd-Warshall</a>
+  <a href="algo18.html">Algo 18 — Network Flow &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">CLRS 4판 §21, Borůvka 1926 (Práce Moravské 3:37-58), Kruskal 1956 (Proc. AMS 7:48-50), Prim 1957 (Bell Syst. Tech. J. 36:1389-1401) 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>

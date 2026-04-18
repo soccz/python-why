@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
     <div class="header-nav">
       <a href="week13.html" class="nav-btn">&larr; 이전</a>
       <a href="week15.html" class="nav-btn">다음 &rarr;</a>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -300,7 +301,7 @@ print(sys.modules[__name__].__annotations__)
       <strong>Part A:</strong>
       CPython에서 함수의 <code>__annotations__</code>는 <code>PyFunctionObject.func_annotations</code>에 저장됩니다.
       <code>def f(x: int):</code> 컴파일 시 <code>int</code>가 평가되어 dict에 저장됩니다.
-      <strong>Python 3.14+에서는 PEP 749</strong>로 어노테이션이 지연 평가(lazy evaluation)됩니다 —
+      <strong>Python 3.14+에서는 PEP 649(Deferred Evaluation Of Annotations)</strong>로 어노테이션이 지연 평가(lazy evaluation)됩니다 (PEP 749는 PEP 649의 구현/보완).
       어노테이션 표현식은 함수 정의 시점에 실행되지 않고, <code>get_type_hints()</code> 호출 시 비로소 평가됩니다.
       이전까지는 <code>from __future__ import annotations</code>(PEP 563)로 문자열화하여 지연을 시뮬레이션했습니다.
     </div>
@@ -1040,7 +1041,7 @@ print(p)        # Point(x=3.0, y=4.0)
 # 수정 불가
 try:
     p.x = 5.0   # FrozenInstanceError!
-except AttributeError as e:   # Python 3.11+: FrozenInstanceError (AttributeError 서브클래스)
+except AttributeError as e:   # FrozenInstanceError는 AttributeError 서브클래스 (dataclass 3.7+)
     print(e)     # cannot assign to field 'x'
 
 # frozen이면 hash 가능 → dict 키, set 원소 가능!

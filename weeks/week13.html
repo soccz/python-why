@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
     <div class="header-nav">
       <a href="week12.html" class="nav-btn">&larr; 이전</a>
       <a href="week14.html" class="nav-btn">다음 &rarr;</a>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -812,7 +813,9 @@ print(add.__wrapped__) # &lt;function add&gt;  ← 원본 함수 접근!</code><
 <pre><code>from functools import WRAPPER_ASSIGNMENTS, WRAPPER_UPDATES
 print(WRAPPER_ASSIGNMENTS)
 # ('__module__', '__name__', '__qualname__',
-#  '__annotations__', '__doc__', '__type_params__')
+#  '__annotations__', '__type_params__', '__doc__')
+# ↑ Python 3.14 원서 기준 순서 — library/functools.html 참조
+# (__type_params__는 PEP 695 도입, Python 3.12+에서 포함)
 print(WRAPPER_UPDATES)
 # ('__dict__',)</code></pre>
 
@@ -1618,7 +1621,8 @@ print(p.distance_from_origin())   # 5.0
     <h3>Part A: lru_cache의 내부 — C 구현과 LRU 알고리즘</h3>
     <div class="callout callout-warning">
       <strong>Part A:</strong>
-      CPython의 <code>lru_cache</code>는 Python 3.8+에서 C로 구현됩니다(<code>_functools_lruobject</code>).
+      CPython의 <code>lru_cache</code>는 Python 3.5+에서 C로 구현됩니다(<code>_functools_lruobject</code>).
+      (참고: <code>functools.cache</code>는 Python 3.9에서 추가되었고, <code>maxsize=None</code>인 <code>lru_cache</code>와 동일합니다.)
       내부적으로 해시 테이블과 이중 연결 리스트를 사용합니다.
       캐시 히트 시 해당 노드를 LRU 리스트의 앞으로 이동(O(1)).
       <code>maxsize</code> 초과 시 가장 오래된 항목(리스트 끝) 제거.

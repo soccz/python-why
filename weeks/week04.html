@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
     <div class="header-nav">
       <a href="week03.html" class="nav-btn">&larr; 이전</a>
       <a href="week05.html" class="nav-btn">다음 &rarr;</a>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -878,7 +879,8 @@ dis.dis(g)</code></pre>
       <h3 class="level-section-title">Part B: 문법 계층 (Grammar Nesting) = 우선순위 계층</h3>
     </div>
     <p>
-      Python 3.10+부터 PEG(Parsing Expression Grammar) 파서(PEP 617)를 사용한다.
+      Python 3.9+부터 PEG(Parsing Expression Grammar) 파서(PEP 617)를 사용한다
+      (Python 3.10에서 구 LL(1) 파서가 완전히 제거됨).
       우선순위는 문법 규칙의 <strong>중첩 깊이</strong>로 인코딩된다:
     </p>
     <pre><code class="language-text"># Python Grammar (간략화, Grammar/python.gram)

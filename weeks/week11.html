@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,7 @@
     <div class="header-nav">
       <a href="week10.html" class="nav-btn">&larr; 이전</a>
       <a href="week12.html" class="nav-btn">다음 &rarr;</a>
-      <button class="theme-toggle" aria-label="테마 전환">🌙</button>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
     </div>
   </div>
 </header>
@@ -481,10 +482,10 @@ dis.dis(with_comp)
 
     <div class="callout callout-warning">
       <strong>Part A — PEP 709의 설계 동기:</strong>
-      Python 3.11 이전에는 컴프리헨션마다 <code>MAKE_FUNCTION</code> + <code>CALL_FUNCTION</code>이 필요했습니다.
+      Python 3.11까지는 컴프리헨션마다 <code>MAKE_FUNCTION</code> + <code>CALL</code>이 필요했습니다.
       이는 함수 호출 오버헤드(프레임 생성 + 해제)를 의미합니다.
-      PEP 709의 저자 Carl Meyer(Instagram/Meta)는 실측 결과
-      <strong>컴프리헨션 실행 속도가 평균 11% 향상</strong>되었다고 보고했습니다.
+      Python 3.12의 PEP 709(Carl Meyer, Instagram/Meta)는 이를 인라인화하여
+      <strong>컴프리헨션 실행 속도가 최대 2배(up to 2x) 빨라졌다</strong>고 공식 문서(whatsnew/3.12)가 밝힙니다.
       인라인 처리에서도 <code>LOAD_FAST_AND_CLEAR</code> 명령어로 임시 변수를 저장/복원하여
       스코프 격리 의미론(semantics)을 보존합니다.
     </div>
@@ -612,7 +613,7 @@ print(f"map+list:   {t_map:.3f}초")    # 약 1.0초
     <details>
       <summary>왜 컴프리헨션이 map+lambda보다 빠른가요?</summary>
       <div class="answer">
-        <code>map(lambda x: x**2, ...)</code>는 매 원소마다 Python 함수 호출(CALL_FUNCTION)이 발생합니다.
+        <code>map(lambda x: x**2, ...)</code>는 매 원소마다 Python 함수 호출(<code>CALL</code> 바이트코드, 3.10 이하는 <code>CALL_FUNCTION</code>)이 발생합니다.
         함수 호출에는 프레임 생성/해제 오버헤드가 있습니다.
         컴프리헨션은 바이트코드 수준에서 인라인 루프이므로 이 오버헤드가 없습니다.
         단, <code>map(int, strings)</code>처럼 <strong>C 구현 함수</strong>를 쓰면 map이 더 빠를 수 있습니다 —
@@ -2131,7 +2132,7 @@ print(f"결과: {result:,}")   # 55,555,388,888,555,556</code></pre>
     </div>
     <div class="glossary-item">
       <span class="term">PEP 709</span>
-      <span class="definition">Python 3.12에서 컴프리헨션을 인라인 처리로 변경. 11% 성능 향상</span>
+      <span class="definition">Python 3.12에서 컴프리헨션을 인라인 처리로 변경. 최대 2배(up to 2x) 성능 향상</span>
     </div>
   </div>
 

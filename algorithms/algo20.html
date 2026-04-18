@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알고리즘 20주차: 동적 계획법 I — Fibonacci, Memoization, Rod Cutting | PyWhy</title>
+  <link rel="stylesheet" href="../css/style.min.css">
+  <meta name="description" content="DP — Bellman 1957의 'Dynamic Programming' 책에서 태어남. 피보나치를 O(2^n)→O(n)으로. CLRS 4판 §14.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="알고리즘 20주차: 동적 계획법 I | PyWhy">
+  <meta property="og:description" content="부분 문제의 재사용 — Bellman의 아이디어, @lru_cache, 막대 자르기, 동전 교환 DP">
+  <meta property="og:url" content="https://soccz.github.io/python-why/algorithms/algo20.html">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary">
+</head>
+<body data-week="A20">
+<a href="#main-content" class="skip-link">본문 바로가기</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="https://soccz.github.io" class="home-btn" title="soccz.github.io" aria-label="포트폴리오 홈"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
+      <a href="../index.html" class="site-title">PyWhy</a>
+    </div>
+    <div class="header-nav">
+      <a href="algo19.html" class="nav-btn">&larr; 이전</a>
+      <a href="algo21.html" class="nav-btn">다음 &rarr;</a>
+      <button class="theme-toggle" aria-label="테마 전환"><span aria-hidden="true">🌙</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrapper">
+<main id="main-content">
+
+<div class="week-header">
+  <div class="week-number">ALGO 20</div>
+  <h1 class="week-title">동적 계획법 I — 부분 문제의 재사용<br>Bellman의 "Dynamic Programming"에서 @lru_cache까지</h1>
+  <p class="week-subtitle">
+    1950년 RAND, <strong>Richard Bellman</strong>이 "다단계 결정 과정"을 부를 이름을 고민합니다. 국방장관 Wilson이 "research"라는 단어를 싫어한다는 소문 때문에(정확도엔 의문) <em>"Dynamic Programming"</em>이라는 이름을 택합니다 — <em>"dynamic"은 경멸적 의미로 쓸 수 없고, "programming"은 그 시대의 스케줄링 용어였죠."</em><br>
+    70년이 넘도록 부분 문제의 재사용이라는 이 단순한 아이디어가 컴파일러, 게임 AI, 딥러닝 학습까지 도달. 피보나치의 지수 시간이 선형이 되는 마법.<br>
+    핵심 질문: <em>"언제 그리디 대신 DP가 필요한가? 왜 파이썬 @lru_cache 한 줄이 O(2<sup>n</sup>)을 O(n)으로 바꾸는가?"</em>
+  </p>
+</div>
+
+<details class="toc" open>
+  <summary>이번 주 목차 (15개 섹션)</summary>
+  <div class="toc-body">
+    <div class="toc-section">
+      <a href="#story" class="toc-section-link"><span class="toc-num">01</span>이번 주 이야기 — Bellman의 "이름 짓기"</a>
+    </div>
+    <div class="toc-section">
+      <a href="#when-dp" class="toc-section-link"><span class="toc-num">02</span>DP가 통하는 두 조건</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#fibonacci" class="toc-section-link"><span class="toc-num">03</span>피보나치 — DP의 hello world</a>
+      <div class="toc-levels"><span class="toc-level-dot elem">초</span><span class="toc-level-dot inter">중</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#fib-python" class="toc-section-link"><span class="toc-num">04</span>Python @lru_cache / @cache</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#memo-tab" class="toc-section-link"><span class="toc-num">05</span>Memoization vs Tabulation</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#rod-cutting" class="toc-section-link"><span class="toc-num">06</span>막대 자르기 (CLRS §14.1)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#rod-python" class="toc-section-link"><span class="toc-num">07</span>막대 자르기 Python 구현</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#coin-change" class="toc-section-link"><span class="toc-num">08</span>동전 교환 DP — 그리디 실패 문제</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#climbing-stairs" class="toc-section-link"><span class="toc-num">09</span>계단 오르기</a>
+      <div class="toc-levels"><span class="toc-level-dot elem">초</span><span class="toc-level-dot inter">중</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#house-robber" class="toc-section-link"><span class="toc-num">10</span>집 털기 (LeetCode 198)</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#space-opt" class="toc-section-link"><span class="toc-num">11</span>공간 최적화 — O(n) → O(1)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span><span class="toc-level-dot exp">전공</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#reconstruct" class="toc-section-link"><span class="toc-num">12</span>선택 복원 (value → path)</a>
+      <div class="toc-levels"><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#dp-vs-greedy" class="toc-section-link"><span class="toc-num">13</span>DP vs Greedy — 언제 무엇을</a>
+      <div class="toc-levels"><span class="toc-level-dot inter">중</span><span class="toc-level-dot adv">고</span></div>
+    </div>
+    <div class="toc-section">
+      <a href="#exercises" class="toc-section-link"><span class="toc-num">14</span>연습문제 (12문제)</a>
+    </div>
+    <div class="toc-section">
+      <a href="#summary-glossary-next" class="toc-section-link"><span class="toc-num">15</span>정리 + 용어 사전 + 다음 주 맛보기</a>
+    </div>
+  </div>
+</details>
+
+<!-- ==================== 01. 이야기 ==================== -->
+<section id="story">
+  <h2>01 — 이번 주 이야기: Bellman의 "이름 짓기"</h2>
+
+  <blockquote>
+    <em>"I spent the Fall quarter of 1950 at RAND... My first task was to find a name for multistage decision processes. ... I chose 'dynamic programming'... both because it has a precise meaning in the classical physical sense, and because it is impossible to use the word 'dynamic' in a pejorative sense."</em>
+    <br>— Richard Bellman, 자서전 <em>Eye of the Hurricane</em> (1984)
+  </blockquote>
+
+  <div class="story-block">
+    <h3>1950 — RAND Corporation, 캘리포니아</h3>
+    <p>
+      Richard Bellman은 수학자·OR 연구자로 RAND 합류. "다단계 결정 과정(multistage decision processes)"의 수학적 구조를 연구 중. 기존에 이름이 없던 이 분야에 딱 맞는 명칭이 필요.
+    </p>
+    <p>
+      Bellman의 자서전에 따르면: 국방장관 Charles Wilson이 "research"라는 단어를 질색한다는 소문이 RAND에 있었고, RAND는 공군 소속이라 Wilson의 눈치를 봐야 했음. 그래서 "mathematical research" 대신 <strong>"dynamic programming"</strong>으로 명명.
+    </p>
+    <div class="caution-box">
+      <div class="box-header">💡 역사 주의 — 이야기의 정확도</div>
+      <p>
+        Russell &amp; Norvig(<em>AIMA</em>)은 이 일화의 시기에 의문을 제기: Bellman이 "dynamic programming"을 처음 쓴 논문은 1952년인데, Wilson이 국방장관이 된 건 1953년. Bellman의 자서전이 사후 정당화일 가능성. 아무튼 이름 선택에 "programming = 스케줄링" 시대적 의미가 반영된 것은 분명.
+      </p>
+    </div>
+  </div>
+
+  <div class="story-block">
+    <h3>1957 — <em>"Dynamic Programming"</em>, Princeton University Press</h3>
+    <p>
+      Bellman의 첫 단행본. DP의 수학적 기초를 세움 — <strong>Bellman 방정식</strong>, <strong>최적 원리(Principle of Optimality)</strong> 정립. 이 책이 OR, 제어 이론, 경제학, 생물학에 연쇄 영향. 2003년 Princeton이 재판(복원판) 출간.
+    </p>
+    <p>
+      수학적 뿌리지만 <em>계산 과학</em>에서도 연쇄 영향 — 1958년 Bellman 자신이 <em>"On a Routing Problem"</em>에서 최단 경로를 DP 형태로 재정립한 것이 Bellman-Ford 알고리즘 (Algo 16).
+    </p>
+  </div>
+
+  <div class="story-block">
+    <h3>DP가 현대 CS에 남긴 흔적</h3>
+    <ul>
+      <li><strong>피보나치</strong> — O(2<sup>n</sup>)를 O(n)으로.</li>
+      <li><strong>컴파일러 파서</strong> — CYK 알고리즘 (문맥 자유 파싱).</li>
+      <li><strong>편집 거리</strong> — diff, 맞춤법 검사, DNA 서열 정렬.</li>
+      <li><strong>강화학습</strong> — Value Iteration이 Bellman 방정식의 MDP 버전.</li>
+      <li><strong>Viterbi 알고리즘</strong> — 음성 인식, HMM.</li>
+      <li><strong>Held-Karp TSP</strong> — O(n² · 2<sup>n</sup>) 정확 해법.</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DP 역사 타임라인">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📜 Dynamic Programming의 계보 — Bellman 1950~</text>
+
+      <!-- 타임라인 -->
+      <line x1="60" y1="130" x2="680" y2="130" stroke="var(--text-muted)" stroke-width="2"/>
+      <polygon points="680,130 670,126 670,134" fill="var(--text-muted)"/>
+
+      <g font-family="JetBrains Mono, monospace" font-size="11">
+        <!-- 1950 RAND -->
+        <circle cx="80" cy="130" r="8" fill="#d4930c" stroke="var(--accent)" stroke-width="2"/>
+        <line x1="80" y1="122" x2="80" y2="70" stroke="#d4930c" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="25" y="40" width="115" height="32" rx="4" fill="rgba(212,147,12,0.1)" stroke="#d4930c" stroke-width="1"/>
+        <text x="82" y="57" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Bellman @ RAND</text>
+        <text x="82" y="68" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">"DP" 명명</text>
+        <text x="80" y="155" text-anchor="middle" class="viz-label-small">1950</text>
+
+        <!-- 1952 first paper -->
+        <circle cx="140" cy="130" r="7" fill="#3b9b6e" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="140" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">첫 논문</text>
+        <text x="140" y="155" text-anchor="middle" class="viz-label-small">1952</text>
+
+        <!-- 1957 book -->
+        <circle cx="260" cy="130" r="8" fill="#196aa1" stroke="#196aa1" stroke-width="2"/>
+        <line x1="260" y1="138" x2="260" y2="200" stroke="#196aa1" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="200" y="200" width="130" height="32" rx="4" fill="rgba(25,106,161,0.1)" stroke="#196aa1" stroke-width="1"/>
+        <text x="265" y="218" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">"DP" 책 (Princeton)</text>
+        <text x="265" y="229" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">최적원리 정립</text>
+        <text x="260" y="155" text-anchor="middle" class="viz-label-small">1957</text>
+
+        <!-- 1958 Bellman-Ford -->
+        <circle cx="290" cy="130" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="290" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">BF</text>
+
+        <!-- 1962 Held-Karp TSP -->
+        <circle cx="380" cy="130" r="7" fill="#c23b5e" stroke="#c23b5e" stroke-width="2"/>
+        <line x1="380" y1="122" x2="380" y2="80" stroke="#c23b5e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="320" y="50" width="130" height="32" rx="4" fill="rgba(194,59,94,0.1)" stroke="#c23b5e" stroke-width="1"/>
+        <text x="385" y="67" text-anchor="middle" class="viz-label" font-weight="700" font-size="11">Held-Karp TSP</text>
+        <text x="385" y="78" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)" font-size="9">O(n²·2ⁿ)</text>
+        <text x="380" y="155" text-anchor="middle" class="viz-label-small">1962</text>
+
+        <!-- 1967 Viterbi -->
+        <circle cx="440" cy="130" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="440" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Viterbi</text>
+        <text x="440" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1967</text>
+
+        <!-- 1989 RL -->
+        <circle cx="560" cy="130" r="6" fill="var(--text-muted)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="560" y="110" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">Watkins Q-learning</text>
+        <text x="560" y="155" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">1989</text>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>DP의 확장</strong>: 1950 RAND에서 시작, 1957 책으로 정립, 1962 Held-Karp TSP, 1967 Viterbi(HMM), 1989 Watkins Q-learning이 Bellman 방정식을 확률적 MDP로 확장 — 현대 RL의 뿌리.</div>
+  </div>
+</section>
+
+<!-- ==================== 02. 언제 DP? ==================== -->
+<section id="when-dp">
+  <h2>02 — DP가 통하는 두 조건</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">두 가지 조건</h3>
+    </div>
+    <ol>
+      <li><strong>Optimal Substructure (최적 부분구조)</strong>: 전체 문제의 최적해가 부분 문제들의 최적해로 구성됨. 그리디와 공유하는 속성.</li>
+      <li><strong>Overlapping Subproblems (중복 부분 문제)</strong>: 같은 부분 문제가 여러 번 등장. <em>이것이 DP를 유용하게 만듦</em> — 한 번 풀고 저장하면 재사용 가능.</li>
+    </ol>
+    <p>
+      <strong>그리디와의 차이</strong>:
+    </p>
+    <ul>
+      <li>그리디: Optimal Substructure + <em>Greedy-Choice Property</em>. 탐색 불필요.</li>
+      <li>DP: Optimal Substructure + <em>Overlapping Subproblems</em>. 모든 선택을 보지만 중복을 제거.</li>
+      <li>분할 정복: Optimal Substructure는 있지만 Overlapping 없음 (독립 부분 문제). 메모이제이션 불필요.</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Bellman의 최적 원리 (Principle of Optimality)</h3>
+    </div>
+    <div class="formula-box" style="text-align:left;font-size:0.92rem;">
+      <em>"An optimal policy has the property that whatever the initial state and initial decision are, the remaining decisions must constitute an optimal policy with regard to the state resulting from the first decision."</em>
+    </div>
+    <p>
+      한국어로: <em>최적해의 부분 경로도 그 부분 문제의 최적해</em>. 이게 Optimal Substructure의 또 다른 표현. DP의 점화식(Bellman equation)의 정당성.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 03. 피보나치 ==================== -->
+<section id="fibonacci">
+  <h2>03 — 피보나치 — DP의 hello world</h2>
+
+  <div class="level-section elementary">
+    <div class="level-section-header">
+      <span class="level-badge level-elem">초급</span>
+      <h3 class="level-section-title">문제 — 토끼 번식</h3>
+    </div>
+    <p>
+      1202년 Leonardo of Pisa(Fibonacci)가 <em>"Liber Abaci"</em>에서 제시: "토끼 한 쌍에서 시작, 매달 새끼 한 쌍을 낳는데 새끼는 2달 지나야 번식 시작. n달 후 토끼 쌍 수는?"
+    </p>
+    <div class="formula-box">
+      F(0) = 0, &nbsp; F(1) = 1, &nbsp; F(n) = F(n-1) + F(n-2)
+    </div>
+    <ul>
+      <li>F(0)=0, F(1)=1, F(2)=1, F(3)=2, F(4)=3, F(5)=5, F(6)=8, F(7)=13, ...</li>
+      <li>황금비 φ ≈ 1.618에 수렴하는 놀라운 수학적 성질.</li>
+    </ul>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">순진한 재귀의 함정</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">fib_naive.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">fib</span>(n):
+    <span class="hl-kw">if</span> n &lt; <span class="hl-num">2</span>: <span class="hl-kw">return</span> n
+    <span class="hl-kw">return</span> fib(n-<span class="hl-num">1</span>) + fib(n-<span class="hl-num">2</span>)
+
+<span class="hl-bi">print</span>(fib(<span class="hl-num">30</span>))    <span class="hl-cmt"># 832040 — 0.3초</span>
+<span class="hl-bi">print</span>(fib(<span class="hl-num">40</span>))    <span class="hl-cmt"># 102334155 — 30초</span>
+<span class="hl-bi">print</span>(fib(<span class="hl-num">50</span>))    <span class="hl-cmt"># 12586269025 — 한 시간?</span></code></pre>
+    </div>
+    <p>
+      <strong>왜 느린가</strong>: <code>fib(n)</code>이 <code>fib(n-1)</code>과 <code>fib(n-2)</code>를 호출 → 그들이 또 호출 → 지수적 호출 트리. 같은 값이 수없이 재계산됨. 호출 횟수 ≈ φ<sup>n</sup> ≈ 1.618<sup>n</sup>.
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a20fib-show { 0%,2%{opacity:0} 4%,18%{opacity:1} 20%,100%{opacity:0} }
+      .a20fib-F0{animation:a20fib-show 10s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a20fib-F1{animation:a20fib-show 10s linear infinite;animation-delay:3.3s;animation-fill-mode:backwards}
+      .a20fib-F2{animation:a20fib-show 10s linear infinite;animation-delay:6.6s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="피보나치 재귀 호출 트리">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🌳 fib(5) 호출 트리 — 순진 재귀 vs memoization</text>
+
+      <!-- F0: 순진 재귀 트리 -->
+      <g class="a20fib-F0">
+        <g transform="translate(20, 50)" font-family="JetBrains Mono, monospace" font-size="10">
+          <text x="340" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="var(--accent)">순진 재귀 — 중복 호출 폭발 (호출 15번, 시간 O(2ⁿ))</text>
+
+          <!-- f(5) at top -->
+          <circle cx="340" cy="30" r="18" fill="#fde6a6" stroke="#d4930c" stroke-width="2"/>
+          <text x="340" y="35" text-anchor="middle" class="viz-label" font-weight="700">5</text>
+          <line x1="325" y1="42" x2="240" y2="68" stroke="var(--text-muted)" stroke-width="1"/>
+          <line x1="355" y1="42" x2="440" y2="68" stroke="var(--text-muted)" stroke-width="1"/>
+
+          <!-- f(4), f(3) -->
+          <circle cx="240" cy="80" r="16" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+          <text x="240" y="85" text-anchor="middle" class="viz-label-small" font-weight="700">4</text>
+          <circle cx="440" cy="80" r="16" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+          <text x="440" y="85" text-anchor="middle" class="viz-label-small" font-weight="700">3</text>
+
+          <line x1="227" y1="92" x2="170" y2="120" stroke="var(--text-muted)" stroke-width="1"/>
+          <line x1="253" y1="92" x2="310" y2="120" stroke="var(--text-muted)" stroke-width="1"/>
+          <line x1="427" y1="92" x2="380" y2="120" stroke="var(--text-muted)" stroke-width="1"/>
+          <line x1="453" y1="92" x2="510" y2="120" stroke="var(--text-muted)" stroke-width="1"/>
+
+          <!-- f(3), f(2), f(2), f(1) -->
+          <circle cx="170" cy="130" r="14" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+          <text x="170" y="134" text-anchor="middle" class="viz-label-small" font-weight="700">3</text>
+          <circle cx="310" cy="130" r="14" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="310" y="134" text-anchor="middle" class="viz-label-small" font-weight="700">2</text>
+          <circle cx="380" cy="130" r="14" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="1"/>
+          <text x="380" y="134" text-anchor="middle" class="viz-label-small" font-weight="700">2</text>
+          <circle cx="510" cy="130" r="14" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="1"/>
+          <text x="510" y="134" text-anchor="middle" class="viz-label-small" font-weight="700">1</text>
+
+          <line x1="160" y1="142" x2="110" y2="170" stroke="var(--text-muted)" stroke-width="0.8"/>
+          <line x1="180" y1="142" x2="230" y2="170" stroke="var(--text-muted)" stroke-width="0.8"/>
+          <line x1="302" y1="142" x2="270" y2="170" stroke="var(--text-muted)" stroke-width="0.8"/>
+          <line x1="318" y1="142" x2="350" y2="170" stroke="var(--text-muted)" stroke-width="0.8"/>
+          <line x1="372" y1="142" x2="340" y2="170" stroke="var(--text-muted)" stroke-width="0.8"/>
+          <line x1="388" y1="142" x2="420" y2="170" stroke="var(--text-muted)" stroke-width="0.8"/>
+
+          <!-- depth 3: f(2), f(1), f(1), f(0), f(1), f(0) -->
+          <circle cx="110" cy="180" r="11" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="0.8"/>
+          <text x="110" y="184" text-anchor="middle" class="viz-label-small">2</text>
+          <circle cx="230" cy="180" r="11" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="0.8"/>
+          <text x="230" y="184" text-anchor="middle" class="viz-label-small">1</text>
+          <circle cx="270" cy="180" r="11" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="0.8"/>
+          <text x="270" y="184" text-anchor="middle" class="viz-label-small">1</text>
+          <circle cx="350" cy="180" r="11" fill="#f5c6c6" stroke="#c23b5e" stroke-width="0.8"/>
+          <text x="350" y="184" text-anchor="middle" class="viz-label-small">0</text>
+          <circle cx="340" cy="180" r="11" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="0.8"/>
+          <text x="340" y="184" text-anchor="middle" class="viz-label-small">1</text>
+          <circle cx="420" cy="180" r="11" fill="#f5c6c6" stroke="#c23b5e" stroke-width="0.8"/>
+          <text x="420" y="184" text-anchor="middle" class="viz-label-small">0</text>
+
+          <line x1="102" y1="190" x2="80" y2="215" stroke="var(--text-muted)" stroke-width="0.7"/>
+          <line x1="118" y1="190" x2="140" y2="215" stroke="var(--text-muted)" stroke-width="0.7"/>
+
+          <!-- f(1), f(0) at bottom -->
+          <circle cx="80" cy="225" r="9" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="0.7"/>
+          <text x="80" y="229" text-anchor="middle" class="viz-label-small">1</text>
+          <circle cx="140" cy="225" r="9" fill="#f5c6c6" stroke="#c23b5e" stroke-width="0.7"/>
+          <text x="140" y="229" text-anchor="middle" class="viz-label-small">0</text>
+
+          <text x="340" y="265" text-anchor="middle" class="viz-label-small" fill="var(--accent)" font-weight="700">fib(3)이 2번, fib(2)가 3번 호출됨 — 낭비!</text>
+        </g>
+      </g>
+
+      <!-- F1: memoization 강조 -->
+      <g class="a20fib-F1">
+        <g transform="translate(20, 50)" font-family="JetBrains Mono, monospace" font-size="10">
+          <text x="340" y="0" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">Memoization — 중복 제거 (호출 9번, 시간 O(n))</text>
+
+          <circle cx="340" cy="30" r="18" fill="#fde6a6" stroke="#d4930c" stroke-width="2"/>
+          <text x="340" y="35" text-anchor="middle" class="viz-label" font-weight="700">5</text>
+          <line x1="325" y1="42" x2="240" y2="68" stroke="#3b9b6e" stroke-width="1.5"/>
+          <line x1="355" y1="42" x2="440" y2="68" stroke="#3b9b6e" stroke-width="1.5" stroke-dasharray="3,2"/>
+
+          <circle cx="240" cy="80" r="16" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+          <text x="240" y="85" text-anchor="middle" class="viz-label-small" font-weight="700">4</text>
+          <circle cx="440" cy="80" r="16" fill="#dcdcdc" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="3,2"/>
+          <text x="440" y="85" text-anchor="middle" class="viz-label-small">3 (cached)</text>
+
+          <line x1="227" y1="92" x2="170" y2="120" stroke="#3b9b6e" stroke-width="1"/>
+          <line x1="253" y1="92" x2="310" y2="120" stroke="#3b9b6e" stroke-width="1" stroke-dasharray="3,2"/>
+
+          <circle cx="170" cy="130" r="14" fill="#cfe3ed" stroke="#196aa1" stroke-width="1.5"/>
+          <text x="170" y="134" text-anchor="middle" class="viz-label-small" font-weight="700">3</text>
+          <circle cx="310" cy="130" r="14" fill="#dcdcdc" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3,2"/>
+          <text x="310" y="134" text-anchor="middle" class="viz-label-small">2 (cached)</text>
+
+          <line x1="160" y1="142" x2="110" y2="170" stroke="#3b9b6e" stroke-width="0.8"/>
+          <line x1="180" y1="142" x2="230" y2="170" stroke="#3b9b6e" stroke-width="0.8"/>
+
+          <circle cx="110" cy="180" r="11" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="0.8"/>
+          <text x="110" y="184" text-anchor="middle" class="viz-label-small">2</text>
+          <circle cx="230" cy="180" r="11" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="0.8"/>
+          <text x="230" y="184" text-anchor="middle" class="viz-label-small">1</text>
+
+          <line x1="102" y1="190" x2="80" y2="215" stroke="#3b9b6e" stroke-width="0.7"/>
+          <line x1="118" y1="190" x2="140" y2="215" stroke="#3b9b6e" stroke-width="0.7"/>
+
+          <circle cx="80" cy="225" r="9" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="0.7"/>
+          <text x="80" y="229" text-anchor="middle" class="viz-label-small">1</text>
+          <circle cx="140" cy="225" r="9" fill="#f5c6c6" stroke="#c23b5e" stroke-width="0.7"/>
+          <text x="140" y="229" text-anchor="middle" class="viz-label-small">0</text>
+
+          <text x="340" y="265" text-anchor="middle" class="viz-label-small" fill="#3b9b6e" font-weight="700">점선 = cached (재계산 스킵). 각 fib(k)는 딱 1번만 실제 계산.</text>
+        </g>
+      </g>
+
+      <!-- F2: 복잡도 비교 -->
+      <g class="a20fib-F2">
+        <g transform="translate(60, 60)" font-family="JetBrains Mono, monospace" font-size="12">
+          <text x="300" y="0" text-anchor="middle" class="viz-label" font-weight="700">복잡도 비교 (fib(n))</text>
+
+          <!-- 표 -->
+          <g font-size="11">
+            <rect x="0" y="20" width="600" height="30" fill="rgba(196,114,78,0.1)" stroke="var(--text-muted)" stroke-width="1"/>
+            <text x="100" y="40" text-anchor="middle" class="viz-label" font-weight="700">n</text>
+            <text x="260" y="40" text-anchor="middle" class="viz-label" font-weight="700">순진 재귀 O(φⁿ)</text>
+            <text x="470" y="40" text-anchor="middle" class="viz-label" font-weight="700">memoization O(n)</text>
+
+            <rect x="0" y="50" width="600" height="28" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+            <text x="100" y="68" text-anchor="middle" class="viz-label-small">30</text>
+            <text x="260" y="68" text-anchor="middle" class="viz-label-small">0.3초 (~2M 호출)</text>
+            <text x="470" y="68" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">0.00001초</text>
+
+            <rect x="0" y="78" width="600" height="28" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+            <text x="100" y="96" text-anchor="middle" class="viz-label-small">40</text>
+            <text x="260" y="96" text-anchor="middle" class="viz-label-small">30초 (~100M 호출)</text>
+            <text x="470" y="96" text-anchor="middle" class="viz-label-small" fill="#3b9b6e">0.00001초</text>
+
+            <rect x="0" y="106" width="600" height="28" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+            <text x="100" y="124" text-anchor="middle" class="viz-label-small">100</text>
+            <text x="260" y="124" text-anchor="middle" class="viz-label-small" fill="var(--accent)">~10¹⁰년 🚫</text>
+            <text x="470" y="124" text-anchor="middle" class="viz-label-small" fill="#3b9b6e" font-weight="700">0.0001초 ✓</text>
+
+            <rect x="0" y="134" width="600" height="28" fill="white" stroke="var(--text-muted)" stroke-width="0.5"/>
+            <text x="100" y="152" text-anchor="middle" class="viz-label-small">10⁶</text>
+            <text x="260" y="152" text-anchor="middle" class="viz-label-small" fill="var(--accent)">불가능</text>
+            <text x="470" y="152" text-anchor="middle" class="viz-label-small" fill="#3b9b6e" font-weight="700">~1초</text>
+          </g>
+
+          <text x="300" y="200" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">→ @lru_cache 한 줄이 <tspan fill="var(--accent)" font-weight="700">우주의 나이보다 긴 계산</tspan>을 0.0001초로!</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>3프레임 Fibonacci 변환</strong>: (1) 순진 재귀의 지수적 호출 트리 → (2) Memoization으로 중복 제거 → (3) 복잡도 비교 표. <em>같은 알고리즘, 같은 점화식, 다만 "기억할 뿐"</em>.</div>
+  </div>
+</section>
+
+<!-- ==================== 04. @lru_cache ==================== -->
+<section id="fib-python">
+  <h2>04 — Python @lru_cache / @cache</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">마법의 한 줄 데코레이터</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">fib_memo.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> functools <span class="hl-kw">import</span> lru_cache, cache
+
+<span class="hl-cmt"># 방법 1: @lru_cache (Python 3.2+, 캐시 크기 제한 가능)</span>
+<span class="hl-bi">@lru_cache</span>(maxsize=<span class="hl-kw">None</span>)
+<span class="hl-kw">def</span> <span class="hl-bi">fib</span>(n):
+    <span class="hl-kw">if</span> n &lt; <span class="hl-num">2</span>: <span class="hl-kw">return</span> n
+    <span class="hl-kw">return</span> fib(n-<span class="hl-num">1</span>) + fib(n-<span class="hl-num">2</span>)
+
+<span class="hl-bi">print</span>(fib(<span class="hl-num">100</span>))    <span class="hl-cmt"># 354224848179261915075 — 즉시 반환</span>
+
+<span class="hl-cmt"># 방법 2: @cache (Python 3.9+, maxsize=None과 동등, 더 간결)</span>
+<span class="hl-bi">@cache</span>
+<span class="hl-kw">def</span> <span class="hl-bi">fib2</span>(n):
+    <span class="hl-kw">if</span> n &lt; <span class="hl-num">2</span>: <span class="hl-kw">return</span> n
+    <span class="hl-kw">return</span> fib2(n-<span class="hl-num">1</span>) + fib2(n-<span class="hl-num">2</span>)
+
+<span class="hl-cmt"># 방법 3: 수동 dict</span>
+memo = {}
+<span class="hl-kw">def</span> <span class="hl-bi">fib3</span>(n):
+    <span class="hl-kw">if</span> n <span class="hl-kw">in</span> memo: <span class="hl-kw">return</span> memo[n]
+    <span class="hl-kw">if</span> n &lt; <span class="hl-num">2</span>: <span class="hl-kw">return</span> n
+    memo[n] = fib3(n-<span class="hl-num">1</span>) + fib3(n-<span class="hl-num">2</span>)
+    <span class="hl-kw">return</span> memo[n]</code></pre>
+    </div>
+    <ul>
+      <li><strong>@lru_cache</strong>: 인자를 키로 한 dict를 자동 관리. <code>maxsize=None</code>이면 무제한 캐시, 기본은 128.</li>
+      <li><strong>@cache</strong> (Python 3.9+): <code>@lru_cache(maxsize=None)</code>의 별칭. 더 짧은 문법.</li>
+      <li><strong>조건</strong>: 인자가 <em>hashable</em>해야 함. 리스트, 딕셔너리는 tuple/frozenset으로 변환 필요.</li>
+      <li><strong>재귀 깊이</strong>: Python 기본 재귀 한도 1000. fib(2000) 호출 시 <code>RecursionError</code>. <code>sys.setrecursionlimit(10000)</code> 또는 반복문 구현.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">반복문 버전 (stack overflow 방지)</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">fib_iter.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">fib_iter</span>(n):
+    <span class="hl-kw">if</span> n &lt; <span class="hl-num">2</span>: <span class="hl-kw">return</span> n
+    a, b = <span class="hl-num">0</span>, <span class="hl-num">1</span>
+    <span class="hl-kw">for</span> _ <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n - <span class="hl-num">1</span>):
+        a, b = b, a + b
+    <span class="hl-kw">return</span> b
+
+<span class="hl-bi">print</span>(fib_iter(<span class="hl-num">1000</span>))    <span class="hl-cmt"># 재귀 한도 문제 없음</span></code></pre>
+    </div>
+    <p>
+      <strong>공간 O(1)</strong>. 직전 두 값만 필요하니 전체 배열 안 필요. 이게 다음 섹션 주제 "Tabulation + 공간 최적화"의 예.
+    </p>
+    <p>
+      더 빠른 방법: <strong>행렬 거듭제곱</strong>으로 O(log n). fib를 2×2 행렬 거듭제곱으로 표현.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 05. Memo vs Tab ==================== -->
+<section id="memo-tab">
+  <h2>05 — Memoization vs Tabulation</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">두 스타일 비교</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>측면</th><th>Memoization (Top-Down)</th><th>Tabulation (Bottom-Up)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>접근 방향</td><td>재귀 (큰 문제 → 작은 문제)</td><td>반복 (작은 문제 → 큰 문제)</td></tr>
+        <tr><td>자료구조</td><td>dict 또는 @lru_cache</td><td>배열 (1D/2D)</td></tr>
+        <tr><td>장점</td><td>자연스런 표현, 필요한 것만 계산</td><td>재귀 오버헤드 없음, 공간 최적화 쉬움</td></tr>
+        <tr><td>단점</td><td>재귀 깊이 제한, 함수 호출 오버헤드</td><td>전체 테이블 계산 (필요 없어도)</td></tr>
+        <tr><td>Python 추천</td><td>@cache 데코레이터</td><td>for loop + 리스트</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>선택 기준</strong>:
+    </p>
+    <ul>
+      <li>상태 공간이 희소(sparse)하면 Memoization. 모든 상태를 안 봐도 되니 빠름.</li>
+      <li>상태 공간이 조밀(dense)하면 Tabulation. 재귀 오버헤드 절약.</li>
+      <li>공간을 줄이고 싶으면 Tabulation. "최근 k개 상태만 필요" 패턴으로 O(n) → O(k).</li>
+    </ul>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Fibonacci 세 버전 비교</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">fib_three_styles.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-cmt"># 1. Memoization (Top-Down) — 재귀 + @cache</span>
+<span class="hl-kw">from</span> functools <span class="hl-kw">import</span> cache
+<span class="hl-bi">@cache</span>
+<span class="hl-kw">def</span> <span class="hl-bi">fib_memo</span>(n):
+    <span class="hl-kw">if</span> n &lt; <span class="hl-num">2</span>: <span class="hl-kw">return</span> n
+    <span class="hl-kw">return</span> fib_memo(n-<span class="hl-num">1</span>) + fib_memo(n-<span class="hl-num">2</span>)
+
+<span class="hl-cmt"># 2. Tabulation (Bottom-Up) — 반복 + 배열</span>
+<span class="hl-kw">def</span> <span class="hl-bi">fib_tab</span>(n):
+    <span class="hl-kw">if</span> n &lt; <span class="hl-num">2</span>: <span class="hl-kw">return</span> n
+    dp = [<span class="hl-num">0</span>] * (n + <span class="hl-num">1</span>)
+    dp[<span class="hl-num">1</span>] = <span class="hl-num">1</span>
+    <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">2</span>, n + <span class="hl-num">1</span>):
+        dp[i] = dp[i-<span class="hl-num">1</span>] + dp[i-<span class="hl-num">2</span>]
+    <span class="hl-kw">return</span> dp[n]
+
+<span class="hl-cmt"># 3. Tabulation + 공간 최적화 — O(1) 공간</span>
+<span class="hl-kw">def</span> <span class="hl-bi">fib_opt</span>(n):
+    <span class="hl-kw">if</span> n &lt; <span class="hl-num">2</span>: <span class="hl-kw">return</span> n
+    a, b = <span class="hl-num">0</span>, <span class="hl-num">1</span>
+    <span class="hl-kw">for</span> _ <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n - <span class="hl-num">1</span>):
+        a, b = b, a + b
+    <span class="hl-kw">return</span> b</code></pre>
+    </div>
+    <p>
+      세 버전 모두 시간 O(n), 공간은 O(n)/O(n)/O(1). DP의 실무 패턴 — 먼저 memoization으로 맞는지 확인, 다음에 tabulation, 마지막에 공간 최적화.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 06. 막대 자르기 ==================== -->
+<section id="rod-cutting">
+  <h2>06 — 막대 자르기 (CLRS §14.1)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">문제 — 최대 수익 절단</h3>
+    </div>
+    <p>
+      길이 n인 막대. 길이 i인 조각은 가격 p<sub>i</sub>에 팔 수 있음. 막대를 어떻게 잘라야 총 수익 최대?
+    </p>
+    <p>
+      예: 가격 표
+    </p>
+    <div class="formula-box" style="text-align:left;font-size:0.9rem;">
+      length i: &nbsp; 1 &nbsp; 2 &nbsp; 3 &nbsp; 4 &nbsp; 5 &nbsp; 6 &nbsp; 7 &nbsp; 8 &nbsp; 9 &nbsp; 10<br>
+      price p<sub>i</sub>: &nbsp; 1 &nbsp; 5 &nbsp; 8 &nbsp; 9 &nbsp; 10 &nbsp; 17 &nbsp; 17 &nbsp; 20 &nbsp; 24 &nbsp; 30
+    </div>
+    <p>
+      <strong>점화식</strong>: r(n) = max<sub>1≤i≤n</sub>(p<sub>i</sub> + r(n-i)). 즉 "첫 조각을 길이 i로 자르고, 남은 n-i에 최적 해".
+    </p>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a20rod-show { 0%,2%{opacity:0} 4%,14%{opacity:1} 16%,100%{opacity:0} }
+      .a20rod-F0{animation:a20rod-show 12s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a20rod-F1{animation:a20rod-show 12s linear infinite;animation-delay:2.4s;animation-fill-mode:backwards}
+      .a20rod-F2{animation:a20rod-show 12s linear infinite;animation-delay:4.8s;animation-fill-mode:backwards}
+      .a20rod-F3{animation:a20rod-show 12s linear infinite;animation-delay:7.2s;animation-fill-mode:backwards}
+      .a20rod-F4{animation:a20rod-show 12s linear infinite;animation-delay:9.6s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="막대 자르기 DP 테이블">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">📏 막대 자르기 DP — 5단계로 r[0..5] 채우기 (부분 예)</text>
+
+      <!-- DP 테이블 헤더 -->
+      <g transform="translate(60, 60)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="0" y="0" class="viz-label" font-weight="700">n:</text>
+        <text x="50" y="0" class="viz-label" font-weight="700">0</text>
+        <text x="110" y="0" class="viz-label" font-weight="700">1</text>
+        <text x="170" y="0" class="viz-label" font-weight="700">2</text>
+        <text x="230" y="0" class="viz-label" font-weight="700">3</text>
+        <text x="290" y="0" class="viz-label" font-weight="700">4</text>
+        <text x="350" y="0" class="viz-label" font-weight="700">5</text>
+
+        <!-- 테이블 셀 -->
+        <!-- r[0] -->
+        <g class="a20rod-F0 a20rod-F1 a20rod-F2 a20rod-F3 a20rod-F4">
+          <rect x="35" y="15" width="30" height="30" rx="3" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="50" y="35" text-anchor="middle" class="viz-label" font-weight="700">0</text>
+        </g>
+
+        <!-- r[1] -->
+        <g class="a20rod-F0">
+          <rect x="95" y="15" width="30" height="30" rx="3" fill="white" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="110" y="35" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">?</text>
+        </g>
+        <g class="a20rod-F1 a20rod-F2 a20rod-F3 a20rod-F4">
+          <rect x="95" y="15" width="30" height="30" rx="3" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="110" y="35" text-anchor="middle" class="viz-label" font-weight="700">1</text>
+        </g>
+
+        <!-- r[2] -->
+        <g class="a20rod-F0 a20rod-F1">
+          <rect x="155" y="15" width="30" height="30" rx="3" fill="white" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="170" y="35" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">?</text>
+        </g>
+        <g class="a20rod-F2 a20rod-F3 a20rod-F4">
+          <rect x="155" y="15" width="30" height="30" rx="3" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="170" y="35" text-anchor="middle" class="viz-label" font-weight="700">5</text>
+        </g>
+
+        <!-- r[3] -->
+        <g class="a20rod-F0 a20rod-F1 a20rod-F2">
+          <rect x="215" y="15" width="30" height="30" rx="3" fill="white" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="230" y="35" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">?</text>
+        </g>
+        <g class="a20rod-F3 a20rod-F4">
+          <rect x="215" y="15" width="30" height="30" rx="3" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="230" y="35" text-anchor="middle" class="viz-label" font-weight="700">8</text>
+        </g>
+
+        <!-- r[4] -->
+        <g class="a20rod-F0 a20rod-F1 a20rod-F2 a20rod-F3">
+          <rect x="275" y="15" width="30" height="30" rx="3" fill="white" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="290" y="35" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">?</text>
+        </g>
+        <g class="a20rod-F4">
+          <rect x="275" y="15" width="30" height="30" rx="3" fill="#e6f5ec" stroke="#3b9b6e" stroke-width="2"/>
+          <text x="290" y="35" text-anchor="middle" class="viz-label" font-weight="700">10</text>
+        </g>
+
+        <!-- r[5] -->
+        <g class="a20rod-F0 a20rod-F1 a20rod-F2 a20rod-F3">
+          <rect x="335" y="15" width="30" height="30" rx="3" fill="white" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="350" y="35" text-anchor="middle" class="viz-label-small" fill="var(--text-muted)">?</text>
+        </g>
+        <g class="a20rod-F4">
+          <rect x="335" y="15" width="30" height="30" rx="3" fill="#fde6a6" stroke="var(--accent)" stroke-width="2.5"/>
+          <text x="350" y="35" text-anchor="middle" class="viz-label" font-weight="700" fill="var(--accent)">13</text>
+        </g>
+      </g>
+
+      <!-- 단계별 설명 -->
+      <g transform="translate(60, 130)" font-size="12" font-family="JetBrains Mono, monospace">
+        <g class="a20rod-F0">
+          <text x="0" y="0" class="viz-label" font-weight="700">단계 0: 초기화</text>
+          <text x="0" y="22" class="viz-label-small">r[0] = 0 (빈 막대)</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">가격: p = [_, 1, 5, 8, 9, 10]</text>
+        </g>
+        <g class="a20rod-F1">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 1: r[1] 계산</text>
+          <text x="0" y="22" class="viz-label-small">max(p[1] + r[0]) = 1 + 0 = 1</text>
+          <text x="0" y="42" class="viz-label-small" fill="var(--text-muted)">길이 1짜리 하나.</text>
+        </g>
+        <g class="a20rod-F2">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 2: r[2] 계산</text>
+          <text x="0" y="22" class="viz-label-small">max(p[1]+r[1], p[2]+r[0])</text>
+          <text x="0" y="40" class="viz-label-small">= max(1+1, 5+0) = <tspan font-weight="700" fill="#3b9b6e">5</tspan></text>
+          <text x="0" y="60" class="viz-label-small" fill="var(--text-muted)">길이 2 통째로 파는 게 나음.</text>
+        </g>
+        <g class="a20rod-F3">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="#3b9b6e">단계 3: r[3] 계산</text>
+          <text x="0" y="22" class="viz-label-small">max(p[1]+r[2], p[2]+r[1], p[3]+r[0])</text>
+          <text x="0" y="40" class="viz-label-small">= max(1+5, 5+1, 8+0) = <tspan font-weight="700" fill="#3b9b6e">8</tspan></text>
+        </g>
+        <g class="a20rod-F4">
+          <text x="0" y="0" class="viz-label" font-weight="700" fill="var(--accent)">단계 4: r[5] 완성</text>
+          <text x="0" y="22" class="viz-label-small">r[4] = 10 (길이 2+2 = 5+5)</text>
+          <text x="0" y="42" class="viz-label-small">r[5] = max(1+10, 5+8, 8+5, 9+1, 10+0)</text>
+          <text x="0" y="60" class="viz-label-small" font-weight="700" fill="var(--accent)">= 13 (길이 2+3 = 5+8)</text>
+          <text x="0" y="82" class="viz-label-small" fill="var(--text-muted)">재계산 없이 r[0..4] 값 재사용!</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>5단계 막대 자르기 DP</strong>: bottom-up으로 r[0], r[1], ..., r[5]를 차례로 채움. 각 단계는 이전 계산 결과만 참조 (중복 계산 없음). <em>복잡도 O(n²)</em>.</div>
+  </div>
+</section>
+
+<!-- ==================== 07. Rod Python ==================== -->
+<section id="rod-python">
+  <h2>07 — 막대 자르기 Python 구현</h2>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">세 스타일 구현</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">rod_cutting.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">from</span> functools <span class="hl-kw">import</span> cache
+
+prices = [<span class="hl-num">0</span>, <span class="hl-num">1</span>, <span class="hl-num">5</span>, <span class="hl-num">8</span>, <span class="hl-num">9</span>, <span class="hl-num">10</span>, <span class="hl-num">17</span>, <span class="hl-num">17</span>, <span class="hl-num">20</span>, <span class="hl-num">24</span>, <span class="hl-num">30</span>]
+
+<span class="hl-cmt"># 1. Memoization (Top-Down)</span>
+<span class="hl-bi">@cache</span>
+<span class="hl-kw">def</span> <span class="hl-bi">rod_memo</span>(n):
+    <span class="hl-kw">if</span> n == <span class="hl-num">0</span>: <span class="hl-kw">return</span> <span class="hl-num">0</span>
+    <span class="hl-kw">return</span> <span class="hl-bi">max</span>(prices[i] + rod_memo(n - i) <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, n + <span class="hl-num">1</span>))
+
+
+<span class="hl-cmt"># 2. Tabulation (Bottom-Up)</span>
+<span class="hl-kw">def</span> <span class="hl-bi">rod_tab</span>(n, p=prices):
+    r = [<span class="hl-num">0</span>] * (n + <span class="hl-num">1</span>)
+    <span class="hl-kw">for</span> j <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, n + <span class="hl-num">1</span>):
+        r[j] = <span class="hl-bi">max</span>(p[i] + r[j-i] <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, j + <span class="hl-num">1</span>))
+    <span class="hl-kw">return</span> r[n]
+
+
+<span class="hl-cmt"># 3. 경로 복원 포함</span>
+<span class="hl-kw">def</span> <span class="hl-bi">rod_reconstruct</span>(n, p=prices):
+    orig_n = n    <span class="hl-cmt"># 복원 루프가 n을 바꾸므로 미리 저장</span>
+    r = [<span class="hl-num">0</span>] * (n + <span class="hl-num">1</span>)
+    s = [<span class="hl-num">0</span>] * (n + <span class="hl-num">1</span>)    <span class="hl-cmt"># 첫 조각 길이 기록</span>
+    <span class="hl-kw">for</span> j <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, n + <span class="hl-num">1</span>):
+        best = <span class="hl-num">0</span>; cut = <span class="hl-num">0</span>
+        <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, j + <span class="hl-num">1</span>):
+            <span class="hl-kw">if</span> p[i] + r[j-i] &gt; best:
+                best = p[i] + r[j-i]; cut = i
+        r[j] = best; s[j] = cut
+
+    <span class="hl-cmt"># 복원</span>
+    cuts = []
+    <span class="hl-kw">while</span> n &gt; <span class="hl-num">0</span>:
+        cuts.append(s[n])
+        n -= s[n]
+    <span class="hl-kw">return</span> r[orig_n], cuts
+
+
+<span class="hl-bi">print</span>(rod_tab(<span class="hl-num">10</span>))    <span class="hl-cmt"># 30 (길이 10 통째)</span>
+<span class="hl-bi">print</span>(rod_reconstruct(<span class="hl-num">8</span>))    <span class="hl-cmt"># (22, [2, 6]) — 길이 8 = 2+6, 수익 5+17=22</span></code></pre>
+    </div>
+    <ul>
+      <li><strong>복잡도</strong>: O(n²) 시간, O(n) 공간. 내부 max에서 n번 비교 × 외부 j 루프 n번.</li>
+      <li><strong>경로 복원</strong>: <code>s[j]</code>에 "j를 위한 첫 조각 길이"를 기록. 종료 후 s를 따라가며 복원.</li>
+      <li><strong>CLRS §14.1</strong>에 EXTENDED-BOTTOM-UP-CUT-ROD 의사코드 있음 — 위 코드와 동일한 구조.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 08. 동전 교환 DP ==================== -->
+<section id="coin-change">
+  <h2>08 — 동전 교환 DP — 그리디 실패 문제</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">그리디가 실패했던 그 문제</h3>
+    </div>
+    <p>
+      Algo 19 §2에서 봤듯 동전 {1, 3, 4}로 6을 거슬러주는 최소 동전 수는 그리디 3개(4+1+1)가 아닌 DP로 푼 2개(3+3).
+    </p>
+    <p>
+      <strong>점화식</strong>: <code>dp[v] = 금액 v를 만드는 최소 동전 수</code>.
+    </p>
+    <div class="formula-box">
+      dp[v] = 1 + min<sub>c ∈ coins, c ≤ v</sub> dp[v − c]
+    </div>
+    <ul>
+      <li><code>dp[0] = 0</code> (빈 금액).</li>
+      <li>가능하지 않으면 <code>dp[v] = ∞</code>.</li>
+      <li>복잡도: O(V · |coins|) 시간, O(V) 공간.</li>
+    </ul>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">coin_change.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">coin_change</span>(coins, amount):
+    INF = <span class="hl-bi">float</span>(<span class="hl-str">'inf'</span>)
+    dp = [INF] * (amount + <span class="hl-num">1</span>)
+    dp[<span class="hl-num">0</span>] = <span class="hl-num">0</span>
+    <span class="hl-kw">for</span> v <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, amount + <span class="hl-num">1</span>):
+        <span class="hl-kw">for</span> c <span class="hl-kw">in</span> coins:
+            <span class="hl-kw">if</span> c &lt;= v:
+                dp[v] = <span class="hl-bi">min</span>(dp[v], dp[v - c] + <span class="hl-num">1</span>)
+    <span class="hl-kw">return</span> dp[amount] <span class="hl-kw">if</span> dp[amount] != INF <span class="hl-kw">else</span> -<span class="hl-num">1</span>
+
+<span class="hl-bi">print</span>(coin_change([<span class="hl-num">1</span>, <span class="hl-num">3</span>, <span class="hl-num">4</span>], <span class="hl-num">6</span>))    <span class="hl-cmt"># 2 (3+3)</span>
+<span class="hl-bi">print</span>(coin_change([<span class="hl-num">2</span>], <span class="hl-num">3</span>))    <span class="hl-cmt"># -1 (불가능)</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 09. 계단 오르기 ==================== -->
+<section id="climbing-stairs">
+  <h2>09 — 계단 오르기 (LeetCode 70)</h2>
+
+  <div class="level-section elementary">
+    <div class="level-section-header">
+      <span class="level-badge level-elem">초급</span>
+      <h3 class="level-section-title">문제</h3>
+    </div>
+    <p>
+      n 계단을 오르는데 한 번에 1 또는 2칸. 방법의 가짓수는?
+    </p>
+    <ul>
+      <li>n=1: 1가지 (1).</li>
+      <li>n=2: 2가지 (1+1, 2).</li>
+      <li>n=3: 3가지 (1+1+1, 1+2, 2+1).</li>
+      <li>n=4: 5가지.</li>
+      <li>n=5: 8가지. — 피보나치와 같은 수열!</li>
+    </ul>
+    <p>
+      <strong>점화식</strong>: <code>f(n) = f(n-1) + f(n-2)</code>. 마지막 이동이 1 또는 2 → 두 경우 합. <em>사실상 피보나치</em>.
+    </p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">climbing_stairs.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">climb</span>(n):
+    <span class="hl-kw">if</span> n &lt;= <span class="hl-num">2</span>: <span class="hl-kw">return</span> n
+    a, b = <span class="hl-num">1</span>, <span class="hl-num">2</span>
+    <span class="hl-kw">for</span> _ <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">3</span>, n + <span class="hl-num">1</span>):
+        a, b = b, a + b
+    <span class="hl-kw">return</span> b</code></pre>
+    </div>
+  </div>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">변형: 1/2/3 칸 (LeetCode 746)</h3>
+    </div>
+    <p>
+      한 번에 1, 2, 또는 3칸 오를 수 있다면? <code>f(n) = f(n-1) + f(n-2) + f(n-3)</code>. Tribonacci.
+    </p>
+    <p>
+      이 패턴을 <em>k-th Fibonacci / k-bonacci</em>라 부름. <code>f(n) = f(n-1) + f(n-2) + ... + f(n-k)</code>. 일반화된 DP.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 10. 집 털기 ==================== -->
+<section id="house-robber">
+  <h2>10 — 집 털기 (LeetCode 198)</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">문제</h3>
+    </div>
+    <p>
+      한 줄로 늘어선 집 nums[0..n-1]. 각 집에 돈 nums[i]. 인접한 두 집은 동시에 털 수 없음(경보). 최대 얼마를 털 수 있나?
+    </p>
+    <p>
+      예: nums = [1, 2, 3, 1].
+    </p>
+    <ul>
+      <li>[0, 2]: 1+3 = 4.</li>
+      <li>[1, 3]: 2+1 = 3.</li>
+      <li>최적: 4.</li>
+    </ul>
+  </div>
+
+  <div class="viz-box">
+    <style>
+      @keyframes a20house-show { 0%,2%{opacity:0} 4%,18%{opacity:1} 20%,100%{opacity:0} }
+      .a20house-S0{animation:a20house-show 10s linear infinite;animation-delay:0s;animation-fill-mode:backwards}
+      .a20house-S1{animation:a20house-show 10s linear infinite;animation-delay:2s;animation-fill-mode:backwards}
+      .a20house-S2{animation:a20house-show 10s linear infinite;animation-delay:4s;animation-fill-mode:backwards}
+      .a20house-S3{animation:a20house-show 10s linear infinite;animation-delay:6s;animation-fill-mode:backwards}
+      .a20house-S4{animation:a20house-show 10s linear infinite;animation-delay:8s;animation-fill-mode:backwards}
+    </style>
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="집 털기 DP 애니메이션">
+      <text x="360" y="22" class="viz-label" text-anchor="middle">🏠 집 털기 — nums = [2, 7, 9, 3, 1], 인접 금지</text>
+
+      <!-- 집 이미지 (사각형 + 돈 표시) -->
+      <g transform="translate(60, 80)" font-family="JetBrains Mono, monospace" font-size="12">
+        <!-- 집 0: $2 -->
+        <rect x="0" y="0" width="80" height="80" rx="6" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+        <text x="40" y="35" text-anchor="middle" class="viz-label" font-weight="700">집 0</text>
+        <text x="40" y="55" text-anchor="middle" class="viz-label-small">$2</text>
+
+        <rect x="120" y="0" width="80" height="80" rx="6" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+        <text x="160" y="35" text-anchor="middle" class="viz-label" font-weight="700">집 1</text>
+        <text x="160" y="55" text-anchor="middle" class="viz-label-small">$7</text>
+
+        <rect x="240" y="0" width="80" height="80" rx="6" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+        <text x="280" y="35" text-anchor="middle" class="viz-label" font-weight="700">집 2</text>
+        <text x="280" y="55" text-anchor="middle" class="viz-label-small">$9</text>
+
+        <rect x="360" y="0" width="80" height="80" rx="6" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+        <text x="400" y="35" text-anchor="middle" class="viz-label" font-weight="700">집 3</text>
+        <text x="400" y="55" text-anchor="middle" class="viz-label-small">$3</text>
+
+        <rect x="480" y="0" width="80" height="80" rx="6" fill="var(--why-bg-flat)" stroke="var(--why-accent)" stroke-width="2"/>
+        <text x="520" y="35" text-anchor="middle" class="viz-label" font-weight="700">집 4</text>
+        <text x="520" y="55" text-anchor="middle" class="viz-label-small">$1</text>
+
+        <!-- 턴 강조 (단계별) -->
+        <g class="a20house-S1 a20house-S2 a20house-S3 a20house-S4">
+          <rect x="0" y="0" width="80" height="80" rx="6" fill="rgba(59,155,110,0.3)" stroke="#3b9b6e" stroke-width="3"/>
+          <text x="40" y="35" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">집 0 ✓</text>
+          <text x="40" y="55" text-anchor="middle" class="viz-label-small" fill="#3b9b6e" font-weight="700">$2</text>
+        </g>
+
+        <g class="a20house-S2 a20house-S3 a20house-S4">
+          <rect x="240" y="0" width="80" height="80" rx="6" fill="rgba(59,155,110,0.3)" stroke="#3b9b6e" stroke-width="3"/>
+          <text x="280" y="35" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">집 2 ✓</text>
+          <text x="280" y="55" text-anchor="middle" class="viz-label-small" fill="#3b9b6e" font-weight="700">$9</text>
+        </g>
+
+        <g class="a20house-S4">
+          <rect x="480" y="0" width="80" height="80" rx="6" fill="rgba(59,155,110,0.3)" stroke="#3b9b6e" stroke-width="3"/>
+          <text x="520" y="35" text-anchor="middle" class="viz-label" font-weight="700" fill="#3b9b6e">집 4 ✓</text>
+          <text x="520" y="55" text-anchor="middle" class="viz-label-small" fill="#3b9b6e" font-weight="700">$1</text>
+        </g>
+      </g>
+
+      <!-- DP 테이블 -->
+      <g transform="translate(60, 190)" font-family="JetBrains Mono, monospace" font-size="12">
+        <text x="0" y="0" class="viz-label-small" fill="var(--text-muted)">DP: dp[i] = 집 i까지 최대 수익</text>
+
+        <g class="a20house-S1">
+          <text x="0" y="25" class="viz-label-small" font-weight="700" fill="#3b9b6e">dp = [2, ?, ?, ?, ?]</text>
+          <text x="0" y="45" class="viz-label-small" fill="var(--text-muted)">dp[0] = 2 (집 0만 턺)</text>
+        </g>
+        <g class="a20house-S2">
+          <text x="0" y="25" class="viz-label-small" font-weight="700" fill="#3b9b6e">dp = [2, 7, 11, ?, ?]</text>
+          <text x="0" y="45" class="viz-label-small">dp[1] = max(2, 7) = 7</text>
+          <text x="0" y="65" class="viz-label-small">dp[2] = max(dp[1], dp[0]+9) = max(7, 11) = <tspan font-weight="700" fill="#3b9b6e">11</tspan></text>
+        </g>
+        <g class="a20house-S3">
+          <text x="0" y="25" class="viz-label-small" font-weight="700" fill="#3b9b6e">dp = [2, 7, 11, 11, ?]</text>
+          <text x="0" y="45" class="viz-label-small">dp[3] = max(dp[2], dp[1]+3) = max(11, 10) = 11</text>
+          <text x="0" y="65" class="viz-label-small" fill="var(--text-muted)">집 3 안 털음 (집 2 이미 털었음)</text>
+        </g>
+        <g class="a20house-S4">
+          <text x="0" y="25" class="viz-label-small" font-weight="700" fill="var(--accent)">dp = [2, 7, 11, 11, 12]</text>
+          <text x="0" y="45" class="viz-label-small">dp[4] = max(dp[3], dp[2]+1) = max(11, 12) = <tspan font-weight="700" fill="var(--accent)">12</tspan></text>
+          <text x="0" y="65" class="viz-label-small" fill="#3b9b6e" font-weight="700">최대 수익: $12 (집 0+2+4 = 2+9+1)</text>
+        </g>
+      </g>
+    </svg>
+    <div class="viz-caption"><strong>5단계 집 털기 DP</strong>: <code>dp[i] = max(dp[i-1], dp[i-2]+nums[i])</code> — "집 i 안 털음" vs "집 i 털음 + i-2까지 최적". 최종 $12 (집 0, 2, 4 선택).</div>
+  </div>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">Python 구현 (공간 O(1))</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">house_robber.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">rob</span>(nums):
+    prev, curr = <span class="hl-num">0</span>, <span class="hl-num">0</span>
+    <span class="hl-kw">for</span> n <span class="hl-kw">in</span> nums:
+        prev, curr = curr, <span class="hl-bi">max</span>(curr, prev + n)
+    <span class="hl-kw">return</span> curr
+
+<span class="hl-bi">print</span>(rob([<span class="hl-num">2</span>, <span class="hl-num">7</span>, <span class="hl-num">9</span>, <span class="hl-num">3</span>, <span class="hl-num">1</span>]))    <span class="hl-cmt"># 12</span>
+<span class="hl-bi">print</span>(rob([<span class="hl-num">1</span>, <span class="hl-num">2</span>, <span class="hl-num">3</span>, <span class="hl-num">1</span>]))    <span class="hl-cmt"># 4</span></code></pre>
+    </div>
+    <p>
+      <strong>공간 O(1)</strong>: dp 배열 전체 안 저장, 최근 두 값만. 이 패턴은 DP 실무의 표준 최적화.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 11. 공간 최적화 ==================== -->
+<section id="space-opt">
+  <h2>11 — 공간 최적화 — O(n) → O(1)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">일반 패턴 — "윈도우 축소"</h3>
+    </div>
+    <p>
+      DP 점화식이 <em>최근 k개의 값만 참조</em>한다면, 전체 배열 대신 <strong>k개 변수</strong>로 충분.
+    </p>
+    <ul>
+      <li>Fibonacci: <code>dp[n] = dp[n-1] + dp[n-2]</code> → 두 변수.</li>
+      <li>House Robber: <code>dp[i] = max(dp[i-1], dp[i-2]+nums[i])</code> → 두 변수.</li>
+      <li>2D DP(배낭, LCS): 한 행 전체 → 1D 배열 + 롤링.</li>
+    </ul>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">배낭 문제의 공간 최적화 예시</h3>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">knapsack_01_space.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">knapsack_01</span>(values, weights, W):
+    <span class="hl-cmt">"""0/1 배낭. 공간 O(W)."""</span>
+    n = <span class="hl-bi">len</span>(values)
+    dp = [<span class="hl-num">0</span>] * (W + <span class="hl-num">1</span>)
+    <span class="hl-kw">for</span> i <span class="hl-kw">in</span> <span class="hl-bi">range</span>(n):
+        <span class="hl-cmt"># 역순 갱신 — 같은 아이템 중복 사용 방지</span>
+        <span class="hl-kw">for</span> w <span class="hl-kw">in</span> <span class="hl-bi">range</span>(W, weights[i] - <span class="hl-num">1</span>, -<span class="hl-num">1</span>):
+            dp[w] = <span class="hl-bi">max</span>(dp[w], dp[w - weights[i]] + values[i])
+    <span class="hl-kw">return</span> dp[W]
+
+<span class="hl-bi">print</span>(knapsack_01([<span class="hl-num">60</span>, <span class="hl-num">100</span>, <span class="hl-num">120</span>], [<span class="hl-num">10</span>, <span class="hl-num">20</span>, <span class="hl-num">30</span>], <span class="hl-num">50</span>))    <span class="hl-cmt"># 220</span></code></pre>
+    </div>
+    <ul>
+      <li>원래 2D dp[i][w] 배열 O(nW) → 1D dp[w] O(W).</li>
+      <li><strong>역순 순회</strong>가 핵심 — 같은 아이템을 여러 번 쓰는 "무한 배낭" 버그 방지.</li>
+      <li>완전 배낭(같은 아이템 여러 개 가능)은 정순 순회.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ==================== 12. 복원 ==================== -->
+<section id="reconstruct">
+  <h2>12 — 선택 복원 (value → path)</h2>
+
+  <div class="level-section advanced">
+    <div class="level-section-header">
+      <span class="level-badge level-adv">고급</span>
+      <h3 class="level-section-title">"답은 알겠는데 어떻게 했는지?"</h3>
+    </div>
+    <p>
+      DP는 보통 <em>최적 값</em>만 반환. 하지만 실무에선 "어떤 선택을 했는지"도 중요. 해법: <strong>"어디서 왔는지" 기록</strong>.
+    </p>
+    <ul>
+      <li><strong>추가 배열 parent/choice</strong>: <code>dp[i]</code>를 얻기 위해 어떤 하위 선택을 썼는지 저장.</li>
+      <li>종료 후 parent 따라 역순 추적 → 전체 경로 복원.</li>
+    </ul>
+    <div class="code-block">
+      <div class="code-header"><span class="code-label">coin_change_reconstruct.py</span><button class="copy-btn">복사</button></div>
+<pre><code><span class="hl-kw">def</span> <span class="hl-bi">coin_change_path</span>(coins, amount):
+    INF = <span class="hl-bi">float</span>(<span class="hl-str">'inf'</span>)
+    dp = [INF] * (amount + <span class="hl-num">1</span>); dp[<span class="hl-num">0</span>] = <span class="hl-num">0</span>
+    parent = [-<span class="hl-num">1</span>] * (amount + <span class="hl-num">1</span>)
+
+    <span class="hl-kw">for</span> v <span class="hl-kw">in</span> <span class="hl-bi">range</span>(<span class="hl-num">1</span>, amount + <span class="hl-num">1</span>):
+        <span class="hl-kw">for</span> c <span class="hl-kw">in</span> coins:
+            <span class="hl-kw">if</span> c &lt;= v <span class="hl-kw">and</span> dp[v - c] + <span class="hl-num">1</span> &lt; dp[v]:
+                dp[v] = dp[v - c] + <span class="hl-num">1</span>
+                parent[v] = c    <span class="hl-cmt"># 이 동전을 썼음</span>
+
+    <span class="hl-kw">if</span> dp[amount] == INF: <span class="hl-kw">return</span> -<span class="hl-num">1</span>, []
+
+    coins_used = []
+    cur = amount
+    <span class="hl-kw">while</span> cur &gt; <span class="hl-num">0</span>:
+        coins_used.append(parent[cur])
+        cur -= parent[cur]
+    <span class="hl-kw">return</span> dp[amount], coins_used
+
+<span class="hl-bi">print</span>(coin_change_path([<span class="hl-num">1</span>, <span class="hl-num">3</span>, <span class="hl-num">4</span>], <span class="hl-num">6</span>))    <span class="hl-cmt"># (2, [3, 3])</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 13. DP vs Greedy ==================== -->
+<section id="dp-vs-greedy">
+  <h2>13 — DP vs Greedy — 언제 무엇을</h2>
+
+  <div class="level-section intermediate">
+    <div class="level-section-header">
+      <span class="level-badge level-inter">중급</span>
+      <h3 class="level-section-title">결정 표</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>조건</th><th>그리디</th><th>DP</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Optimal Substructure</td><td>필요</td><td>필요</td></tr>
+        <tr><td>Greedy-Choice Property</td><td>필요</td><td>불필요</td></tr>
+        <tr><td>Overlapping Subproblems</td><td>무관</td><td>있으면 유리</td></tr>
+        <tr><td>시간</td><td>O(n log n) ~ O(n)</td><td>O(n) ~ O(n²) ~ O(nW)</td></tr>
+        <tr><td>공간</td><td>보통 O(1) ~ O(n)</td><td>O(n) ~ O(nW)</td></tr>
+        <tr><td>증명 난이도</td><td>Exchange Argument (쉬움)</td><td>귀납 + 점화식 (더 쉬움)</td></tr>
+        <tr><td>코드 길이</td><td>짧음</td><td>중간</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>실무 팁</strong>:
+    </p>
+    <ol>
+      <li>먼저 그리디로 시도 — 반례 생각나나?</li>
+      <li>반례 있으면 DP. 점화식 먼저 (펜과 종이), 그 다음 Python @cache로 정리.</li>
+      <li>맞으면 공간 최적화 검토.</li>
+      <li>그래도 느리면 Matrix exponentiation, convex hull trick 등 고급 최적화.</li>
+    </ol>
+  </div>
+
+  <div class="level-section expert">
+    <div class="level-section-header">
+      <span class="level-badge level-expert">전공자</span>
+      <h3 class="level-section-title">AI가 DP를 잘못 쓰는 패턴</h3>
+    </div>
+    <ul>
+      <li><strong>"그리디로 풀리는데 DP"</strong>: O(n log n)이면 끝날 것을 O(n²) DP로. 비효율.</li>
+      <li><strong>"메모이제이션 없는 재귀"</strong>: 피보나치에 @cache 생략 → 지수 시간.</li>
+      <li><strong>"리스트를 @cache 인자로"</strong>: hashable 아닌 타입 → TypeError.</li>
+      <li><strong>"경계 조건 실수"</strong>: dp[0] 초기화 틀림, 범위 off-by-one.</li>
+      <li><strong>"점화식 방향 혼동"</strong>: 역순 순회 필요한 곳에 정순, 또는 반대.</li>
+    </ul>
+    <p>
+      <strong>교정 질문</strong>: "점화식을 종이에 써봐", "dp[0] = 0 맞나?", "순서가 정순? 역순?"
+    </p>
+  </div>
+</section>
+
+<!-- ==================== 14. 연습문제 ==================== -->
+<section id="exercises">
+  <h2>14 — 연습문제 (12문제)</h2>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 1</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">DP의 두 조건(Optimal Substructure + Overlapping Subproblems) 중 하나만 있으면?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>Optimal Substructure만</strong>: 분할 정복 (merge sort, quicksort). 부분 문제가 독립적이라 메모이제이션 불필요. <strong>Overlapping Subproblems만</strong>: 정의상 의미 없음 — Optimal Substructure 없으면 DP 점화식 자체가 성립 안 함.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 2</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">fib(100)을 @cache 없이 계산하면 얼마나 걸리나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>호출 수 ≈ φ<sup>100</sup> ≈ 7.9·10<sup>20</sup>. CPU가 10<sup>9</sup>ops/s라 가정하면 ≈ 7.9·10<sup>11</sup>초 ≈ <strong>2.5만 년</strong>. @cache 한 줄로 수 μs.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 3</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">0/1 배낭 DP 작성. values=[60,100,120], weights=[10,20,30], W=50.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">힌트</div>
+            <p>점화식: <code>dp[i][w] = max(dp[i-1][w], dp[i-1][w-weights[i]] + values[i])</code>. 공간 O(W) 최적화는 역순 순회. 답 220 (B+C).</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 4</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Memoization과 Tabulation의 시간/공간 복잡도가 같은데, 왜 구분?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>시간 복잡도 같음. 차이는:
+            <ul>
+              <li><strong>재귀 오버헤드</strong>: Memoization은 함수 호출 stack 사용. Python은 특히 느림.</li>
+              <li><strong>공간 최적화</strong>: Tabulation은 "최근 k 값만" 패턴으로 O(n)→O(1) 쉬움. Memoization은 전체 캐시 유지.</li>
+              <li><strong>부분 계산</strong>: 상태 공간이 희소하면 Memoization이 유리 (필요한 것만 계산).</li>
+            </ul>
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 5</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">0/1 배낭 공간 최적화에서 왜 W를 역순으로 순회하나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>정순이면 <code>dp[w-weights[i]]</code>가 <em>이번 i에서 이미 갱신된</em> 값 → 같은 아이템 중복 사용 (완전 배낭이 됨). 역순이면 <code>dp[w-weights[i]]</code>는 i-1 라운드 값 → 0/1 성질 유지. 완전 배낭을 원하면 정순.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 6</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">"계단 오르기 + 1/2 중 골라갈 때 비용 최소화" (LeetCode 746).</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>cost[i] = 계단 i의 비용. <code>dp[i] = cost[i] + min(dp[i-1], dp[i-2])</code>. dp[0]=cost[0], dp[1]=cost[1]. 답은 <code>min(dp[n-1], dp[n-2])</code>. 공간 O(1)로 두 변수 유지.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-predict">PREDICT</span>
+      <span class="problem-num">문제 7</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">@cache를 쓰면 왜 함수 인자가 list면 TypeError?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>@cache는 내부적으로 <code>dict[args]</code>로 결과 저장. list, dict는 mutable → hashable 아님 → 키로 쓸 수 없음. 해결: <code>tuple(list)</code>, <code>frozenset(dict.items())</code>로 변환 후 전달. 또는 list를 인덱스와 함께 튜플로 키 구성.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 8</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Bellman의 "Principle of Optimality"가 DP 점화식의 정당성과 어떤 관계?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>"최적 해의 부분 경로도 부분 문제의 최적 해"라는 진술. DP 점화식 <code>dp[n] = f(dp[k])</code>가 작동하려면 "n의 최적이 k의 최적을 사용"이 보장되어야 함. Principle of Optimality가 바로 이 보장. 없으면 DP 불가.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-build">BUILD</span>
+      <span class="problem-num">문제 9</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">Fibonacci를 O(log n)으로 푸는 방법 (행렬 거듭제곱).</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><code>[[1,1],[1,0]]<sup>n</sup> = [[F(n+1), F(n)],[F(n), F(n-1)]]</code>. 행렬 거듭제곱을 분할 정복으로 O(log n) (2×2 행렬 곱은 상수). Python numpy 또는 수동 구현. 매우 큰 n (10<sup>18</sup>)에도 즉시.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-desugar">DESUGAR</span>
+      <span class="problem-num">문제 10</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">막대 자르기의 상태 공간 크기와 전이 비용을 분석.</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p>상태: 막대 남은 길이 n+1가지. 각 상태에서 n가지 선택 (첫 조각 길이 1~n). 총 O(n²) 시간. 메모이제이션 또는 테이블로 해결. 일반 DP 패턴: <strong>상태 수 × 전이 비용</strong>이 시간 복잡도.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-ai">AI</span>
+      <span class="problem-num">문제 11</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">AI가 "N=10<sup>5</sup>인 0/1 배낭 DP를 O(NW)로 풀라" 제안. W=10<sup>9</sup>이면?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">질문</div>
+            <ol>
+              <li>"NW = 10<sup>14</sup> — 실행 가능한가?"</li>
+              <li>"W가 크면 DP는 의사다항 (pseudo-polynomial). W 크기 확인해봐."</li>
+              <li>"W가 매우 크면 FPTAS로 근사, 또는 제약 완화."</li>
+              <li>"분수 배낭으로 환원 가능한가? (그러면 O(N log N))"</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-header">
+      <span class="problem-type type-why">WHY</span>
+      <span class="problem-num">문제 12</span>
+    </div>
+    <div class="problem-body">
+      <p class="problem-prompt">DP 점화식이 맞는지 어떻게 "증명" 하나?</p>
+      <details class="answer">
+        <summary>풀이 펼치기</summary>
+        <div class="answer-content">
+          <div class="answer-why">
+            <div class="answer-why-title">답</div>
+            <p><strong>수학적 귀납법</strong>: Base case 확인 + 점화식이 Principle of Optimality를 따르는지. "f(n)의 최적 해는 어떤 선택 k를 거쳤을 것"이라는 case 분석 → 각 case가 f(k) + 전이 비용으로 표현됨 → 모든 case의 max/min이 f(n). 이 논증이 정당하면 점화식 올바름. CLRS §14.3 "Elements of dynamic programming"에 구체적 예시.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15. 정리 + 용어 + 다음 주 ==================== -->
+<section id="summary-glossary-next">
+  <h2>15 — 정리 + 용어 사전 + 다음 주 맛보기</h2>
+
+  <h3>핵심 정리</h3>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">📚</div>
+      <h3>Bellman 1957</h3>
+      <p>RAND에서 태어난 DP. 다단계 결정 과정 + 최적 원리.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🎯</div>
+      <h3>두 조건</h3>
+      <p>Optimal Substructure + Overlapping Subproblems. 둘 다 필요.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🐰</div>
+      <h3>Fibonacci 마법</h3>
+      <p>O(2ⁿ) → O(n). @cache 한 줄이 우주 나이를 밀리초로.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">⬆️⬇️</div>
+      <h3>Top-Down vs Bottom-Up</h3>
+      <p>Memoization: 재귀+@cache. Tabulation: 반복+배열.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">💾</div>
+      <h3>공간 최적화</h3>
+      <p>최근 k 상태만 참조하면 O(n)→O(k). 역순 순회 주의.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔄</div>
+      <h3>그리디 vs DP</h3>
+      <p>그리디 실패 = 반례 존재 = DP 필요. 그리디가 더 빠를 때만 그리디.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:40px;">용어 사전 (25개)</h3>
+  <div class="glossary">
+    <div class="glossary-item"><div class="glossary-term">Dynamic Programming (DP)</div><div class="glossary-def">Bellman 1950. 중복 부분 문제 재사용으로 지수를 다항으로.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Optimal Substructure</div><div class="glossary-def">최적해가 부분 문제의 최적해로 구성. DP·그리디 공통 조건.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Overlapping Subproblems</div><div class="glossary-def">같은 부분 문제가 여러 번 등장. DP의 고유 전제.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Principle of Optimality</div><div class="glossary-def">"최적 정책의 부분 경로도 그 부분 문제의 최적". Bellman 1957.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Memoization</div><div class="glossary-def">재귀 + 결과 캐시. Top-Down DP의 구현. 용어는 Donald Michie가 "Memo Functions and Machine Learning" (<em>Nature</em> 218, 1968)에서 만듦.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Tabulation</div><div class="glossary-def">반복 + 테이블 채움. Bottom-Up DP의 구현.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Top-Down</div><div class="glossary-def">큰 문제에서 작은 문제로 재귀. Memoization과 같음.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Bottom-Up</div><div class="glossary-def">작은 문제부터 채워 올라감. Tabulation과 같음.</div></div>
+    <div class="glossary-item"><div class="glossary-term">@lru_cache</div><div class="glossary-def">Python functools 데코레이터. maxsize로 캐시 크기.</div></div>
+    <div class="glossary-item"><div class="glossary-term">@cache</div><div class="glossary-def">Python 3.9+, @lru_cache(None)과 동등. 무제한.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Recurrence Relation</div><div class="glossary-def">DP의 점화식. 부분 문제 간 관계.</div></div>
+    <div class="glossary-item"><div class="glossary-term">State Space</div><div class="glossary-def">DP 하위 문제 집합. 크기가 복잡도에 직결.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Richard Bellman</div><div class="glossary-def">1920-1984. Dynamic Programming 창시. RAND.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Bellman Equation</div><div class="glossary-def">V(s) = max<sub>a</sub>[R + γ E[V(s')]]. RL의 핵심.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Fibonacci</div><div class="glossary-def">F(n) = F(n-1) + F(n-2). DP의 hello world.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Leonardo of Pisa</div><div class="glossary-def">1170-1250. Fibonacci로 알려짐. Liber Abaci 1202.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Rod Cutting</div><div class="glossary-def">CLRS §14.1. 최대 수익 절단. O(n²).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Coin Change DP</div><div class="glossary-def">최소 동전 수. O(V|coins|).</div></div>
+    <div class="glossary-item"><div class="glossary-term">House Robber</div><div class="glossary-def">LeetCode 198. 인접 금지 최대 합. O(n) 시간 O(1) 공간.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Climbing Stairs</div><div class="glossary-def">LeetCode 70. Fibonacci와 동일 점화식.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Pseudo-polynomial</div><div class="glossary-def">값에 의존하는 다항 (O(nW)). 0/1 배낭.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Matrix Exponentiation</div><div class="glossary-def">선형 점화식을 O(log n)으로. Fibonacci, 선형 DP.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Rolling Array</div><div class="glossary-def">2D DP를 2행만 유지. O(nW) → O(W).</div></div>
+    <div class="glossary-item"><div class="glossary-term">Held-Karp</div><div class="glossary-def">1962 TSP DP. O(n²·2ⁿ). 정확 해법.</div></div>
+    <div class="glossary-item"><div class="glossary-term">Viterbi Algorithm</div><div class="glossary-def">HMM 디코딩. DP로 최대 확률 경로.</div></div>
+  </div>
+
+  <div class="next-week-box" style="margin-top:48px;">
+    <div class="next-week-label">다음 주 — Algo 21</div>
+    <h3>동적 계획법 II — 고전 문제</h3>
+    <p style="color:var(--text-secondary);margin:8px 0 16px;">
+      배낭, LCS, LIS, 편집 거리 — DP 면접 단골 5종.
+    </p>
+    <ul>
+      <li><strong>0/1 Knapsack</strong> — 2D DP의 정석, 공간 최적화.</li>
+      <li><strong>LCS (Longest Common Subsequence)</strong> — diff, 맞춤법, 유전자 정렬.</li>
+      <li><strong>LIS (Longest Increasing Subsequence)</strong> — O(n²) DP와 O(n log n) 패치 기법.</li>
+      <li><strong>Edit Distance (Levenshtein)</strong> — 문자열 유사도, 맞춤법 검사.</li>
+      <li><strong>Matrix Chain Multiplication</strong> — 괄호 최적 배치, Catalan.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<nav class="week-nav">
+  <a href="algo19.html">&larr; Algo 19 — 그리디 알고리즘</a>
+  <a href="algo21.html">Algo 21 — DP II: LCS, 배낭, 편집거리 &rarr;</a>
+</nav>
+
+<footer class="site-footer">
+  <p>파이썬은 왜? &mdash; 컴퓨터가 어떻게 생각하는지를 배우는 파이썬 강의</p>
+  <p style="margin-top:6px;font-size:0.78rem;">CLRS 4판 §14, Bellman 1957 "Dynamic Programming" (Princeton Univ. Press), Fibonacci 1202 (Liber Abaci) 기반</p>
+</footer>
+
+<button class="back-to-top" aria-label="맨 위로">&uarr;</button>
+
+<script src="../js/bundle.min.js"></script>
+
+</body>
+</html>
