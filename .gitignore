@@ -1,0 +1,14 @@
+# 출시 패키지 — 본판 PDF 절대 push 금지
+release/
+*.pdf
+
+# 단, 무료 미리보기 PDF는 공개 (예외)
+!assets/PyWhy_preview.pdf
+
+# 빌드 산출물
+*.tmp
+*.bak
+.DS_Store
+
+# Claude 세션
+.claude/

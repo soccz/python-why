@@ -1,0 +1,48 @@
+<svg width="660" height="280" viewBox="0 0 720 280" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+        <text x="360" y="22" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="14" fill="#1a1410">5천만 개 처리: 리스트 vs 제너레이터</text>
+
+        <!-- 리스트 (왼쪽) -->
+        <text x="180" y="55" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="13" fill="#963434">리스트 컴프리헨션</text>
+        <text x="180" y="73" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#706b66">[i**2 for i in range(1, 100_000_001) if i%2==0]</text>
+
+        <!-- 메모리 박스 -->
+        <rect x="40" y="90" width="280" height="120" rx="8" fill="#fdf2f2" stroke="#c45858" stroke-width="2"/>
+        <text x="180" y="115" text-anchor="middle" font-family="Noto Sans KR" font-size="11" fill="#963434" font-weight="700">메모리에 5천만 개 모두 적재</text>
+
+        <!-- 작은 사각형들로 5천만 개 표현 -->
+        <g fill="#c45858" opacity="0.7">
+          <rect x="60" y="130" width="6" height="6"/><rect x="68" y="130" width="6" height="6"/><rect x="76" y="130" width="6" height="6"/><rect x="84" y="130" width="6" height="6"/><rect x="92" y="130" width="6" height="6"/><rect x="100" y="130" width="6" height="6"/><rect x="108" y="130" width="6" height="6"/><rect x="116" y="130" width="6" height="6"/><rect x="124" y="130" width="6" height="6"/><rect x="132" y="130" width="6" height="6"/><rect x="140" y="130" width="6" height="6"/><rect x="148" y="130" width="6" height="6"/><rect x="156" y="130" width="6" height="6"/><rect x="164" y="130" width="6" height="6"/><rect x="172" y="130" width="6" height="6"/><rect x="180" y="130" width="6" height="6"/><rect x="188" y="130" width="6" height="6"/><rect x="196" y="130" width="6" height="6"/><rect x="204" y="130" width="6" height="6"/><rect x="212" y="130" width="6" height="6"/><rect x="220" y="130" width="6" height="6"/><rect x="228" y="130" width="6" height="6"/><rect x="236" y="130" width="6" height="6"/><rect x="244" y="130" width="6" height="6"/><rect x="252" y="130" width="6" height="6"/><rect x="260" y="130" width="6" height="6"/><rect x="268" y="130" width="6" height="6"/><rect x="276" y="130" width="6" height="6"/><rect x="284" y="130" width="6" height="6"/><rect x="292" y="130" width="6" height="6"/>
+          <rect x="60" y="138" width="6" height="6"/><rect x="68" y="138" width="6" height="6"/><rect x="76" y="138" width="6" height="6"/><rect x="84" y="138" width="6" height="6"/><rect x="92" y="138" width="6" height="6"/><rect x="100" y="138" width="6" height="6"/><rect x="108" y="138" width="6" height="6"/><rect x="116" y="138" width="6" height="6"/><rect x="124" y="138" width="6" height="6"/><rect x="132" y="138" width="6" height="6"/><rect x="140" y="138" width="6" height="6"/><rect x="148" y="138" width="6" height="6"/><rect x="156" y="138" width="6" height="6"/><rect x="164" y="138" width="6" height="6"/><rect x="172" y="138" width="6" height="6"/><rect x="180" y="138" width="6" height="6"/><rect x="188" y="138" width="6" height="6"/><rect x="196" y="138" width="6" height="6"/><rect x="204" y="138" width="6" height="6"/><rect x="212" y="138" width="6" height="6"/><rect x="220" y="138" width="6" height="6"/><rect x="228" y="138" width="6" height="6"/><rect x="236" y="138" width="6" height="6"/><rect x="244" y="138" width="6" height="6"/><rect x="252" y="138" width="6" height="6"/><rect x="260" y="138" width="6" height="6"/><rect x="268" y="138" width="6" height="6"/><rect x="276" y="138" width="6" height="6"/><rect x="284" y="138" width="6" height="6"/><rect x="292" y="138" width="6" height="6"/>
+          <rect x="60" y="146" width="6" height="6"/><rect x="68" y="146" width="6" height="6"/><rect x="76" y="146" width="6" height="6"/><rect x="84" y="146" width="6" height="6"/><rect x="92" y="146" width="6" height="6"/><rect x="100" y="146" width="6" height="6"/><rect x="108" y="146" width="6" height="6"/><rect x="116" y="146" width="6" height="6"/><rect x="124" y="146" width="6" height="6"/><rect x="132" y="146" width="6" height="6"/><rect x="140" y="146" width="6" height="6"/><rect x="148" y="146" width="6" height="6"/><rect x="156" y="146" width="6" height="6"/><rect x="164" y="146" width="6" height="6"/><rect x="172" y="146" width="6" height="6"/><rect x="180" y="146" width="6" height="6"/><rect x="188" y="146" width="6" height="6"/><rect x="196" y="146" width="6" height="6"/><rect x="204" y="146" width="6" height="6"/><rect x="212" y="146" width="6" height="6"/><rect x="220" y="146" width="6" height="6"/><rect x="228" y="146" width="6" height="6"/><rect x="236" y="146" width="6" height="6"/><rect x="244" y="146" width="6" height="6"/><rect x="252" y="146" width="6" height="6"/><rect x="260" y="146" width="6" height="6"/><rect x="268" y="146" width="6" height="6"/><rect x="276" y="146" width="6" height="6"/><rect x="284" y="146" width="6" height="6"/><rect x="292" y="146" width="6" height="6"/>
+        </g>
+        <text x="180" y="180" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">... 5천만 개 ...</text>
+        <text x="180" y="200" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#963434" font-weight="700">≈ 3.2 GB</text>
+
+        <text x="180" y="240" text-anchor="middle" font-family="Noto Sans KR" font-size="11" fill="#1a1410">5천만 × 8 byte 포인터 + 객체 오버헤드</text>
+        <text x="180" y="255" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">사용 안 하는 값까지 모두 메모리에 보관</text>
+
+        <!-- 구분선 -->
+        <line x1="370" y1="30" x2="370" y2="270" stroke="#e7e2db" stroke-width="1" stroke-dasharray="4,4"/>
+
+        <!-- 제너레이터 (오른쪽) -->
+        <text x="540" y="55" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="13" fill="#267547">제너레이터</text>
+        <text x="540" y="73" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#706b66">(i**2 for i in range(1, 100_000_001) if i%2==0)</text>
+
+        <!-- 메모리 박스 -->
+        <rect x="400" y="90" width="280" height="120" rx="8" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="2"/>
+        <text x="540" y="115" text-anchor="middle" font-family="Noto Sans KR" font-size="11" fill="#267547" font-weight="700">메모리에 "다음 값 계산법"만 보관</text>
+
+        <!-- 작은 박스 하나 -->
+        <rect x="510" y="135" width="60" height="40" rx="6" fill="#3b9b6e" opacity="0.85"/>
+        <text x="540" y="160" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#fff" font-weight="700">상태</text>
+
+        <text x="540" y="200" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#267547" font-weight="700">≈ 200 bytes</text>
+
+        <text x="540" y="240" text-anchor="middle" font-family="Noto Sans KR" font-size="11" fill="#1a1410">현재 상태 + 다음 계산 코드만</text>
+        <text x="540" y="255" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">필요할 때 next()로 하나씩 계산 (Lazy)</text>
+
+        <!-- 비율 -->
+        <text x="360" y="275" text-anchor="middle" font-family="Noto Sans KR" font-size="11" fill="#1a1410">
+          메모리 비율: 약 <tspan font-weight="700" fill="#c4724e">1600만 배</tspan> 차이
+        </text>
+      </svg>

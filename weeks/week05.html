@@ -41,9 +41,9 @@
 <main id="main-content">
 
 <!-- ==================== WEEK HEADER ==================== -->
-<div class="week-header">
+<div class="week-header" id="header">
   <div class="week-number">WEEK 05</div>
-  <h1 class="week-title">조건문<br>컴퓨터는 어떻게 결정하는가?</h1>
+  <h1 class="week-title">조건문 — 컴퓨터의 결정 메커니즘</h1>
   <p class="week-subtitle">
     ATM은 잔액이 충분한지 어떻게 아는가?<br>
     게임 캐릭터는 체력이 0이면 어떻게 죽는가?<br>
@@ -292,7 +292,7 @@ else:
     </p>
     <p>
       1968년 에츠허르 다익스트라(Dijkstra)는
-      <em>"Go To Statement Considered Harmful"</em>을 발표했습니다.
+      <em>"Go To Statement Considered Harmful"</em>을 발표했습니다<sup class="cite"><a href="#ref-1">[1]</a></sup>.
       이후 <code>if</code>, <code>for</code>, <code>while</code>, <code>def</code>로 대표되는
       <strong>구조적 프로그래밍(Structured Programming)</strong>이 표준이 되었습니다.
     </p>
@@ -303,7 +303,7 @@ else:
     </p>
     <div class="callout callout-info">
       <strong>Python 공식 문서(reference/compound_stmts §8.1):</strong><br>
-      <em>"Compound statements contain (groups of) other statements; they affect or control the execution of those other statements in some way."</em>
+      <em>"Compound statements contain (groups of) other statements; they affect or control the execution of those other statements in some way."</em><sup class="cite"><a href="#ref-2">[2]</a></sup>
     </div>
   </div>
 
@@ -652,6 +652,10 @@ print(f"차이: {t2/t1:.1f}배")</code></pre>
 <section id="truthiness-condition">
   <h2>Truthiness를 조건으로 활용하기</h2>
 
+  <div class="arch-diagram">
+    <img src="../book/diagrams/week05-truthiness-flow.svg" alt="bool(x) 평가 절차: __bool__ → __len__ → 기본값 True" class="diagram-img">
+  </div>
+
   <!-- 초급 -->
   <div class="level-section elementary">
     <span class="level-badge level-elementary">초급</span>
@@ -927,7 +931,7 @@ greet("")         # 안녕하세요, 게스트님!</code></pre>
     <div class="callout callout-warning">
       <strong>🚨 흔한 실수 — <code>and</code>/<code>or</code>는 True/False를 반환하지 않습니다:</strong>
       <div class="code-block">
-<pre><code class="language-python" tabindex="0"># and는 첫 번째 거짓값, 없으면 마지막 값 반환
+<pre><code class="language-python" tabindex="0"># and은 첫 번째 거짓값, 없으면 마지막 값 반환
 print(1 and 2)        # 2  (1은 참 → 다음으로)
 print(0 and 2)        # 0  (0은 거짓 → 즉시 반환)
 print("" and "hello") # "" (빈 문자열은 거짓)
@@ -1582,8 +1586,8 @@ dis.dis(check)</code></pre>
     </ol>
     <div class="callout callout-info">
       <strong>Python 공식 문서(reference/compound_stmts §8.6 — match):</strong><br>
-      <em>"A match statement takes an expression and compares its value to successive patterns given as one or more case blocks."</em>
-      클래스 패턴은 <code>__match_args__</code>를 통해 위치 인자를 지원한다 (PEP 634 §Class Patterns).
+      <em>"A match statement takes an expression and compares its value to successive patterns given as one or more case blocks."</em><sup class="cite"><a href="#ref-2">[2]</a></sup>
+      클래스 패턴은 <code>__match_args__</code>를 통해 위치 인자를 지원한다 (PEP 634 §Class Patterns)<sup class="cite"><a href="#ref-3">[3]</a></sup>.
     </div>
   </div>
 </section>
@@ -1605,7 +1609,7 @@ x = 10
 if x == 10:    # 올바름
     print("x는 10")
 
-# 버그 2: None을 == 로 비교
+# 버그 2: None를 == 로 비교
 result = None
 # AI가 만든 코드:
 if result == None:     # 동작하지만 관례에 어긋남
@@ -1894,7 +1898,7 @@ print(process_order({"items": ["책"], "payment": "approved"}))</code></pre>
 #            5 → "추움"</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -1929,7 +1933,7 @@ print("윤년" if is_leap else "평년")
 # 테스트: 2000 → 윤년, 1900 → 평년, 2024 → 윤년, 2023 → 평년</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -1968,7 +1972,7 @@ user_pw = input("비밀번호: ")
 # 조건문 작성 (ID 확인 → 비밀번호 확인 → 로그인 성공)</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2017,12 +2021,12 @@ print(f"result2: {result2}")
 # 예측: result1에서 어떤 함수가 호출? result2에서는?</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
 <pre><code class="language-python" tabindex="0"># result1: check_a()만 호출됨
-# → check_a()가 False를 반환하면 and는 즉시 False 확정
+# → check_a()가 False를 반환하면 and은 즉시 False 확정
 # → check_b(), check_c()는 평가 안 됨
 # 출력: "A 평가됨" / result1: False
 
@@ -2034,7 +2038,7 @@ print(f"result2: {result2}")
 # 핵심: and/or는 bool이 아니라 피연산자 값 자체를 반환한다.
 # check_a() and check_b() → check_a()가 Falsy이면 check_a()의 반환값(False) 그대로 반환
 # check_b() or check_a() → check_b()가 Truthy이면 check_b()의 반환값(True) 그대로 반환
-# 즉, and는 첫 번째 Falsy 값을, or는 첫 번째 Truthy 값을 반환한다.</code></pre>
+# 즉, and은 첫 번째 Falsy 값을, or는 첫 번째 Truthy 값을 반환한다.</code></pre>
 </div>
         </div>
       </div>
@@ -2062,7 +2066,7 @@ print(handle_response(201, {"id": "abc123"}))
 print(handle_response(404, {}))</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2105,7 +2109,7 @@ print(handle_response(404, {}))</code></pre>
 # None인 경우 "주소 정보 없음" 반환</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2172,7 +2176,7 @@ for v in [None, True, False, 42, -3, 0, "hello"]:
     print(f"{repr(v):15} → {categorize(v)}")</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2232,7 +2236,7 @@ class BothMethods:
       CPython 소스(<code>Objects/object.c</code>)에서 해당 처리를 찾아보세요.
     </p>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2291,7 +2295,7 @@ dis.dis(version_b)
 # 3. 성능 차이가 있는가? 있다면 왜인가?</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2345,7 +2349,7 @@ match v:
 # 3. MATCH_CLASS 바이트코드에서 __match_args__를 어떻게 활용하는가?</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2386,12 +2390,12 @@ match v:
         </tr>
         <tr>
           <td>Truthiness</td>
-          <td>0, "", [], None은 Falsy. 나머지는 Truthy. __bool__ → __len__ 순서</td>
+          <td>0, "", [], None는 Falsy. 나머지는 Truthy. __bool__ → __len__ 순서</td>
           <td>Boolean context, PyObject_IsTrue</td>
         </tr>
         <tr>
           <td>단락 평가</td>
-          <td>and는 False 발견 시, or는 True 발견 시 나머지 평가 중단</td>
+          <td>and은 False 발견 시, or는 True 발견 시 나머지 평가 중단</td>
           <td>Short-circuit Evaluation</td>
         </tr>
         <tr>
@@ -2446,91 +2450,91 @@ match v:
   <h2>용어 사전 (22개)</h2>
   <div class="glossary-grid">
     <div class="glossary-item">
-      <h4>Conditional Statement (조건문)</h4>
+      <h3>Conditional Statement (조건문)</h3>
       <p>조건의 참/거짓에 따라 다른 코드 블록을 실행하는 제어 구조. Python의 <code>if/elif/else</code>.</p>
     </div>
     <div class="glossary-item">
-      <h4>Branch (분기)</h4>
+      <h3>Branch (분기)</h3>
       <p>조건문에 의해 생성되는 실행 경로의 갈림길. 조건이 참이면 한 쪽, 거짓이면 다른 쪽.</p>
     </div>
     <div class="glossary-item">
-      <h4>Compound Statement (복합문)</h4>
+      <h3>Compound Statement (복합문)</h3>
       <p>다른 문(statement)을 포함하는 문. <code>if</code>, <code>for</code>, <code>def</code>, <code>class</code> 등.</p>
     </div>
     <div class="glossary-item">
-      <h4>Suite (블록)</h4>
+      <h3>Suite (블록)</h3>
       <p>Python 원서 용어. 들여쓰기로 구분된 문의 묶음. if/for/def 등의 본문.</p>
     </div>
     <div class="glossary-item">
-      <h4>Clause (절)</h4>
+      <h3>Clause (절)</h3>
       <p>if 문의 구성 요소. <code>if</code> 절, <code>elif</code> 절, <code>else</code> 절.</p>
     </div>
     <div class="glossary-item">
-      <h4>Truthiness (참같음 — 개념)</h4>
+      <h3>Truthiness (참같음 — 개념)</h3>
       <p>불리언 컨텍스트에서 참/거짓을 판단하는 개념적 속성. __bool__ → __len__ 순으로 판단하는 프로토콜 자체를 가리킨다.</p>
     </div>
     <div class="glossary-item">
-      <h4>Falsy (거짓같음)</h4>
+      <h3>Falsy (거짓같음)</h3>
       <p>불리언 컨텍스트에서 False로 평가되는 값. <code>False</code>, <code>0</code>, <code>""</code>, <code>[]</code>, <code>None</code> 등.</p>
     </div>
     <div class="glossary-item">
-      <h4>Truthy (참같은 값)</h4>
+      <h3>Truthy (참같은 값)</h3>
       <p>bool 컨텍스트에서 True로 평가되는 개별 값. Falsy가 아닌 모든 객체. Truthiness는 이 판단 체계 자체를, Truthy는 그 판단 결과 참인 개별 값을 가리킨다.</p>
     </div>
     <div class="glossary-item">
-      <h4>Short-Circuit Evaluation (단락 평가)</h4>
+      <h3>Short-Circuit Evaluation (단락 평가)</h3>
       <p>and/or 연산에서 결과가 확정되면 나머지 피연산자 평가를 중단하는 동작.</p>
     </div>
     <div class="glossary-item">
-      <h4>Guard Clause (경비 조항)</h4>
+      <h3>Guard Clause (경비 조항)</h3>
       <p>함수 시작 부분에서 실패 조건을 먼저 처리하고 early return해 중첩을 줄이는 패턴.</p>
     </div>
     <div class="glossary-item">
-      <h4>Early Return (조기 반환)</h4>
+      <h3>Early Return (조기 반환)</h3>
       <p>함수 끝이 아닌 중간에 return을 사용해 Guard Clause를 구현하는 기법.</p>
     </div>
     <div class="glossary-item">
-      <h4>Conditional Expression (조건식)</h4>
+      <h3>Conditional Expression (조건식)</h3>
       <p><code>A if 조건 else B</code> 형태의 표현식. 값을 반환하므로 대입/인자/리스트 안에 사용 가능.</p>
     </div>
     <div class="glossary-item">
-      <h4>Ternary Operator (삼항 연산자)</h4>
+      <h3>Ternary Operator (삼항 연산자)</h3>
       <p>세 피연산자를 갖는 연산자. Python의 조건식 <code>A if C else B</code>가 해당.</p>
     </div>
     <div class="glossary-item">
-      <h4>Structural Pattern Matching (구조적 패턴 매칭)</h4>
+      <h3>Structural Pattern Matching (구조적 패턴 매칭)</h3>
       <p>Python 3.10 PEP 634. match/case로 값의 구조(타입, 속성, 시퀀스)를 동시에 매칭.</p>
     </div>
     <div class="glossary-item">
-      <h4>Wildcard Pattern (와일드카드 패턴)</h4>
+      <h3>Wildcard Pattern (와일드카드 패턴)</h3>
       <p>match/case에서 <code>case _:</code>. 어떤 값도 매칭. 변수로 캡처하지 않음.</p>
     </div>
     <div class="glossary-item">
-      <h4>Capture Pattern (캡처 패턴)</h4>
+      <h3>Capture Pattern (캡처 패턴)</h3>
       <p>match/case에서 <code>case x:</code>처럼 변수명으로 값을 캡처하는 패턴.</p>
     </div>
     <div class="glossary-item">
-      <h4>OR Pattern (OR 패턴)</h4>
+      <h3>OR Pattern (OR 패턴)</h3>
       <p>match/case에서 <code>case A | B | C:</code>처럼 여러 패턴 중 하나와 매칭.</p>
     </div>
     <div class="glossary-item">
-      <h4>Class Pattern (클래스 패턴)</h4>
+      <h3>Class Pattern (클래스 패턴)</h3>
       <p>match/case에서 <code>case Point(x=0):</code>처럼 타입과 속성을 동시에 매칭.</p>
     </div>
     <div class="glossary-item">
-      <h4>POP_JUMP_IF_FALSE</h4>
+      <h3>POP_JUMP_IF_FALSE</h3>
       <p>CPython 바이트코드. 스택 top을 pop하고, False이면 목적 주소로 점프. if의 핵심 명령어.</p>
     </div>
     <div class="glossary-item">
-      <h4>MATCH_CLASS</h4>
+      <h3>MATCH_CLASS</h3>
       <p>CPython 바이트코드 (Python 3.10+). isinstance 체크 + 속성 추출. 클래스 패턴 구현.</p>
     </div>
     <div class="glossary-item">
-      <h4>Cyclomatic Complexity (순환 복잡도)</h4>
+      <h3>Cyclomatic Complexity (순환 복잡도)</h3>
       <p>코드의 독립적 실행 경로 수. 분기(if, elif, while 등) 하나당 +1. 10 이하 권장.</p>
     </div>
     <div class="glossary-item">
-      <h4>Branch Predictor (분기 예측기)</h4>
+      <h3>Branch Predictor (분기 예측기)</h3>
       <p>CPU 하드웨어. 조건 분기의 결과를 미리 예측해 파이프라인을 채움. 예측 실패 시 성능 저하.</p>
     </div>
   </div>
@@ -2563,6 +2567,37 @@ for score in scores:        # 다음 주에!
       그리고 <strong>리스트는 컴퓨터 메모리에서 어떻게 생겼는가?</strong>
     </p>
   </div>
+</section>
+
+<!-- ==================== 참고문헌 ==================== -->
+<section id="references" class="references-section">
+  <h2>참고문헌</h2>
+  <p class="references-intro">
+    본 챕터의 기술적 주장은 모두 아래 1차 출처와 대조하여 검증되었습니다.
+    URL은 모두 2026년 5월 1일 마지막 접속 기준입니다.
+  </p>
+  <ol class="references-list">
+    <li id="ref-1">
+      <span class="ref-title">Edsger W. Dijkstra. <em>"Go To Statement Considered Harmful."</em> Communications of the ACM, Vol. 11, No. 3, March 1968, pp. 147–148.</span>
+      <span class="ref-meta">cs.utexas.edu/~EWD/transcriptions/EWD02xx/EWD215.html — 구조적 프로그래밍 운동의 시발점이 된 글. <code>goto</code>를 사용한 비구조적 흐름 제어를 비판하고 if/while/for 등 구조적 제어문 사용을 주장.</span>
+    </li>
+    <li id="ref-2">
+      <span class="ref-title">Python Software Foundation. <em>Python 3.14 Language Reference — 8. Compound statements.</em></span>
+      <span class="ref-meta">docs.python.org/3/reference/compound_stmts.html (한국어판: <code>reference/compound_stmts.txt</code>) — §8.1 if 문, §8.6 match 문의 정확한 문법 정의.</span>
+    </li>
+    <li id="ref-3">
+      <span class="ref-title">Brandt Bucher, Daniel F Moisset, Tobias Kohn, Ivan Levkivskyi, Guido van Rossum, Talin. <em>PEP 634 — Structural Pattern Matching: Specification.</em> Python.org, 2020.</span>
+      <span class="ref-meta">peps.python.org/pep-0634/ — Python 3.10 도입. 패턴 종류: 리터럴/캡처/와일드카드/시퀀스/매핑/클래스/OR/AS/Guard. <code>__match_args__</code>로 위치 인자 패턴 지원.</span>
+    </li>
+    <li id="ref-4">
+      <span class="ref-title">Guido van Rossum, Raymond Hettinger. <em>PEP 308 — Conditional Expressions.</em> Python.org, 2003.</span>
+      <span class="ref-meta">peps.python.org/pep-0308/ — Python 2.5에 도입된 삼항 표현식 <code>a if cond else b</code>. C의 <code>cond ? a : b</code>와 달리 영어 어순(value if condition).</span>
+    </li>
+    <li id="ref-5">
+      <span class="ref-title">CPython source — <code>Python/ceval.c</code> (POP_JUMP_IF_FALSE, JUMP_FORWARD, MATCH_CLASS, MATCH_SEQUENCE), <code>Objects/object.c</code> (PyObject_IsTrue + nb_bool 예외 전파).</span>
+      <span class="ref-meta">github.com/python/cpython — if/elif/else, 조건식, match/case의 모든 바이트코드 처리, nb_bool에서 -1 반환 시 예외 전파 메커니즘의 1차 출처.</span>
+    </li>
+  </ol>
 </section>
 
 </main>

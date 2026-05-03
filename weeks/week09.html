@@ -41,9 +41,9 @@
 <main id="main-content">
 
 <!-- ==================== WEEK HEADER ==================== -->
-<div class="week-header">
+<div class="week-header" id="header">
   <div class="week-number">WEEK 09</div>
-  <h1 class="week-title">함수 — 왜 함수가<br>존재하는가</h1>
+  <h1 class="week-title">함수 — 왜 함수가 존재하는가</h1>
   <p class="week-subtitle">
     같은 코드를 세 번 복붙했습니다. 버그를 고치려면 세 곳을 다 고쳐야 합니다.<br>
     <strong>함수는 이름을 붙인 코드 블록</strong>이 아닙니다 —<br>
@@ -322,17 +322,17 @@ else:
 </div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
-4은 짝수
-7은 홀수
-12은 짝수
+4: 짝수
+7: 홀수
+12: 짝수
     </div>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0"># ✅ 함수로 — 한 번 만들고 이름만 호출
 def check_even(num):
     if num % 2 == 0:
-        print(f"{num}은 짝수")
+        print(f"{num}: 짝수")
     else:
-        print(f"{num}은 홀수")
+        print(f"{num}: 홀수")
 
 check_even(4)
 check_even(7)
@@ -340,9 +340,9 @@ check_even(12)</code></pre>
 </div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
-4은 짝수
-7은 홀수
-12은 짝수
+4: 짝수
+7: 홀수
+12: 짝수
     </div>
     <div class="callout callout-tip">
       <strong>DRY 원칙 (Don't Repeat Yourself):</strong><br>
@@ -425,7 +425,7 @@ print(primes)</code></pre>
     <span class="level-badge level-advanced">고급</span>
     <h3>Python 공식 문서의 funcdef 문법과 함수의 3가지 역할</h3>
     <p>
-      Python 공식 문서(reference/compound_stmts)의 함수 정의 BNF:
+      Python 공식 문서(reference/compound_stmts)의 함수 정의 BNF<sup class="cite"><a href="#ref-1">[1]</a></sup>:
     </p>
     <pre><code class="language-text">funcdef        ::= [decorators] "def" funcname [type_params]
                    "(" [parameter_list] ")" ["->" expression] ":" suite
@@ -493,7 +493,7 @@ dis.dis(make_adder)</code></pre>
       <div class="output-label">make_adder 핵심 바이트코드 (Python 3.12):</div>
   LOAD_CLOSURE    x                      ← 자유변수 x의 cell을 스택에 로드
   BUILD_TUPLE     1                      ← cell 1개를 튜플로 묶음
-  LOAD_CONST      &lt;code object adder&gt;   ← code object를 상수로 로드
+  LOAD_CONST      &lt;code object adder&gt;   ← code object을 상수로 로드
   MAKE_FUNCTION   8 (closure)            ← 클로저 플래그: cell 튜플을 포함해 생성
   STORE_FAST      adder                  ← 이름 'adder'에 바인딩
   LOAD_FAST       adder
@@ -515,7 +515,7 @@ add10 = make_adder(10)
 
 print(type(add5))         # &lt;class 'function'&gt;
 print(add5 is add10)      # False — 호출마다 새 PyFunctionObject
-print(add5.__code__ is add10.__code__)  # True — code object는 공유</code></pre>
+print(add5.__code__ is add10.__code__)  # True — code object은 공유</code></pre>
 </div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
@@ -575,7 +575,7 @@ def add(a, b):
 result = add(3, 4)
 print(result)         # 7
 
-# return 없음: None을 반환
+# return 없음: None를 반환
 def say_hi():
     print("Hi!")
 
@@ -808,10 +808,10 @@ power
 c1 = make_counter(0)
 c2 = make_counter(10)
 
-# code object는 공유 — 같은 바이트코드
+# code object은 공유 — 같은 바이트코드
 print(c1.__code__ is c2.__code__)   # True
 
-# function object는 별개 — 각자의 closure(상태) 보유
+# function object은 별개 — 각자의 closure(상태) 보유
 print(c1 is c2)                     # False
 print(c1())                         # 1
 print(c2())                         # 11</code></pre>
@@ -1036,6 +1036,10 @@ True
 <!-- ==================== 05. 스코프와 LEGB Rule ==================== -->
 <section id="scope-legb">
   <h2>스코프와 LEGB Rule — 이름을 찾는 순서</h2>
+
+  <div class="arch-diagram">
+    <img src="../book/diagrams/week09-legb-call-stack.svg" alt="LEGB 동심원(Local→Enclosing→Global→Built-in)과 factorial(3) Call Stack 흐름" class="diagram-img">
+  </div>
 
   <!-- 초급 -->
   <div class="level-section elementary">
@@ -1439,7 +1443,7 @@ print(append_to(3))   # [1, 2, 3] ← 같은 리스트를 계속 공유
 # 왜? 기본값은 함수 객체에 저장됨 (호출마다 새로 만들지 않음)
 print(append_to.__defaults__)   # ([1, 2, 3],) ← 누적된 상태!
 
-# ✅ 해결: None을 기본값으로 사용
+# ✅ 해결: None를 기본값으로 사용
 def append_to_safe(element, lst=None):
     if lst is None:
         lst = []   # 호출마다 새 리스트 생성
@@ -2090,7 +2094,7 @@ print(c.__closure__[0].cell_contents)   # 2</code></pre>
     </div>
     <ol>
       <li>
-        <strong>return이 있는가?</strong> — return을 빠뜨리면 None을 반환합니다.
+        <strong>return이 있는가?</strong> — return을 빠뜨리면 None를 반환합니다.
         <div class="code-block">
 <pre><code class="language-python" tabindex="0"># ❌ AI가 자주 빠뜨리는 return
 def get_squared(x):
@@ -2308,16 +2312,16 @@ print(result)   # 12 (3 → 6 → 12)</code></pre>
 # LSP 관점에서의 함수 시그니처
 # 올바른 예: 더 넓은 타입을 받아 더 좁은 타입을 반환 (공변 반환)
 def safe_parse(value: Union[int, str]) -> int:
-    """int 또는 str을 받아 항상 int를 반환."""
+    """int 또는 str을 받아 항상 int을 반환."""
     if isinstance(value, str):
         return int(value)
     return value
 
 # 잘못된 예: 반환 타입이 약속보다 더 광범위
-# def bad_parse(value: int) -> Union[int, None]:  # None은 호출자가 기대 안 함
+# def bad_parse(value: int) -> Union[int, None]:  # None는 호출자가 기대 안 함
 #     if value > 0:
 #         return value
-#     # return None은 암묵적 — 시그니처 위반
+#     # return None는 암묵적 — 시그니처 위반
 
 print(safe_parse(42))    # 42
 print(safe_parse("99"))  # 99</code></pre>
@@ -2373,7 +2377,7 @@ dis.dis(outer_fn(5))
 
     <h3>실습 2 — 클로저 상태 추적</h3>
     <p>
-      클로저가 상태를 어떻게 유지하는지 cell object를 통해 직접 확인하세요.
+      클로저가 상태를 어떻게 유지하는지 cell object을 통해 직접 확인하세요.
     </p>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0">def make_accumulator(initial=0):
@@ -2445,7 +2449,7 @@ print(x)               # 어디서? — G (Global)
     <div class="code-block">
 <pre><code class="language-python" tabindex="0">def find_max(numbers):
     """리스트에서 가장 큰 값을 반환.
-    빈 리스트면 None을 반환.
+    빈 리스트면 None를 반환.
     """
     # 구현하세요
     pass
@@ -2455,7 +2459,7 @@ print(find_max([42]))                         # 42
 print(find_max([]))                           # None</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2488,7 +2492,7 @@ print(reverse_string("파이썬"))    # "썬이파"
 print(reverse_string(""))          # ""</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2518,7 +2522,7 @@ print(filter_evens([1, 3, 5, 7]))           # []
 print(filter_evens([]))                     # []</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2548,7 +2552,7 @@ print(convert_temp(32, "C"))   # 0.0   (화씨 → 섭씨)
 print(convert_temp(0))         # 32.0  (섭씨 → 화씨)</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2580,7 +2584,7 @@ print(my_map(str.upper, ["hello", "world"]))       # ['HELLO', 'WORLD']
 print(my_map(lambda x: x * 2, []))                # []</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2618,7 +2622,7 @@ print(c2())   # 10
 print(c2())   # 15</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2653,7 +2657,7 @@ print(recursive_sum([10]))              # 10
 print(recursive_sum([]))               # 0</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2694,7 +2698,7 @@ print(f"결과: {result}")
 print(slow_sum.__name__)   # 'slow_sum' — wraps 덕분에 보존</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2752,7 +2756,7 @@ dis.dis(outer_fn())
 # Q3. UnboundLocalError가 발생하는 상황을 만들어 바이트코드를 확인하세요.</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2777,7 +2781,7 @@ dis.dis(bad)   # LOAD_FAST 0(x) → 할당 전이라 오류</code></pre>
     <p><code>compose(f, g)</code> 함수를 구현하세요. <code>compose(f, g)(x)</code>는 <code>f(g(x))</code>와 같아야 합니다.<br>
     그리고 <code>pipe(x, f1, f2, f3)</code> 함수를 구현하세요. <code>f3(f2(f1(x)))</code>와 같아야 합니다.</p>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2841,7 +2845,7 @@ cube   = make_power(3)
 pass</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2901,7 +2905,7 @@ for stat in top_stats[:3]:
 # Q3. sys.getrecursionlimit() = 1000인 이유는?</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2921,7 +2925,7 @@ for stat in top_stats[:3]:
   <div class="exercise-block level-expert">
     <span class="level-badge level-expert">전공자 13</span>
     <h3>클로저 cell object 분석</h3>
-    <p>클로저의 cell object와 LOAD_DEREF 바이트코드를 직접 분석하세요:</p>
+    <p>클로저의 cell object과 LOAD_DEREF 바이트코드를 직접 분석하세요:</p>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0">import dis
 
@@ -2956,7 +2960,7 @@ print("수정 버전:", [f(10) for f in good])   # [0, 10, 20, 30]
 pass</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -3053,123 +3057,123 @@ def outer():
   <h2>용어 사전 (30개)</h2>
   <div class="glossary-grid">
     <div class="glossary-item">
-      <h4>함수 (Function)</h4>
+      <h3>함수 (Function)</h3>
       <p>이름이 붙은 코드 블록. Python에서는 First-class Object로, 변수에 저장하고 인수로 전달할 수 있음.</p>
     </div>
     <div class="glossary-item">
-      <h4>매개변수 (Parameter)</h4>
+      <h3>매개변수 (Parameter)</h3>
       <p>함수를 <em>정의</em>할 때 괄호 안에 쓰는 이름. <code>def f(x):</code>에서 <code>x</code>.</p>
     </div>
     <div class="glossary-item">
-      <h4>인수 (Argument)</h4>
+      <h3>인수 (Argument)</h3>
       <p>함수를 <em>호출</em>할 때 전달하는 실제 값. <code>f(42)</code>에서 <code>42</code>.</p>
     </div>
     <div class="glossary-item">
-      <h4>return</h4>
+      <h3>return</h3>
       <p>함수 실행을 즉시 종료하고 값을 반환. return 없으면 None 반환. 함수 어디서든 사용 가능.</p>
     </div>
     <div class="glossary-item">
-      <h4>docstring</h4>
+      <h3>docstring</h3>
       <p>함수 def 바로 다음에 오는 삼중따옴표 문자열. <code>__doc__</code> 속성에 저장. <code>help()</code>로 확인.</p>
     </div>
     <div class="glossary-item">
-      <h4>DRY 원칙</h4>
+      <h3>DRY 원칙</h3>
       <p>Don't Repeat Yourself. 같은 코드를 두 번 쓰지 마라. 함수가 존재하는 핵심 이유.</p>
     </div>
     <div class="glossary-item">
-      <h4>First-class Object</h4>
+      <h3>First-class Object</h3>
       <p>변수에 저장, 인수로 전달, 반환값으로 사용할 수 있는 객체. Python 함수는 First-class.</p>
     </div>
     <div class="glossary-item">
-      <h4>고차 함수 (Higher-order Function)</h4>
+      <h3>고차 함수 (Higher-order Function)</h3>
       <p>함수를 인수로 받거나 함수를 반환하는 함수. map, filter, sorted(key=), 데코레이터.</p>
     </div>
     <div class="glossary-item">
-      <h4>람다 (lambda)</h4>
+      <h3>람다 (lambda)</h3>
       <p>이름 없는 한 줄짜리 함수. <code>lambda x: x*2</code>. 표현식만 가능, 문(statement) 불가.</p>
     </div>
     <div class="glossary-item">
-      <h4>스코프 (Scope)</h4>
+      <h3>스코프 (Scope)</h3>
       <p>변수 이름이 유효한 코드 범위. Python은 Lexical Scoping — 소스 코드 구조에 의해 결정.</p>
     </div>
     <div class="glossary-item">
-      <h4>LEGB Rule</h4>
+      <h3>LEGB Rule</h3>
       <p>Python의 이름 탐색 순서: Local → Enclosing → Global → Built-in.</p>
     </div>
     <div class="glossary-item">
-      <h4>지역 변수 (Local Variable)</h4>
+      <h3>지역 변수 (Local Variable)</h3>
       <p>함수 안에서 정의된 변수. 함수 외부에서 접근 불가. LOAD_FAST로 접근.</p>
     </div>
     <div class="glossary-item">
-      <h4>전역 변수 (Global Variable)</h4>
+      <h3>전역 변수 (Global Variable)</h3>
       <p>모듈(파일) 수준에서 정의된 변수. 모든 함수에서 읽기 가능. LOAD_GLOBAL로 접근.</p>
     </div>
     <div class="glossary-item">
-      <h4>Enclosing Scope</h4>
+      <h3>Enclosing Scope</h3>
       <p>중첩 함수에서 바깥 함수의 스코프. 지역도 전역도 아닌 중간 단계. LEGB의 E.</p>
     </div>
     <div class="glossary-item">
-      <h4>Built-in Scope</h4>
+      <h3>Built-in Scope</h3>
       <p>Python이 기본 제공하는 이름들(print, len, range 등)이 있는 스코프. LEGB의 B.</p>
     </div>
     <div class="glossary-item">
-      <h4>global 키워드</h4>
+      <h3>global 키워드</h3>
       <p>함수 안에서 전역 변수를 수정할 때 선언. <code>global x</code>. 없으면 UnboundLocalError 발생 가능.</p>
     </div>
     <div class="glossary-item">
-      <h4>nonlocal 키워드</h4>
+      <h3>nonlocal 키워드</h3>
       <p>중첩 함수에서 Enclosing 변수를 수정할 때 선언. <code>nonlocal x</code>. 클로저 상태 변경에 필수.</p>
     </div>
     <div class="glossary-item">
-      <h4>Pass by Object Reference</h4>
+      <h3>Pass by Object Reference</h3>
       <p>Python의 인자 전달 방식. 객체의 참조(포인터)를 값으로 전달. Call by Value도 Call by Reference도 아님.</p>
     </div>
     <div class="glossary-item">
-      <h4>기본값 매개변수 (Default Parameter)</h4>
+      <h3>기본값 매개변수 (Default Parameter)</h3>
       <p>함수 정의 시 기본값을 지정하는 매개변수. <code>def f(x, y=0):</code>. 기본값은 정의 시 단 한 번만 평가.</p>
     </div>
     <div class="glossary-item">
-      <h4>재귀 (Recursion)</h4>
+      <h3>재귀 (Recursion)</h3>
       <p>함수가 자기 자신을 호출하는 기법. base case와 recursive case가 필수. 호출마다 새 frame 생성.</p>
     </div>
     <div class="glossary-item">
-      <h4>base case</h4>
+      <h3>base case</h3>
       <p>재귀를 멈추는 조건. 더 이상 자기 자신을 호출하지 않고 바로 값을 반환. 없으면 무한 재귀.</p>
     </div>
     <div class="glossary-item">
-      <h4>Call Stack</h4>
+      <h3>Call Stack</h3>
       <p>함수 호출 정보를 저장하는 스택. 각 호출마다 PyFrameObject를 push. return 시 pop.</p>
     </div>
     <div class="glossary-item">
-      <h4>클로저 (Closure)</h4>
+      <h3>클로저 (Closure)</h3>
       <p>내부 함수 + 외부 함수의 자유 변수 환경. 외부 함수가 사라져도 자유 변수를 기억.</p>
     </div>
     <div class="glossary-item">
-      <h4>순수 함수 (Pure Function)</h4>
+      <h3>순수 함수 (Pure Function)</h3>
       <p>같은 입력이면 항상 같은 출력. 외부 상태를 읽거나 쓰지 않음. 테스트, 예측이 쉬움.</p>
     </div>
     <div class="glossary-item">
-      <h4>부작용 (Side Effect)</h4>
+      <h3>부작용 (Side Effect)</h3>
       <p>함수가 반환값 외에 외부 상태(전역 변수, 파일, DB 등)를 변경하는 행위.</p>
     </div>
     <div class="glossary-item">
-      <h4>MAKE_FUNCTION</h4>
-      <p>CPython 바이트코드. def 문이 실행될 때 PyFunctionObject를 생성. code object를 참조.</p>
+      <h3>MAKE_FUNCTION</h3>
+      <p>CPython 바이트코드. def 문이 실행될 때 PyFunctionObject를 생성. code object을 참조.</p>
     </div>
     <div class="glossary-item">
-      <h4>LOAD_FAST</h4>
+      <h3>LOAD_FAST</h3>
       <p>지역 변수를 스택에 push하는 바이트코드. PyFrameObject의 f_localsplus 배열에서 인덱스로 직접 접근. 가장 빠름.</p>
     </div>
     <div class="glossary-item">
-      <h4>LOAD_GLOBAL</h4>
+      <h3>LOAD_GLOBAL</h3>
       <p>전역/내장 변수를 스택에 push하는 바이트코드. f_globals 딕셔너리에서 탐색.</p>
     </div>
     <div class="glossary-item">
-      <h4>LOAD_DEREF</h4>
+      <h3>LOAD_DEREF</h3>
       <p>클로저(Enclosing)의 cell object에서 값을 읽는 바이트코드. 자유 변수(free variable) 접근에 사용.</p>
     </div>
     <div class="glossary-item">
-      <h4>TCO (Tail Call Optimization)</h4>
+      <h3>TCO (Tail Call Optimization)</h3>
       <p>꼬리 위치 재귀 호출을 JUMP로 변환해 스택 프레임을 재사용하는 최적화. Scheme·Haskell 등이 지원. Python은 traceback 가독성·디버깅 가능성을 이유로 의도적으로 미지원.</p>
     </div>
   </div>
@@ -3223,6 +3227,34 @@ print(phone_book["지민"])   # "010-1111"</code></pre>
     <a href="https://docs.python.org/3/library/dis.html" target="_blank">dis — Bytecode disassembler</a> ·
     <a href="https://peps.python.org/pep-3107/" target="_blank">PEP 3107: Function Annotations</a>
   </p>
+</section>
+
+<!-- ==================== 참고문헌 ==================== -->
+<section id="references" class="references-section">
+  <h2>참고문헌</h2>
+  <p class="references-intro">본 챕터의 기술적 주장은 모두 아래 1차 출처와 대조하여 검증되었습니다. URL은 모두 2026년 5월 1일 마지막 접속 기준입니다.</p>
+  <ol class="references-list">
+    <li id="ref-1">
+      <span class="ref-title">Python Software Foundation. <em>Python 3.14 Language Reference — 8.7 Function definitions.</em></span>
+      <span class="ref-meta">docs.python.org/3/reference/compound_stmts.html#function-definitions — funcdef BNF, decorators, type_params, parameter_list, return type annotation.</span>
+    </li>
+    <li id="ref-2">
+      <span class="ref-title">Python Software Foundation. <em>Python 3.14 Language Reference — 4. Execution model: Naming and binding.</em></span>
+      <span class="ref-meta">docs.python.org/3/reference/executionmodel.html#naming-and-binding — LEGB Rule (Local, Enclosing, Global, Built-in).</span>
+    </li>
+    <li id="ref-3">
+      <span class="ref-title">Collin Winter, Tony Lownds. <em>PEP 3107 — Function Annotations.</em> Python.org, 2006.</span>
+      <span class="ref-meta">peps.python.org/pep-3107/ — Python 3.0 도입. 함수 매개변수와 반환값에 임의 표현식 어노테이션. <code>__annotations__</code> 딕셔너리 저장.</span>
+    </li>
+    <li id="ref-4">
+      <span class="ref-title">Mark Shannon. <em>PEP 659 — Specializing Adaptive Interpreter.</em> Python.org, 2021.</span>
+      <span class="ref-meta">peps.python.org/pep-0659/ — Python 3.11+. CALL 바이트코드 도입(CALL_FUNCTION 대체) 및 자동 특화.</span>
+    </li>
+    <li id="ref-5">
+      <span class="ref-title">CPython source — <code>Objects/funcobject.c</code> (PyFunctionObject), <code>Objects/codeobject.c</code> (PyCodeObject), <code>Python/ceval.c</code> (CALL, MAKE_FUNCTION).</span>
+      <span class="ref-meta">github.com/python/cpython — code object과 function object의 분리, MAKE_FUNCTION 클로저 플래그(8), CALL 바이트코드 처리의 1차 출처.</span>
+    </li>
+  </ol>
 </section>
 
 </main>

@@ -1,0 +1,1904 @@
+/* ================================================================
+   PyWhy — Print / Ebook PDF Stylesheet
+   Target: B5 (176×250mm), Korean tech-book style
+   Engine: WeasyPrint
+   ================================================================ */
+
+/* --- Page geometry --- */
+@page {
+  size: B5 portrait;
+  margin: 16mm 14mm 18mm 14mm;
+
+  @bottom-center {
+    content: counter(page);
+    font-family: 'Noto Sans CJK KR', sans-serif;
+    font-size: 9pt;
+    color: #706b66;
+  }
+  @top-right {
+    content: string(chapter-title);
+    font-family: 'Noto Sans CJK KR', sans-serif;
+    font-size: 8.5pt;
+    letter-spacing: 0.05em;
+    color: #a8a29e;
+  }
+}
+
+/* Front matter pages — no page numbers, no running headers */
+@page cover {
+  margin: 0;
+  @bottom-center { content: none; }
+  @top-right { content: none; }
+}
+@page copyright {
+  size: B5 portrait;
+  margin: 30mm 24mm;
+  @bottom-center { content: none; }
+  @top-right { content: none; }
+}
+@page chapter {
+  margin: 0;
+  @bottom-center { content: none; }
+  @top-right { content: none; }
+}
+
+@page :first {
+  margin: 0;
+  @bottom-center { content: none; }
+  @top-right { content: none; }
+}
+
+/* --- Force light theme; override Google Fonts dependency --- */
+:root, [data-theme="light"], [data-theme="dark"] {
+  --bg: #ffffff;
+  --bg-secondary: #faf7f2;
+  --bg-elevated: #ffffff;
+  --text: #1a1410;
+  --text-primary: #1a1410;
+  --text-secondary: #57534e;
+  --text-muted: #706b66;
+}
+
+html, body {
+  background: #ffffff !important;
+  color: #1a1410 !important;
+  font-family: 'Noto Serif CJK KR', 'Noto Serif KR', serif !important;
+  font-size: 9.5pt;
+  line-height: 1.6;
+  /* Korean text: prevent ugly mid-word breaks (default would break per-character) */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* Box headers / titles — prevent last-character orphaning to next line.
+   word-break: keep-all isn't reliable in WeasyPrint, so we use nowrap on
+   short headers (forces single line; box auto-grows). For long titles like
+   week-title we keep wrap but raise specificity. */
+.func-sig-header {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
+/* level-section-title and box-header: keep on a single line. WeasyPrint's
+   word-break:keep-all is unreliable for Korean (breaks within syllable
+   groups), so we use nowrap and shrink the font slightly to fit longer
+   titles. Long titles still need to be authored short enough to fit. */
+.level-section-title,
+.box-header {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  word-break: keep-all !important;
+}
+.level-section-title {
+  font-size: 11.5pt !important;
+}
+.box-header {
+  font-size: 10pt !important;
+}
+
+/* Multi-line titles (allow wrap, but discourage single-char orphans) */
+h1, h2, h3, h4, h5, h6,
+.week-title,
+.book-cover-title,
+.copyright-title {
+  word-break: keep-all !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Tables — auto layout based on content; tighter font & padding for Korean.
+   Auto layout lets short cells (e.g. "두뇌", "책상") shrink less than long ones. */
+table {
+  table-layout: auto !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+table th, table td {
+  word-break: keep-all !important;
+  overflow-wrap: break-word !important;
+  font-size: 8.5pt !important;
+  padding: 1.5mm 2mm !important;
+  line-height: 1.5;
+}
+
+/* --- Hide all interactive UI chrome --- */
+.site-header,
+.skip-link,
+.theme-toggle,
+.back-to-top,
+.copy-btn,
+.nav-btn,
+.home-btn,
+.header-nav,
+.header-inner,
+.week-nav,
+nav.week-nav,
+footer.site-footer,
+button {
+  display: none !important;
+}
+
+.page-wrapper {
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+main {
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* ================================================================
+   BOOK COVER — first page (PyWhy / H0NG)
+   ================================================================ */
+.book-cover {
+  page: cover;
+  break-after: page;
+  page-break-after: always;
+  height: 250mm;
+  width: 176mm;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: linear-gradient(135deg, #fdf3ec 0%, #faf7f2 50%, #f3ede4 100%) !important;
+  position: relative;
+  overflow: hidden;
+}
+.book-cover-watermark {
+  position: absolute;
+  right: -22mm;
+  bottom: -40mm;
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 420pt;
+  font-weight: 900;
+  color: rgba(196, 114, 78, 0.13);
+  line-height: 0.85;
+  z-index: 0;
+  pointer-events: none;
+  transform: rotate(-6deg);
+  transform-origin: 50% 50%;
+}
+
+/* 좌측 4레벨 컬러 띠 — 책 정체성 즉시 인지 */
+.book-cover-spine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 8mm;
+  display: flex;
+  flex-direction: column;
+  z-index: 3;
+}
+.book-cover-spine .spine-band {
+  flex: 1;
+  display: block;
+}
+.book-cover-spine .band-elem   { background: #3b9b6e; }
+.book-cover-spine .band-inter  { background: #c48b2c; }
+.book-cover-spine .band-adv    { background: #c45858; }
+.book-cover-spine .band-expert { background: #5a48c0; }
+
+/* 저자명 옆 짧은 룰 */
+.book-cover-author-rule {
+  display: inline-block;
+  width: 18mm;
+  height: 1.2pt;
+  background: #c4724e;
+  vertical-align: middle;
+  margin-left: 4mm;
+}
+
+/* 좌하단 미니 코드 스니펫 (de-sugaring 모티브) */
+.book-cover-code-motif {
+  position: absolute;
+  left: 18mm;
+  bottom: 50mm;
+  z-index: 2;
+  font-family: 'JetBrains Mono', 'D2Coding', monospace;
+  font-size: 7.8pt;
+  line-height: 1.6;
+  color: rgba(26, 20, 16, 0.55);
+  letter-spacing: 0;
+  background: rgba(253, 243, 236, 0.6);
+  padding: 3mm 5mm;
+  border-left: 1.5pt solid #c4724e;
+  max-width: 70mm;
+}
+.book-cover-code-motif .code-motif-line { white-space: nowrap; }
+.book-cover-code-motif .motif-prompt {
+  color: #c4724e;
+  font-weight: 700;
+  margin-right: 2mm;
+}
+.book-cover-code-motif .motif-kw { color: #5a48c0; font-weight: 600; }
+.book-cover-code-motif .motif-fn { color: #c45858; font-weight: 600; }
+.book-cover-code-motif .motif-arrow {
+  text-align: center;
+  color: #c4724e;
+  font-weight: 700;
+  margin: 0.5mm 0;
+  letter-spacing: 0;
+}
+.book-cover-author-strip {
+  position: absolute;
+  top: 22mm;
+  right: 20mm;
+  z-index: 2;
+}
+.book-cover-author {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 16pt;
+  font-weight: 800;
+  letter-spacing: 0.45em;
+  color: #c4724e;
+  text-transform: uppercase;
+}
+.book-cover-author .zero {
+  font-family: 'JetBrains Mono', 'D2Coding', monospace;
+  color: #1a1410;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.book-cover-stage {
+  position: absolute;
+  top: 88mm;
+  left: 22mm;
+  right: 22mm;
+  z-index: 1;
+}
+.book-cover-eyebrow {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #8e4f30;
+  margin-bottom: 9mm;
+  text-transform: uppercase;
+}
+.book-cover-title {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 118pt;
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  color: #1a1410;
+  margin: 0 !important;
+  padding: 0 !important;
+  /* No string-set: cover/TOC pages don't need a running header anyway */
+}
+.book-cover-title .title-py { color: #1a1410; }
+.book-cover-title .title-why { color: #c4724e; }
+
+/* 부제 아래 한 줄 슬로건 */
+.book-cover-tagline {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 10.5pt;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #8e4f30;
+  margin: 9mm 0 0 0 !important;
+  padding-left: 0.5mm;
+}
+
+/* 좌상단 비트 패턴 (배경 모티브) */
+.book-cover-bitstrip {
+  position: absolute;
+  top: 22mm;
+  left: 22mm;
+  display: flex;
+  gap: 2.2mm;
+  z-index: 2;
+  font-family: 'JetBrains Mono', 'D2Coding', monospace;
+  font-size: 13pt;
+  font-weight: 700;
+}
+.book-cover-bitstrip .bit.zero { color: rgba(26, 20, 16, 0.32); }
+.book-cover-bitstrip .bit.one  { color: #c4724e; }
+.book-cover-bitstrip-label {
+  position: absolute;
+  top: 32mm;
+  left: 22mm;
+  font-family: 'JetBrains Mono', 'D2Coding', monospace;
+  font-size: 7.5pt;
+  letter-spacing: 0.06em;
+  color: rgba(26, 20, 16, 0.45);
+  z-index: 2;
+}
+
+/* 우측 큰 LEGB 동심원 모티브 (메인 비주얼, 부제 영역 안 침범) */
+.book-cover-orbit {
+  position: absolute;
+  width: 70mm;
+  height: 70mm;
+  right: -2mm;
+  top: 168mm;
+  z-index: 1;
+  opacity: 0.92;
+}
+
+/* ================================================================
+   BOOK TOC (목차)
+   ================================================================ */
+@page toc {
+  margin: 18mm 18mm 22mm 18mm;
+  @bottom-center {
+    content: counter(page, lower-roman);
+    font-family: 'Noto Sans CJK KR', sans-serif;
+    font-size: 8.5pt;
+    color: #57534e;
+  }
+  @top-right { content: '목차 · PyWhy'; font-family: 'Noto Sans CJK KR', sans-serif; font-size: 8.5pt; color: #8e4f30; letter-spacing: 0.18em; }
+}
+.book-toc {
+  page: toc;
+  break-before: page;
+  break-after: page;
+  font-family: 'Noto Serif CJK KR', serif;
+  color: #1a1410;
+  line-height: 1.4;
+}
+.book-toc .toc-head {
+  margin-bottom: 14mm;
+  padding-bottom: 8mm;
+  border-bottom: 1pt solid #c4724e;
+}
+.book-toc .toc-eyebrow {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 9pt;
+  font-weight: 700;
+  color: #8e4f30;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-bottom: 4mm;
+}
+.book-toc .toc-h1 {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 38pt;
+  font-weight: 900;
+  color: #1a1410;
+  margin: 0 0 5mm 0;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.book-toc .toc-meta {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 9pt;
+  color: #57534e;
+  letter-spacing: 0.12em;
+}
+.book-toc .toc-chapters {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.book-toc .toc-chap {
+  display: grid;
+  grid-template-columns: 22mm 1fr auto;
+  align-items: baseline;
+  column-gap: 3mm;
+  padding: 3mm 0;
+  border-bottom: 0.4pt solid rgba(26, 20, 16, 0.08);
+  page-break-inside: avoid;
+}
+.book-toc .toc-chap.toc-front .toc-num,
+.book-toc .toc-chap.toc-back  .toc-num {
+  color: #c4724e;
+  font-style: italic;
+}
+.book-toc .toc-num {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 11pt;
+  font-weight: 800;
+  color: #c4724e;
+  letter-spacing: 0.04em;
+}
+.book-toc .toc-title {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 12pt;
+  font-weight: 700;
+  color: #1a1410;
+  letter-spacing: -0.01em;
+  background-image: radial-gradient(circle, rgba(26, 20, 16, 0.42) 0.55pt, transparent 0.65pt);
+  background-position: bottom left;
+  background-repeat: repeat-x;
+  background-size: 1.8mm 2pt;
+  padding-right: 5mm;
+}
+.book-toc .toc-leader { display: none; }
+.book-toc .toc-page {
+  font-family: 'JetBrains Mono', 'D2Coding', monospace;
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: #1a1410;
+  min-width: 12mm;
+  text-align: right;
+}
+.book-toc .toc-subs {
+  grid-column: 2 / 5;
+  list-style: none;
+  margin: 2mm 0 0 0;
+  padding: 0 0 0 4mm;
+  border-left: 1.5pt solid rgba(196, 114, 78, 0.25);
+}
+.book-toc .toc-subs li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  column-gap: 2mm;
+  padding: 1.2mm 0;
+}
+.book-toc .toc-subs .toc-sub-title {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-size: 9.5pt;
+  color: #57534e;
+  /* leader 점선을 background-image로 */
+  background-image: radial-gradient(circle, rgba(26, 20, 16, 0.32) 0.4pt, transparent 0.5pt);
+  background-position: bottom left;
+  background-repeat: repeat-x;
+  background-size: 1.4mm 1.6pt;
+  padding-right: 4mm;
+}
+.book-toc .toc-subs .toc-leader { display: none; }
+.book-toc .toc-subs .toc-page {
+  font-family: 'JetBrains Mono', 'D2Coding', monospace;
+  font-size: 9pt;
+  font-weight: 600;
+  color: #57534e;
+  min-width: 9mm;
+  text-align: right;
+}
+
+/* ================================================================
+   BACK COVER
+   ================================================================ */
+@page back-cover {
+  margin: 0;
+  @bottom-center { content: none; }
+  @top-right { content: none; }
+}
+.book-back-cover {
+  page: back-cover;
+  break-before: page;
+  page-break-before: always;
+  /* 마지막 페이지여야 하므로 추가 빈 페이지 생성 안 함 */
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+  height: 248mm;
+  width: 176mm;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: linear-gradient(155deg, #faf7f2 0%, #fdf3ec 60%, #f3ede4 100%) !important;
+  position: relative;
+  overflow: hidden;
+}
+.back-cover-watermark {
+  position: absolute;
+  left: -28mm;
+  top: -50mm;
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 380pt;
+  font-weight: 900;
+  color: rgba(196, 114, 78, 0.05);
+  line-height: 0.85;
+  z-index: 0;
+  transform: rotate(-12deg);
+}
+.back-cover-stage {
+  position: absolute;
+  top: 22mm;
+  left: 22mm;
+  right: 22mm;
+  bottom: 30mm;
+  z-index: 2;
+}
+.back-cover-eyebrow {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #c4724e;
+  text-transform: uppercase;
+  margin-bottom: 8mm;
+}
+.back-cover-headline {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 22pt;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: #1a1410;
+  margin: 0 0 8mm 0 !important;
+}
+.back-cover-headline .hl {
+  color: #c4724e;
+  border-bottom: 2pt solid #c4724e;
+  padding-bottom: 0.5mm;
+}
+.back-cover-lead {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-size: 11pt;
+  line-height: 1.7;
+  color: #1a1410;
+  margin: 0 0 9mm 0 !important;
+}
+.back-cover-lead code {
+  font-family: 'JetBrains Mono', 'D2Coding', monospace;
+  font-size: 9.5pt;
+  background: #f3ede4;
+  border: 0.4pt solid #e7dfd3;
+  border-radius: 1mm;
+  padding: 0.3mm 1.2mm;
+}
+
+.back-cover-features {
+  display: flex;
+  gap: 0;
+  margin: 0 0 9mm 0;
+  border-top: 0.6pt solid #e7dfd3;
+  border-bottom: 0.6pt solid #e7dfd3;
+  padding: 4mm 0;
+  justify-content: space-between;
+}
+.back-cover-features .feature { text-align: center; flex: 1; }
+.back-cover-features .feature-num {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 22pt;
+  font-weight: 900;
+  color: #c4724e;
+  line-height: 1;
+}
+.back-cover-features .feature-label {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 8.5pt;
+  color: #57534e;
+  margin-top: 1.5mm;
+  letter-spacing: 0.05em;
+}
+
+.back-cover-toc {
+  display: flex;
+  gap: 6mm;
+  margin: 0 0 8mm 0;
+}
+.back-cover-toc .toc-col { flex: 1; }
+.back-cover-toc .toc-col-title {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #c4724e;
+  letter-spacing: 0.04em;
+  margin-bottom: 2.5mm;
+  padding-bottom: 1.5mm;
+  border-bottom: 0.5pt solid #e7dfd3;
+}
+.back-cover-toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.back-cover-toc li {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 8.5pt;
+  line-height: 1.7;
+  color: #1a1410;
+}
+.back-cover-toc li::before {
+  content: "·";
+  color: #c4724e;
+  font-weight: 700;
+  margin-right: 1.5mm;
+}
+
+.back-cover-quote {
+  text-align: center;
+  margin: 4mm 0 6mm 0;
+  padding: 3mm 0;
+}
+.back-cover-quote p {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-style: italic;
+  font-size: 12pt;
+  color: #8e4f30;
+  margin: 0 !important;
+  letter-spacing: -0.01em;
+}
+
+.back-cover-meta {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-top: 0.5pt solid #e7dfd3;
+  padding-top: 3mm;
+}
+.back-cover-meta .meta-row {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 8.5pt;
+  color: #57534e;
+  letter-spacing: 0.02em;
+}
+.back-cover-meta .meta-label {
+  font-weight: 700;
+  color: #1a1410;
+  margin-right: 1.5mm;
+}
+.back-cover-meta .meta-value { margin-right: 3mm; }
+.back-cover-meta .meta-sep { color: #c4724e; margin-right: 3mm; }
+
+.book-back-cover .back-cover-foot {
+  position: absolute;
+  bottom: 10mm;
+  left: 22mm;
+  right: 22mm;
+  z-index: 2;
+}
+.back-cover-levels {
+  display: block;
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 8.5pt;
+  color: #57534e;
+  white-space: nowrap;
+}
+.back-cover-levels .bcv-level {
+  display: inline-block;
+  margin-right: 7mm;
+  white-space: nowrap;
+}
+.back-cover-levels .bcv-level .dot {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 1.5mm;
+  width: 3.5mm;
+  height: 3.5mm;
+  border-radius: 50%;
+}
+.back-cover-levels .dot-elem    { background: #3b9b6e; }
+.back-cover-levels .dot-inter   { background: #c48b2c; }
+.back-cover-levels .dot-adv     { background: #c45858; }
+.back-cover-levels .dot-expert  { background: #5a48c0; }
+.book-cover-rule {
+  width: 38mm;
+  height: 3pt;
+  background: #c4724e;
+  margin: 13mm 0 11mm 0;
+}
+.book-cover-subtitle {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-size: 19pt;
+  font-weight: 700;
+  line-height: 1.42;
+  color: #1a1410;
+  margin: 0 !important;
+  letter-spacing: -0.015em;
+}
+.book-cover-foot {
+  position: absolute;
+  bottom: 22mm;
+  left: 22mm;
+  right: 22mm;
+  z-index: 2;
+}
+.book-cover-levels-table {
+  border-collapse: separate !important;
+  border-spacing: 0 3mm !important;
+  border: none !important;
+  width: auto !important;
+  margin: 0 !important;
+  font-size: 8.5pt;
+}
+.book-cover-levels-table tr,
+.book-cover-levels-table td {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 9mm 0 0 !important;
+  text-align: center;
+  vertical-align: middle;
+}
+.book-cover-levels-table td:last-child { padding-right: 0 !important; }
+.book-cover-levels-table tr:last-child td {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-weight: 600;
+  color: #57534e;
+  letter-spacing: 0.04em;
+  padding-top: 1mm !important;
+}
+.book-cover-level-dot {
+  display: inline-block;
+  width: 4.5mm;
+  height: 4.5mm;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.book-cover-level-dot.dot-elem   { background: #3b9b6e; }
+.book-cover-level-dot.dot-inter  { background: #c48b2c; }
+.book-cover-level-dot.dot-adv    { background: #c45858; }
+.book-cover-level-dot.dot-expert { background: #5a48c0; }
+
+/* ================================================================
+   COPYRIGHT PAGE — 판권면
+   ================================================================ */
+.copyright-page {
+  page: copyright;
+  break-after: page;
+  page-break-after: always;
+  break-before: page;
+  page-break-before: always;
+  font-family: 'Noto Serif CJK KR', serif;
+  color: #1a1410;
+}
+.copyright-block {
+  margin-top: 4mm;
+  margin-bottom: 12mm;
+}
+.copyright-title {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 24pt;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #1a1410;
+  margin: 0 0 3mm 0 !important;
+}
+.copyright-subtitle {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-size: 11pt;
+  font-weight: 500;
+  color: #57534e;
+  margin: 0 !important;
+}
+.copyright-meta {
+  margin-bottom: 10mm;
+  border-top: 0.5pt solid #c4724e;
+  border-bottom: 0.5pt solid #e7e2db;
+  padding: 4mm 0;
+}
+.copyright-table {
+  width: 100%;
+  border: none;
+  border-collapse: collapse;
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 10pt;
+}
+.copyright-table tr { border: none !important; }
+.copyright-table th {
+  text-align: left;
+  width: 28mm;
+  padding: 1.5mm 0 !important;
+  font-weight: 700;
+  color: #706b66;
+  letter-spacing: 0.04em;
+  border: none !important;
+  background: transparent !important;
+}
+.copyright-table td {
+  padding: 1.5mm 0 !important;
+  font-weight: 500;
+  color: #1a1410;
+  border: none !important;
+  background: transparent !important;
+}
+.copyright-notice {
+  margin-bottom: 9mm;
+  font-size: 9pt;
+  line-height: 1.65;
+  color: #57534e;
+}
+.copyright-notice p { margin: 0 0 2mm 0 !important; }
+.copyright-notice .cn-line strong {
+  display: inline-block;
+  min-width: 16mm;
+  color: #c4724e;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.copyright-notice .cn-line em { font-style: italic; color: #1a1410; }
+.copyright-notice .cn-line q { font-style: italic; color: #1a1410; }
+/* H0NG의 0(zero)은 mono로 분리 인지 */
+.zero-glyph {
+  font-family: 'JetBrains Mono', 'D2Coding', monospace;
+  color: #1a1410;
+  font-weight: 700;
+}
+.copyright-references-note {
+  margin: 2.5mm 0 0 0 !important;
+  font-size: 8pt;
+  line-height: 1.55;
+  color: #706b66;
+  font-style: italic;
+}
+.copyright-foot-sub {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 7.5pt;
+  color: #a8a29e;
+  margin: 1.5mm 0 0 0 !important;
+  letter-spacing: 0.04em;
+}
+.copyright-references {
+  margin-bottom: 0;
+  padding: 3mm 5mm;
+  background: #faf7f2;
+  border-left: 2.5pt solid #c4724e;
+  border-radius: 1mm;
+}
+.copyright-references-label {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 8.5pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #8e4f30;
+  margin: 0 0 1.5mm 0 !important;
+  text-transform: uppercase;
+}
+.copyright-references-list {
+  margin: 0 0 0 5mm !important;
+  padding: 0 !important;
+  list-style: square;
+  font-size: 9pt;
+  line-height: 1.55;
+  color: #1a1410;
+}
+.copyright-references-list li { margin: 0 !important; }
+.copyright-foot {
+  margin-top: 12mm;
+  padding-top: 3mm;
+  border-top: 0.4pt solid #e7e2db;
+}
+.copyright-foot-line {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 9pt;
+  color: #706b66;
+  margin: 0 !important;
+  letter-spacing: 0.03em;
+}
+
+/* ================================================================
+   CHAPTER DIVIDER — week-header (full page, but quieter than book cover)
+   ================================================================ */
+.week-header {
+  page: chapter;
+  break-before: page;
+  page-break-before: always;
+  break-after: page;
+  page-break-after: always;
+  height: 250mm;
+  width: 176mm;
+  padding: 80mm 22mm 30mm 22mm !important;
+  background: linear-gradient(160deg, #faf7f2 0%, #fdf3ec 70%, #f3ede4 100%) !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  display: block !important;
+  position: relative;
+}
+/* 챕터 디바이더 좌상단 ◯ 모티브 (4레벨 컬러 그라디언트 — 책 정체성) */
+.week-header::before {
+  content: '';
+  display: block !important;
+  position: absolute;
+  top: 30mm;
+  left: 22mm;
+  width: 12mm;
+  height: 12mm;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%,
+    #fdf3ec 0%,
+    #c4724e 40%,
+    #8e4f30 100%);
+  opacity: 0.85;
+  z-index: 1;
+}
+/* 우하단 옅은 ? 워터마크 */
+.week-header::after {
+  content: '?';
+  display: block !important;
+  position: absolute;
+  right: -10mm;
+  bottom: -25mm;
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 240pt;
+  font-weight: 900;
+  color: rgba(196, 114, 78, 0.06);
+  line-height: 0.85;
+  z-index: 0;
+  pointer-events: none;
+  background: transparent !important;
+  height: auto !important;
+}
+/* 챕터 우상단 4레벨 컬러 점 (책 시그니처) */
+.week-header .week-number::after {
+  content: '\A● ● ● ●';
+  white-space: pre;
+  display: block;
+  position: absolute;
+  top: 30mm;
+  right: 22mm;
+  text-align: right;
+  font-size: 8pt;
+  letter-spacing: 0.3em;
+  color: transparent;
+  background: linear-gradient(90deg,
+    #3b9b6e 0%, #3b9b6e 20%,
+    #c48b2c 25%, #c48b2c 45%,
+    #c45858 50%, #c45858 70%,
+    #5a48c0 75%, #5a48c0 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.week-number {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-size: 11pt;
+  letter-spacing: 0.45em;
+  font-weight: 700;
+  color: #c4724e !important;
+  margin-bottom: 10mm;
+  display: block;
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+.week-title {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-size: 32pt;
+  font-weight: 900;
+  line-height: 1.25;
+  color: #1a1410 !important;
+  margin: 0 0 14mm 0 !important;
+  letter-spacing: -0.02em;
+  /* No string-set: <br> would corrupt running header. Use h2-only. */
+}
+.week-title br { line-height: 1.1; }
+.week-subtitle {
+  font-size: 11pt;
+  line-height: 1.95;
+  color: #57534e !important;
+  max-width: 140mm;
+  margin: 0 !important;
+}
+.week-subtitle strong { color: #8e4f30 !important; font-weight: 700; }
+.week-subtitle em { color: #1a1410 !important; font-style: italic; font-weight: 600; }
+
+/* ================================================================
+   TABLE OF CONTENTS
+   ================================================================ */
+details.toc {
+  page-break-after: always;
+  break-after: page;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+details.toc > summary {
+  list-style: none !important;
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-size: 18pt;
+  font-weight: 800;
+  color: #1a1410 !important;
+  padding: 0 0 5mm 0 !important;
+  margin: 0 0 8mm 0;
+  border-bottom: 2pt solid #c4724e;
+  cursor: default;
+}
+details.toc > summary::marker,
+details.toc > summary::-webkit-details-marker { display: none !important; }
+
+details.toc[open] > summary::after,
+details.toc > summary::after { content: none !important; }
+
+.toc-body {
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.toc-section {
+  display: block !important;
+  padding: 3.5mm 0 !important;
+  border-bottom: 0.5pt solid #e7e2db !important;
+  background: transparent !important;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.toc-section-link {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-size: 11pt;
+  font-weight: 600;
+  color: #1a1410 !important;
+  text-decoration: none !important;
+  display: block;
+}
+.toc-num {
+  display: inline-block;
+  width: 12mm;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 9.5pt;
+  color: #c4724e !important;
+  font-weight: 700;
+}
+.toc-levels {
+  margin-top: 1.5mm;
+  margin-left: 12mm;
+  display: block;
+}
+.toc-level-dot {
+  display: inline-block;
+  font-size: 7.5pt;
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-weight: 600;
+  padding: 0.5mm 2mm;
+  border-radius: 2mm;
+  margin-right: 1.5mm;
+  letter-spacing: 0.02em;
+}
+.toc-level-dot.elem  { background: #f0f9f4; color: #267547; border: 0.4pt solid #b9e0cb; }
+.toc-level-dot.inter { background: #fdf8ef; color: #8a5f0e; border: 0.4pt solid #ecd7a8; }
+.toc-level-dot.adv   { background: #fdf2f2; color: #963434; border: 0.4pt solid #f0c2c2; }
+.toc-level-dot.exp   { background: #f2f0fc; color: #4835a0; border: 0.4pt solid #cabfee; }
+
+/* ================================================================
+   SECTIONS — let content flow naturally; only force breaks at h2
+   (avoids empty heading-only pages from page-break-before + nested
+   page-break-inside:avoid combinations)
+   ================================================================ */
+main > section[id] {
+  margin: 3mm 0 0 0 !important;
+  padding: 0 !important;
+  break-inside: auto;
+}
+/* keep heading with following content */
+main h2 {
+  page-break-after: avoid;
+  break-after: avoid;
+  page-break-before: auto;
+  break-before: auto;
+}
+/* section's first child h2 should ideally not be orphaned */
+main > section[id] > h2:first-child {
+  /* widows/orphans handled by page-break-after:avoid above */
+}
+
+/* ================================================================
+   HEADINGS
+   ================================================================ */
+h1, h2, h3, h4 {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  page-break-after: avoid;
+  break-after: avoid;
+  color: #1a1410 !important;
+}
+main h2 {
+  font-size: 17pt;
+  font-weight: 800;
+  margin: 0 0 5mm 0;
+  padding: 0 0 2mm 0;
+  border-bottom: 1.2pt solid #c4724e;
+  string-set: chapter-title content();
+}
+main h3 {
+  font-size: 12.5pt;
+  font-weight: 700;
+  margin: 5mm 0 2mm 0;
+}
+main h4 {
+  font-size: 10.5pt;
+  font-weight: 700;
+  margin: 3.5mm 0 1.5mm 0;
+}
+
+p {
+  margin: 0 0 2mm 0;
+  orphans: 3;
+  widows: 3;
+}
+strong { font-weight: 700; color: #1a1410; }
+em { font-style: italic; }
+
+/* Inline code */
+code, :not(pre) > code {
+  font-family: 'JetBrains Mono', 'D2Coding', monospace !important;
+  font-size: 9pt;
+  background: #f3ede4 !important;
+  border: 0.4pt solid #e7dfd3 !important;
+  border-radius: 1mm;
+  padding: 0.3mm 1.5mm;
+  color: #8e4f30 !important;
+}
+
+/* ================================================================
+   LEVEL SECTIONS — allow internal breaks (boxes are often very tall;
+   forcing avoid creates empty pages). Keep header attached to body.
+   ================================================================ */
+.level-section {
+  break-inside: auto;
+  page-break-inside: auto;
+  margin: 3mm 0 !important;
+  padding: 3.5mm 5mm !important;
+  border-radius: 2mm !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-left: 3pt solid !important;
+  background: var(--bg-secondary) !important;
+}
+.level-section-header {
+  page-break-after: avoid;
+  break-after: avoid;
+}
+.level-section::before,
+.level-section::after { display: none !important; }
+
+.level-section.elementary   { background: #f0f9f4 !important; border-left-color: #3b9b6e !important; }
+.level-section.intermediate { background: #fdf8ef !important; border-left-color: #c48b2c !important; }
+.level-section.advanced     { background: #fdf2f2 !important; border-left-color: #c45858 !important; }
+.level-section.expert       { background: #f2f0fc !important; border-left-color: #5a48c0 !important; }
+
+.level-section-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 3mm !important;
+  margin-bottom: 3mm !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+.level-section-title {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-weight: 700;
+  font-size: 12pt;
+  margin: 0 !important;
+}
+
+.level-badge {
+  display: inline-block;
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-size: 8pt;
+  font-weight: 700;
+  padding: 0.8mm 2.5mm;
+  border-radius: 2mm;
+  letter-spacing: 0.02em;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+.level-badge.level-elem   { background: #d6efe1 !important; color: #267547 !important; }
+.level-badge.level-inter  { background: #f6e4c3 !important; color: #8a5f0e !important; }
+.level-badge.level-adv    { background: #f5d5d5 !important; color: #963434 !important; }
+.level-badge.level-expert { background: #ddd5f5 !important; color: #4835a0 !important; }
+
+/* ================================================================
+   SPECIAL BOXES (why / ai / computer / caution / docs)
+   ================================================================ */
+.why-box, .ai-box, .computer-box, .caution-box, .docs-box {
+  break-inside: auto;
+  margin: 2.5mm 0 !important;
+  padding: 3mm 4mm !important;
+  border-radius: 2mm !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-left: 3pt solid !important;
+}
+.why-box::before, .why-box::after,
+.ai-box::before, .ai-box::after,
+.computer-box::before, .computer-box::after,
+.caution-box::before, .caution-box::after,
+.docs-box::before, .docs-box::after { display: none !important; }
+
+.why-box      { background: #fef9ef !important; border-left-color: #d4930c !important; }
+.ai-box       { background: #f5f0ff !important; border-left-color: #7c5cbf !important; }
+.computer-box { background: #eef8f4 !important; border-left-color: #2d9b6e !important; }
+.caution-box  { background: #fef2f3 !important; border-left-color: #d44058 !important; }
+.docs-box     { background: #eff6ff !important; border-left-color: #3878c7 !important; }
+
+.box-header {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-weight: 700;
+  font-size: 10.5pt;
+  margin-bottom: 2.5mm !important;
+  padding: 0 !important;
+  background: transparent !important;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+.why-box .box-header      { color: #7a5408 !important; }
+.ai-box .box-header       { color: #4a2d82 !important; }
+.computer-box .box-header { color: #145740 !important; }
+.caution-box .box-header  { color: #8e1f34 !important; }
+.docs-box .box-header     { color: #1c4a7e !important; }
+
+/* ================================================================
+   CODE BLOCKS — keep dark theme (looks great in PDF/ebook)
+   ================================================================ */
+.code-block {
+  break-inside: auto;
+  margin: 2.5mm 0 !important;
+  border-radius: 2mm !important;
+  box-shadow: none !important;
+  border: 0.4pt solid #313147 !important;
+  overflow: hidden !important;
+  background: #1e1e2e !important;
+}
+.code-header {
+  background: #252538 !important;
+  border-bottom: 0.4pt solid #313147 !important;
+  padding: 1.5mm 4mm !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 2mm !important;
+}
+.code-label {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 8pt;
+  color: #cdd6f4 !important;
+  letter-spacing: 0.02em;
+}
+/* Bare <pre> (no .code-block wrapper) — give it dark bg too so it's readable */
+pre {
+  break-inside: auto;
+  background: #1e1e2e !important;
+  color: #cdd6f4 !important;
+  margin: 2.5mm 0 !important;
+  padding: 2.5mm 3.5mm !important;
+  border-radius: 2mm !important;
+  border: 0.4pt solid #313147 !important;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: visible !important;
+}
+pre code {
+  font-family: 'JetBrains Mono', 'D2Coding', monospace !important;
+  font-size: 8.5pt;
+  line-height: 1.6;
+  color: #cdd6f4 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  white-space: pre-wrap;
+}
+
+/* <pre> inside .code-block — transparent (the .code-block parent provides dark bg) */
+.code-block pre {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 2.5mm 3.5mm !important;
+}
+.code-block code {
+  font-family: 'JetBrains Mono', 'D2Coding', monospace !important;
+  font-size: 8.5pt;
+  line-height: 1.6;
+  color: #cdd6f4 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  white-space: pre-wrap;
+}
+
+/* Output blocks — preserve line breaks (\n in HTML) so multi-line outputs
+   like "사과*바나나*포도\n안녕하세요!\n끝" render as 3 lines, not 1.
+   Allow page split when output is long (avoids huge bottom gaps). */
+.output-block {
+  page-break-inside: auto;
+  break-inside: auto;
+  margin: 2mm 0 !important;
+  padding: 2.5mm 3.5mm !important;
+  background: #f3ede4 !important;
+  border-left: 2pt solid #706b66 !important;
+  border-radius: 1mm !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 8.5pt;
+  color: #1a1410 !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word;
+}
+/* Output label still flows as normal block — only the content is preformatted */
+.output-block .output-label {
+  white-space: normal !important;
+}
+.output-label {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-size: 7.5pt;
+  font-weight: 700;
+  color: #706b66 !important;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-bottom: 1.5mm;
+}
+
+/* ================================================================
+   AI COMPARISON / CALLOUTS / EXERCISES / GLOSSARY
+   ================================================================ */
+.ai-comparison {
+  display: flex !important;
+  gap: 3mm !important;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin: 4mm 0 !important;
+}
+.ai-col {
+  flex: 1 !important;
+  padding: 3mm 4mm !important;
+  border-radius: 2mm !important;
+  border: 0.4pt solid #e7e2db !important;
+  background: #faf7f2 !important;
+}
+.ai-col.human { background: #eef8f4 !important; border-left: 2.5pt solid #2d9b6e !important; }
+.ai-col.ai    { background: #f5f0ff !important; border-left: 2.5pt solid #7c5cbf !important; }
+.ai-col-header {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-weight: 700;
+  font-size: 10pt;
+  margin-bottom: 2mm;
+}
+
+.callout {
+  /* Small callouts stay together; large ones (containing code/tables)
+     may break — use 'avoid-page' which is a hint, not a hard constraint. */
+  page-break-inside: auto;
+  break-inside: avoid-page;
+  margin: 2mm 0 !important;
+  padding: 2.5mm 3.5mm !important;
+  border-radius: 2mm !important;
+  border-left: 2.5pt solid !important;
+  background: #faf7f2 !important;
+  orphans: 3;
+  widows: 3;
+}
+.callout-info    { background: #eff6ff !important; border-left-color: #3878c7 !important; }
+.callout-tip     { background: #f0f9f4 !important; border-left-color: #3b9b6e !important; }
+.callout-warning { background: #fef2f3 !important; border-left-color: #d44058 !important; }
+
+/* Override style.css's `.callout strong { display: block }` — only the
+   leading strong (which acts as a header) should be block; inline strong
+   tags inside the body must stay inline. Otherwise sentences like
+   "타입은 박스의 <strong>레이블</strong>입니다." render as 3 lines. */
+.callout strong { display: inline !important; }
+.callout > strong:first-child {
+  display: block !important;
+  margin-bottom: 1.5mm !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
+/* Exercises */
+.problem,
+.exercise {
+  break-inside: auto;
+  margin: 5mm 0 !important;
+  padding: 4mm 5mm !important;
+  border: 0.5pt solid #e7e2db !important;
+  border-radius: 2mm !important;
+  background: #faf7f2 !important;
+  box-shadow: none !important;
+}
+.problem-body { padding: 0 !important; }
+
+.answer {
+  break-inside: auto;
+  margin-top: 3mm !important;
+  padding: 3mm 4mm !important;
+  background: #f0f9f4 !important;
+  border-left: 2pt solid #3b9b6e !important;
+  border-radius: 1mm !important;
+}
+.answer-content { padding: 0 !important; }
+.answer-why-title {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-weight: 700;
+  font-size: 10pt;
+  color: #267547 !important;
+  margin-bottom: 1.5mm;
+}
+
+/* Glossary */
+.glossary {
+  page-break-before: always;
+  break-before: page;
+}
+.glossary-item {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin: 3mm 0 !important;
+  padding: 2.5mm 4mm !important;
+  border-bottom: 0.4pt solid #e7e2db !important;
+  background: transparent !important;
+}
+.glossary-term {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-weight: 700;
+  font-size: 10.5pt;
+  color: #8e4f30 !important;
+  display: inline-block;
+  margin-right: 2mm;
+}
+.glossary-def {
+  font-size: 10pt;
+  line-height: 1.7;
+  color: #1a1410 !important;
+}
+
+/* Function signatures */
+.func-sig {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin: 3mm 0 !important;
+  padding: 3mm 4mm !important;
+  background: #1e1e2e !important;
+  border-radius: 2mm !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 9pt;
+  color: #cdd6f4 !important;
+}
+.func-sig-header {
+  font-size: 8pt;
+  color: #9ca0b4 !important;
+  margin-bottom: 1.5mm;
+  letter-spacing: 0.05em;
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+}
+.param-required { color: #f38ba8 !important; }
+.param-optional { color: #fab387 !important; }
+.param-default  { color: #a6e3a1 !important; }
+
+/* ================================================================
+   LINKS — kill the default print URL annotation
+   ================================================================ */
+a {
+  color: #8e4f30 !important;
+  text-decoration: none !important;
+  border-bottom: 0.4pt solid #e5bfae;
+}
+a:visited { color: #8e4f30 !important; }
+a::after,
+a[href]::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* ================================================================
+   IMAGES / FIGURES
+   ================================================================ */
+img, svg, figure {
+  max-width: 100% !important;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+img.diagram-img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  margin: 4mm auto !important;
+}
+
+/* ================================================================
+   LISTS
+   ================================================================ */
+ul, ol {
+  margin: 0 0 4mm 6mm !important;
+  padding: 0 !important;
+}
+li {
+  margin: 1.5mm 0 !important;
+  line-height: 1.7;
+}
+
+/* ================================================================
+   TABLES
+   ================================================================ */
+table {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 4mm 0 !important;
+  font-size: 9.5pt;
+}
+th, td {
+  border: 0.4pt solid #e7e2db !important;
+  padding: 2mm 3mm !important;
+  text-align: left;
+}
+th {
+  background: #f3ede4 !important;
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-weight: 700;
+}
+
+/* ================================================================
+   ARCH DIAGRAM (CPU/메모리/저장장치 도식 등)
+   ================================================================ */
+.arch-diagram {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* ================================================================
+   CITATIONS — inline superscript markers + 참고문헌 section
+   ================================================================ */
+sup.cite {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-size: 7pt !important;
+  font-weight: 600;
+  vertical-align: super;
+  line-height: 0;
+}
+sup.cite a {
+  color: #c4724e !important;
+  text-decoration: none !important;
+  border: none !important;
+  padding: 0 0.5pt;
+}
+
+.references-section {
+  page-break-before: always !important;
+  break-before: page !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.references-section h2 {
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+  font-size: 19pt;
+  font-weight: 800;
+  margin: 0 0 8mm 0 !important;
+  padding: 0 0 3mm 0 !important;
+  border-bottom: 1.5pt solid #c4724e;
+  color: #1a1410 !important;
+}
+.references-section .references-intro {
+  font-size: 9.5pt;
+  line-height: 1.7;
+  color: #57534e;
+  margin: 0 0 8mm 0 !important;
+}
+.references-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  counter-reset: ref;
+}
+.references-list li {
+  counter-increment: ref;
+  margin: 0 0 4mm 0 !important;
+  padding: 0 0 0 12mm !important;
+  position: relative;
+  font-size: 9.5pt;
+  line-height: 1.65;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.references-list li::before {
+  content: '[' counter(ref) ']';
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9pt;
+  font-weight: 700;
+  color: #c4724e;
+}
+.references-list .ref-title {
+  font-weight: 700;
+  color: #1a1410;
+}
+.references-list .ref-meta {
+  color: #706b66;
+  font-size: 9pt;
+}
+.references-list .ref-quote {
+  display: block;
+  margin-top: 1mm;
+  padding-left: 4mm;
+  border-left: 1.5pt solid #e7e2db;
+  color: #57534e;
+  font-style: italic;
+  font-size: 9pt;
+}
+.references-list code {
+  font-size: 8.5pt;
+  background: #f3ede4 !important;
+  border: none !important;
+  color: #8e4f30 !important;
+}
+
+/* ================================================================
+   BOOK INDEX (한글 색인 / 영문 색인)
+   ================================================================ */
+.book-index {
+  page: book-index;
+  break-before: page;
+  page-break-before: always;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+@page book-index {
+  size: B5 portrait;
+  margin: 18mm 14mm 18mm 14mm;
+  @top-right {
+    content: string(chapter-title);
+    font-family: 'Noto Sans CJK KR', sans-serif;
+    font-size: 8.5pt;
+    color: #a8a29e;
+  }
+  @bottom-center {
+    content: counter(page);
+    font-family: 'Noto Sans CJK KR', sans-serif;
+    font-size: 9pt;
+    color: #706b66;
+  }
+}
+.book-index h2 {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 22pt;
+  font-weight: 800;
+  margin: 0 0 4mm 0 !important;
+  padding: 0 0 2mm 0 !important;
+  border-bottom: 1.2pt solid #c4724e;
+  string-set: chapter-title content();
+  color: #1a1410;
+}
+.book-index .index-meta {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 9pt;
+  color: #706b66;
+  margin: 0 0 6mm 0 !important;
+}
+/* 2단 컬럼 레이아웃 */
+.book-index main,
+main.book-index {
+  column-count: 2;
+  column-gap: 8mm;
+  column-rule: 0.4pt solid #e7e2db;
+}
+.book-index .index-section {
+  break-inside: avoid;
+  margin-bottom: 4mm;
+}
+.book-index .index-section h3 {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 13pt;
+  font-weight: 800;
+  color: #c4724e;
+  margin: 0 0 2mm 0 !important;
+  padding: 1mm 0;
+  border-bottom: 0.5pt solid #e7e2db;
+}
+.book-index .index-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.book-index .index-section li {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.5;
+  color: #1a1410;
+  break-inside: avoid;
+  padding: 0.5mm 0 0.5mm 5mm;
+  text-indent: -5mm;
+  margin-bottom: 0.4mm;
+}
+.book-index .index-section li a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 0.3pt dotted rgba(196, 114, 78, 0.3);
+}
+.book-index .index-section li::before {
+  content: "";
+}
+
+/* ================================================================
+   PREFACE / 머리말
+   ================================================================ */
+@page preface {
+  size: B5 portrait;
+  margin: 22mm 18mm 22mm 18mm;
+  @top-right {
+    content: "머리말";
+    font-family: 'Noto Sans CJK KR', sans-serif;
+    font-size: 8.5pt;
+    color: #a8a29e;
+  }
+  @bottom-center {
+    content: counter(page);
+    font-family: 'Noto Sans CJK KR', sans-serif;
+    font-size: 9pt;
+    color: #706b66;
+  }
+}
+.book-preface {
+  page: preface;
+  break-before: page;
+  page-break-before: always;
+  break-after: page;
+  page-break-after: always;
+}
+.book-preface .preface-header {
+  margin-bottom: 12mm;
+  padding-bottom: 4mm;
+  border-bottom: 1.2pt solid #c4724e;
+}
+.book-preface .preface-eyebrow {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.4em;
+  color: #c4724e;
+  text-transform: uppercase;
+  margin-bottom: 4mm;
+}
+.book-preface .preface-title {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 28pt;
+  font-weight: 800;
+  color: #1a1410;
+  margin: 0 0 3mm 0 !important;
+  letter-spacing: -0.02em;
+}
+.book-preface .preface-tagline {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-style: italic;
+  font-size: 11pt;
+  color: #8e4f30;
+  margin: 0 !important;
+}
+.book-preface .preface-section {
+  margin-bottom: 10mm;
+  break-inside: avoid;
+}
+.book-preface .preface-section h2 {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 14pt;
+  font-weight: 800;
+  color: #c4724e;
+  margin: 0 0 4mm 0 !important;
+  padding: 0 0 1.5mm 0;
+  border-bottom: 0.5pt solid #e7dfd3;
+}
+.book-preface .preface-section h3 {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 11pt;
+  font-weight: 700;
+  color: #1a1410;
+  margin: 5mm 0 2mm 0 !important;
+}
+.book-preface .preface-section p {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-size: 10.5pt;
+  line-height: 1.85;
+  color: #1a1410;
+  margin: 0 0 3mm 0 !important;
+}
+.book-preface .why-list {
+  list-style: none;
+  padding: 0 0 0 4mm;
+  margin: 4mm 0 4mm 0;
+  border-left: 2pt solid #c4724e;
+}
+.book-preface .why-list li {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-size: 10pt;
+  line-height: 1.9;
+  color: #1a1410;
+  padding-left: 4mm;
+  text-indent: -4mm;
+}
+.book-preface .why-list li::before {
+  content: "·";
+  color: #c4724e;
+  font-weight: 700;
+  margin-right: 2mm;
+}
+.book-preface .level-guide {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4mm 0;
+  font-family: 'Noto Sans CJK KR', sans-serif !important;
+}
+.book-preface .level-guide th,
+.book-preface .level-guide td {
+  border: 0.4pt solid #e7dfd3;
+  padding: 2.5mm 3mm !important;
+  vertical-align: top;
+  font-size: 9pt;
+}
+.book-preface .level-guide th {
+  background: #faf7f2 !important;
+  font-weight: 700;
+  color: #1a1410;
+}
+.book-preface .level-row td:first-child {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.book-preface .level-row .level-dot {
+  display: inline-block;
+  width: 3mm;
+  height: 3mm;
+  border-radius: 50%;
+  margin-right: 2mm;
+  vertical-align: middle;
+}
+.book-preface .level-row.level-elem  .level-dot { background: #3b9b6e; }
+.book-preface .level-row.level-inter .level-dot { background: #c48b2c; }
+.book-preface .level-row.level-adv   .level-dot { background: #c45858; }
+.book-preface .level-row.level-expert .level-dot { background: #5a48c0; }
+.book-preface .reading-tips {
+  margin-top: 5mm;
+  padding: 4mm;
+  background: #faf7f2;
+  border-left: 2.5pt solid #c4724e;
+  border-radius: 1mm;
+}
+.book-preface .reading-tips ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.book-preface .reading-tips li {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-size: 9.5pt;
+  line-height: 1.85;
+  margin-bottom: 2mm;
+}
+.book-preface .verify-sources {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-size: 10pt;
+  line-height: 1.85;
+  margin: 3mm 0 3mm 0;
+  padding-left: 7mm;
+}
+.book-preface .verify-sources li { margin-bottom: 1.5mm; }
+.book-preface .preface-closing {
+  margin-top: 12mm;
+  padding-top: 6mm;
+  border-top: 0.5pt solid #e7dfd3;
+}
+.book-preface .preface-closing-text {
+  font-family: 'Noto Serif CJK KR', serif;
+  font-style: italic;
+  font-size: 11pt !important;
+  line-height: 1.9 !important;
+  color: #1a1410;
+}
+.book-preface .preface-sign {
+  margin-top: 8mm;
+  text-align: right;
+}
+.book-preface .preface-sign .sign-name {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 13pt;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: #c4724e;
+  display: block;
+}
+.book-preface .preface-sign .sign-meta {
+  font-family: 'Noto Sans CJK KR', sans-serif;
+  font-size: 8.5pt;
+  color: #706b66;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-top: 1mm;
+}

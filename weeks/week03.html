@@ -41,9 +41,9 @@
 <main id="main-content">
 
 <!-- ==================== WEEK HEADER ==================== -->
-<div class="week-header">
+<div class="week-header" id="header">
   <div class="week-number">WEEK 03</div>
-  <h1 class="week-title">변수와 입출력<br>이름표와 바인딩</h1>
+  <h1 class="week-title">변수와 입출력 — 이름표와 바인딩</h1>
   <p class="week-subtitle">
     <code>x = 1</code>은 "상자에 값을 넣는 것"이 아닙니다.<br>
     <strong>"이름(x)을 값(1)에 붙이는 것"</strong>입니다.<br>
@@ -214,7 +214,7 @@ print(x)       # [1, 2, 3, 4] — 왜 x도 바뀌었는가?</code></pre>
     <p>
       <code>x = 1</code>은 "상자(x)에 값(1)을 넣는다"는 뜻일까요?<br><br>
       아닙니다. Python의 공식 문서(tutorial/classes)는 이렇게 말합니다:<br>
-      <em>"대입은 데이터를 복사하지 않습니다 — 이름을 단지 객체에 연결할 뿐입니다."</em><br><br>
+      <em>"대입은 데이터를 복사하지 않습니다 — 이름을 단지 객체에 연결할 뿐입니다."</em><sup class="cite"><a href="#ref-1">[1]</a></sup><br><br>
       <strong><code>x = 1</code>은 "이름표 x를 객체 1에 붙인다"는 뜻입니다.</strong><br>
       이 차이가 위 수수께끼의 해답입니다.
     </p>
@@ -224,6 +224,10 @@ print(x)       # [1, 2, 3, 4] — 왜 x도 바뀌었는가?</code></pre>
 <!-- ==================== 02. 왜 이름표인가? ==================== -->
 <section id="why-label">
   <h2>왜 "이름표"인가? — 바인딩 모델</h2>
+
+  <div class="arch-diagram">
+    <img src="../book/diagrams/week03-name-vs-box.svg" alt="x = 1, y = x — '상자' 모델로는 y.append(4)가 x를 바꾸는 것을 설명할 수 없고, '이름표' 모델로만 설명된다" class="diagram-img">
+  </div>
 
   <!-- 초급 -->
   <div class="level-section elementary">
@@ -243,6 +247,10 @@ print(x)       # [1, 2, 3, 4] — 왜 x도 바뀌었는가?</code></pre>
       <br>
       🏷️ 이름표 모델: "이름표 x를 객체 1에 붙인다"<br>
       &nbsp;&nbsp;&nbsp;&nbsp;→ 이름표를 복사하면 두 이름표가 같은 것을 가리킨다
+    </div>
+
+    <div class="arch-diagram">
+      <img src="../book/diagrams/week03-binding-model.png" alt="상자 모델 vs 이름표 모델 비교 다이어그램" class="diagram-img">
     </div>
     <div class="code-block">
       <div class="code-header">
@@ -335,7 +343,7 @@ print(type(math))    # &lt;class 'module'&gt;</code></pre>
     </div>
     <div class="callout callout-info">
       <strong>Python 공식 문서(tutorial/classes):</strong><br>
-      <em>"새 이름을 소개하는 모든 연산은 지역 스코프를 사용합니다: 특히, import 문과 함수 정의는 모듈이나 함수 이름을 지역 스코프에 연결합니다."</em>
+      <em>"새 이름을 소개하는 모든 연산은 지역 스코프를 사용합니다: 특히, import 문과 함수 정의는 모듈이나 함수 이름을 지역 스코프에 연결합니다."</em><sup class="cite"><a href="#ref-1">[1]</a></sup>
     </div>
   </div>
 
@@ -419,6 +427,11 @@ dis.dis(code)</code></pre>
   1           2 LOAD_CONST               0 (42)
               4 STORE_NAME               0 (x)
               6 RETURN_CONST             1 (None)
+    </div>
+    <div class="callout callout-info" style="font-size: 0.9em">
+      <strong>Python 버전 메모:</strong> <code>RETURN_CONST</code>는 Python 3.12에서 도입되어 3.13까지 유지됩니다.
+      <strong>3.14에서는 제거</strong>되어 <code>LOAD_CONST None</code> + <code>RETURN_VALUE</code>(또는 <code>LOAD_SMALL_INT</code>) 조합으로 대체됩니다.
+      위 dis 출력은 3.12–3.13 기준입니다.
     </div>
     <p>두 개의 핵심 명령어:</p>
     <ul>
@@ -600,11 +613,12 @@ a = 100
 b = 100
 print(a is b)    # True — 같은 캐시 객체
 
-# 큰 정수: REPL에서 한 줄씩 입력할 때 다른 객체
+# 큰 정수: 캐시 범위 밖 — 결과는 "구현/실행 환경 의존"
 a = 1000
 b = 1000
-print(a is b)    # CPython 3.12+에서는 REPL에서도 같은 블록 내에서 True가 될 수 있음
-                 # (상수 폴딩/인터닝 정책이 버전마다 다름 — 구현 의존적)
+print(a is b)    # 같은 셀(.py 파일/REPL 한 블록) 안에서 컴파일러가 상수 폴딩하면 True,
+                 # REPL에서 줄을 나눠 입력하면 보통 False.
+                 # 핵심: 작은 정수 캐시(-5~256)를 벗어난 값의 is 결과는 보장되지 않는다.
 
 # 문자열 인터닝 (식별자처럼 생긴 문자열)
 s1 = "hello"
@@ -651,7 +665,7 @@ print(y)                     # [1, 2, 3] — 객체는 여전히 살아있음
 [1, 2, 3]
     </div>
     <p>
-      Python 공식 문서: <em>"문장 del x는 지역 스코프가 참조하는 이름 공간에서 x의 연결을 제거합니다."</em><br>
+      Python 공식 문서: <em>"문장 del x는 지역 스코프가 참조하는 이름 공간에서 x의 연결을 제거합니다."</em><sup class="cite"><a href="#ref-1">[1]</a></sup><br>
       객체 자체가 사라지는 것은 참조 카운트가 0이 될 때입니다.
     </p>
   </div>
@@ -977,7 +991,7 @@ __version__ = "1.0.0"</code></pre>
       <strong>왜 snake_case인가?</strong><br>
       Python은 가독성을 최우선으로 설계된 언어입니다. Guido van Rossum은
       <code>calculateAverage</code>보다 <code>calculate_average</code>가 단어 경계가 명확해
-      더 읽기 쉽다고 판단했습니다. PEP 8(2001)에서 공식화되었습니다.
+      더 읽기 쉽다고 판단했습니다. PEP 8(2001)<sup class="cite"><a href="#ref-2">[2]</a></sup>에서 공식화되었습니다.
     </div>
   </div>
 
@@ -1219,7 +1233,8 @@ print(f"{학생}의 점수는 {점수}점입니다.")  # 김민수의 점수는 
         <span class="code-label">print() 시그니처와 모든 매개변수</span>
         <button class="copy-btn">복사</button>
       </div>
-      <pre><code class="python"># print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
+      <pre><code class="python"># print(*objects, sep=' ', end='\n', file=None, flush=False)
+# (file=None은 sys.stdout을 의미 — 공식 문서 기준)
 
 import sys
 
@@ -1298,7 +1313,7 @@ Point(3, 4)
   <div class="level-section expert">
     <div class="level-section-header">
       <span class="level-badge level-expert">전공자</span>
-      <h3 class="level-section-title">Part A: builtin_print_impl() → PyObject_Str() → tp_str → sys.stdout.write()</h3>
+      <h3 class="level-section-title">Part A: print()의 호출 체인 — tp_str까지</h3>
     </div>
     <p>
       <code>print(x)</code>가 화면에 출력되기까지 CPython 내부에서 거치는 호출 체인을 추적합니다.
@@ -1621,7 +1636,7 @@ Global
       <h3 class="level-section-title">global과 nonlocal — 바깥 스코프에 쓰기</h3>
     </div>
     <p>
-      Python 공식 문서: <em>"global이나 nonlocal 문이 없을 때 — 이름에 대입하면 항상 가장 내부의 스코프로 간다."</em>
+      Python 공식 문서: <em>"global이나 nonlocal 문이 없을 때 — 이름에 대입하면 항상 가장 내부의 스코프로 간다."</em><sup class="cite"><a href="#ref-1">[1]</a></sup>
     </p>
     <div class="code-block">
       <div class="code-header">
@@ -1844,7 +1859,7 @@ numbers = [int(input()) for _ in range(n)]
 # 패턴 2: 한 줄에 여러 값
 a, b = map(int, input().split())
 
-# 패턴 3: 조건부 대입 (Python 3.8+ 왈러스 연산자)
+# 패턴 3: 조건부 대입 (Python 3.8+ 왈러스 연산자, PEP 572)
 while (line := input("입력: ")) != "quit":
     print(f"입력받음: {line}")
 
@@ -1859,7 +1874,7 @@ while (line := input("입력: ")) != "quit":
   <div class="level-section advanced">
     <div class="level-section-header">
       <span class="level-badge level-adv">고급</span>
-      <h3 class="level-section-title">AI가 생성하는 코드와 스코프 버그</h3>
+      <h3 class="level-section-title">AI 코드의 스코프 버그</h3>
     </div>
     <div class="code-block">
       <div class="code-header">
@@ -1951,7 +1966,7 @@ dis.dis(f)</code></pre>
   <div class="level-section expert">
     <div class="level-section-header">
       <span class="level-badge level-expert">전공자</span>
-      <h3 class="level-section-title">Part A — LOAD_FAST vs LOAD_DEREF vs LOAD_GLOBAL: 바이트코드로 보는 LEGB</h3>
+      <h3 class="level-section-title">Part A — LEGB의 바이트코드 구현</h3>
     </div>
     <p>
       파이썬의 LEGB 규칙은 바이트코드 레벨에서 서로 다른 명령어로 구현됩니다.
@@ -2059,7 +2074,7 @@ def fast():
     <h3 class="level-section-title" style="margin-top:2rem;">Part B — 환경 모델(Environment Model) vs 치환 모델(Substitution Model)</h3>
     <p>
       컴퓨터 과학에서 프로그램의 실행을 설명하는 두 가지 모델이 있습니다.
-      SICP(Structure and Interpretation of Computer Programs)에서 소개한 개념입니다.
+      SICP(Structure and Interpretation of Computer Programs)<sup class="cite"><a href="#ref-3">[3]</a></sup>에서 소개한 개념입니다.
     </p>
     <div class="callout callout-info">
       <strong>치환 모델(Substitution Model)</strong>: 함수 호출 시 인자를 함수 본체에 대입합니다.<br>
@@ -2204,7 +2219,7 @@ print(a)
 print(b)</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="output-block">
           <div class="output-label">실행 결과:</div>
@@ -2236,7 +2251,7 @@ next_year = age + 1
 print(f"내년에는 {next_year}살입니다.")</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <p>
           <strong>원인:</strong> <code>input()</code>은 항상 <code>str</code>을 반환합니다.
@@ -2262,7 +2277,7 @@ print(f"내년에는 {next_year}살입니다.")</code></pre>
       사용자로부터 이름과 나이를 입력받아 <code>"[이름]님은 [나이]살입니다."</code> 형태로 출력하는 코드를 작성하세요.
     </p>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="code-block">
           <div class="code-header"><span class="code-label">정답</span></div>
@@ -2297,7 +2312,7 @@ print(x is y)
 print(x is z)</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="output-block">
           <div class="output-label">실행 결과:</div>
@@ -2325,7 +2340,7 @@ False
       한 줄에 공백으로 구분된 정수들을 입력받아 최댓값, 최솟값, 평균을 출력하는 코드를 작성하세요.
     </p>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="code-block">
           <div class="code-header"><span class="code-label">정답</span></div>
@@ -2361,7 +2376,7 @@ print(x)            # (C)
 print(len([1,2]))   # (D)</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="output-block">
           <div class="output-label">실행 결과:</div>
@@ -2400,7 +2415,7 @@ def add(n):
 add(5)</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <p>
           <strong>원인:</strong> Python은 함수 안에서 <code>total =</code> 대입이 있으면 <code>total</code>을 지역 변수로 분류합니다(컴파일 타임 결정). 함수 시작 시점에 지역 <code>total</code>이 아직 초기화되지 않았으므로 <code>total + n</code> 평가 시 오류가 발생합니다.
@@ -2446,7 +2461,7 @@ acc.add(5)</code></pre>
       그 이유(성능 차이 포함)를 설명하세요.
     </p>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="code-block">
           <div class="code-header"><span class="code-label">정답</span></div>
@@ -2490,7 +2505,7 @@ dis.dis(foo)</code></pre>
 print([f() for f in funcs])   # [2, 2, 2]</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="code-block">
           <div class="code-header"><span class="code-label">분석 코드</span></div>
@@ -2525,7 +2540,7 @@ dis.dis(f)</code></pre>
       <code>globals()</code>와 <code>locals()</code>의 차이를 설명하고, 함수 안에서 <code>locals()</code>를 수정해도 실제 지역 변수에 영향이 없는 이유를 CPython 구현 관점에서 설명하세요.
     </p>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="code-block">
           <div class="code-header"><span class="code-label">분석 코드</span></div>
@@ -2547,9 +2562,11 @@ test()</code></pre>
           <br>
           <strong>locals()</strong>: <code>fastlocals</code> C 배열의 <em>현재 스냅샷 복사본</em>을 딕셔너리로 만들어 반환합니다.
           이 딕셔너리를 수정해도 <code>fastlocals</code> 배열에는 반영되지 않습니다.<br>
-          (CPython은 <code>PyFrame_FastToLocalsWithError()</code>로 배열→딕셔너리 변환,
-          <code>PyFrame_LocalsToFast()</code>로 딕셔너리→배열 역변환을 분리합니다.
-          <code>locals()</code>는 변환 후 딕셔너리를 돌려줄 뿐, 역방향 동기화는 자동으로 일어나지 않습니다.)
+          (Python 3.12까지 CPython은 <code>PyFrame_FastToLocalsWithError()</code>로 배열→딕셔너리 변환,
+          <code>PyFrame_LocalsToFast()</code>로 딕셔너리→배열 역변환을 분리했습니다.
+          <code>locals()</code>는 변환 후 딕셔너리를 돌려줄 뿐, 역방향 동기화는 자동으로 일어나지 않았습니다.
+          <strong>Python 3.13+에서 PEP 667</strong>로 이 두 C API는 호출만 유효하고 효력은 no-op이 되어,
+          <code>locals()</code>가 호출 시점마다 새 매핑을 만들어 돌려주도록 단일화됐습니다.)
         </p>
       </div>
     </details>
@@ -2731,6 +2748,38 @@ print(1 is True)     # False — ==과 is의 차이?</code></pre>
     </div>
     <p>이 질문들의 답은 4주차에서 밝혀집니다.</p>
   </div>
+</section>
+
+<!-- ==================== 참고문헌 ==================== -->
+<section id="references" class="references-section">
+  <h2>참고문헌</h2>
+  <p class="references-intro">
+    본 챕터의 기술적 주장은 모두 아래 1차 출처와 대조하여 검증되었습니다.
+    URL은 모두 2026년 5월 1일 마지막 접속 기준입니다.
+  </p>
+  <ol class="references-list">
+    <li id="ref-1">
+      <span class="ref-title">Python Software Foundation. <em>Python 3.14 Tutorial — Chapter 9.2: Python Scopes and Namespaces.</em></span>
+      <span class="ref-meta">docs.python.org/3/tutorial/classes.html#python-scopes-and-namespaces (한국어판: <code>tutorial/classes.txt</code> §147–152)</span>
+      <span class="ref-quote">"대입은 데이터를 복사하지 않습니다 — 이름을 단지 객체에 연결할 뿐입니다. 삭제도 마찬가지입니다: 문장 'del x'는 지역 스코프가 참조하는 이름 공간에서 'x'의 연결을 제거합니다. 사실, 새 이름을 소개하는 모든 연산은 지역 스코프를 사용합니다..."</span>
+    </li>
+    <li id="ref-2">
+      <span class="ref-title">Guido van Rossum, Barry Warsaw, Alyssa Coghlan. <em>PEP 8 — Style Guide for Python Code.</em> Python.org, 2001 (지속 갱신).</span>
+      <span class="ref-meta">peps.python.org/pep-0008/ — Python의 공식 코드 스타일 가이드. 변수·함수는 snake_case, 클래스는 PascalCase, 상수는 UPPER_SNAKE_CASE.</span>
+    </li>
+    <li id="ref-3">
+      <span class="ref-title">Harold Abelson, Gerald Jay Sussman, Julie Sussman. <em>Structure and Interpretation of Computer Programs (SICP).</em> 2nd Edition, MIT Press, 1996.</span>
+      <span class="ref-meta">mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/ — §1.1.5 "The Substitution Model for Procedure Application", §3.2 "The Environment Model of Evaluation". 환경 모델은 클로저와 상태 변경(mutation)을 설명할 수 있는 모델.</span>
+    </li>
+    <li id="ref-4">
+      <span class="ref-title">Chris Angelico, Tim Peters, Guido van Rossum. <em>PEP 572 — Assignment Expressions.</em> Python.org, 2018.</span>
+      <span class="ref-meta">peps.python.org/pep-0572/ — Python 3.8에 도입된 왈러스 연산자(<code>:=</code>). 대입과 동시에 표현식 값을 반환.</span>
+    </li>
+    <li id="ref-5">
+      <span class="ref-title">CPython source — <code>Python/ceval.c</code>, <code>Objects/frameobject.c</code>, <code>Objects/listobject.c</code>, <code>Modules/gcmodule.c</code>.</span>
+      <span class="ref-meta">github.com/python/cpython — STORE_NAME / STORE_FAST / LOAD_DEREF 등 바이트코드 처리, PyFrameObject(f_locals/f_globals), list_append in-place 동작, 세대별 GC 등 본 챕터에서 인용한 모든 CPython 내부 동작의 1차 출처.</span>
+    </li>
+  </ol>
 </section>
 
 </main>

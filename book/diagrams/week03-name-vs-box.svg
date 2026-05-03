@@ -1,0 +1,48 @@
+<svg width="660" height="320" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="22" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="14" fill="#1a1410">x = 1 — 변수는 "상자"가 아니라 "이름표"</text>
+  <text x="360" y="42" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">왜 y = x; y.append(4)가 x도 바꾸는가</text>
+
+  <!-- 왼쪽: 잘못된 모델 (상자) -->
+  <rect x="40" y="60" width="320" height="240" rx="6" fill="#fdf2f2" stroke="#c45858" stroke-width="2"/>
+  <text x="200" y="82" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="13" fill="#963434">❌ 잘못된 모델 — "상자"</text>
+  <text x="200" y="100" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">x = 1 → x라는 박스에 1을 넣는다 (X)</text>
+
+  <!-- 박스 다이어그램 -->
+  <rect x="80" y="125" width="100" height="55" fill="#ffffff" stroke="#c45858" stroke-width="1.5"/>
+  <text x="130" y="160" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#963434" font-weight="700">x: 1</text>
+
+  <rect x="220" y="125" width="100" height="55" fill="#ffffff" stroke="#c45858" stroke-width="1.5"/>
+  <text x="270" y="160" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#963434" font-weight="700">y: 1</text>
+
+  <text x="200" y="200" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#1a1410">y = x → 박스 내용을 복사? (X)</text>
+
+  <text x="200" y="230" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#963434">이 모델로는 다음을 설명할 수 없다:</text>
+  <text x="200" y="252" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#1a1410">y.append(4)</text>
+  <text x="200" y="270" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#963434" font-weight="700">→ 왜 x도 바뀌는가?</text>
+  <text x="200" y="288" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">"복사"로는 설명 불가</text>
+
+  <!-- 오른쪽: 올바른 모델 (이름표) -->
+  <rect x="400" y="60" width="280" height="240" rx="6" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="2"/>
+  <text x="540" y="82" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="13" fill="#267547">✅ 올바른 모델 — "이름표"</text>
+  <text x="540" y="100" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">x = obj → 객체 obj에 'x' 라벨을 붙인다</text>
+
+  <!-- 객체 (가운데) + 이름표 두 개 -->
+  <ellipse cx="540" cy="170" rx="60" ry="38" fill="#ffffff" stroke="#3b9b6e" stroke-width="2"/>
+  <text x="540" y="167" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#267547" font-weight="700">[1, 2, 3]</text>
+  <text x="540" y="183" text-anchor="middle" font-family="Noto Sans KR" font-size="8" fill="#706b66">id: 0x7f...</text>
+
+  <!-- 이름표 x -->
+  <line x1="445" y1="155" x2="485" y2="160" stroke="#c4724e" stroke-width="1.5"/>
+  <rect x="420" y="142" width="32" height="22" rx="3" fill="#fdf3ec" stroke="#c4724e"/>
+  <text x="436" y="158" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#c4724e" font-weight="700">x</text>
+
+  <!-- 이름표 y -->
+  <line x1="635" y1="155" x2="595" y2="160" stroke="#c4724e" stroke-width="1.5"/>
+  <rect x="630" y="142" width="32" height="22" rx="3" fill="#fdf3ec" stroke="#c4724e"/>
+  <text x="646" y="158" text-anchor="middle" font-family="JetBrains Mono" font-size="11" fill="#c4724e" font-weight="700">y</text>
+
+  <text x="540" y="225" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#1a1410">x is y → True</text>
+  <text x="540" y="241" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">두 이름표가 같은 객체를 가리킴</text>
+  <text x="540" y="265" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#963434">y.append(4)</text>
+  <text x="540" y="281" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#267547" font-weight="700">→ 같은 객체를 변경 → x도 [1,2,3,4]</text>
+</svg>

@@ -41,9 +41,9 @@
 <main id="main-content">
 
 <!-- ==================== WEEK HEADER ==================== -->
-<div class="week-header">
+<div class="week-header" id="header">
   <div class="week-number">WEEK 06</div>
-  <h1 class="week-title">리스트와 튜플<br>여러 값을 담는 컨테이너</h1>
+  <h1 class="week-title">리스트와 튜플 — 여러 값을 담는 컨테이너</h1>
   <p class="week-subtitle">
     <code>scores = [95, 82, 78]</code> — 세 값을 어떻게 하나에 담는가?<br>
     리스트는 왜 변경할 수 있고, 튜플은 왜 변경할 수 없는가?<br>
@@ -321,7 +321,7 @@ print(min(lst), max(lst)) # 1 5</code></pre>
 </div>
     <div class="callout callout-info">
       <strong>Python 공식 문서(library/stdtypes §4.6):</strong><br>
-      <em>"There are six sequence types: strings, byte sequences (bytes objects), byte arrays (bytearray objects), lists, tuples, and range objects."</em>
+      <em>"There are six sequence types: strings, byte sequences (bytes objects), byte arrays (bytearray objects), lists, tuples, and range objects."</em><sup class="cite"><a href="#ref-1">[1]</a></sup>
     </div>
   </div>
 
@@ -342,6 +342,10 @@ print(min(lst), max(lst)) # 1 5</code></pre>
       리스트의 항목 자체가 아닌, 항목을 가리키는 포인터를 저장합니다.
       따라서 이종(heterogeneous) 타입이 가능합니다.
     </p>
+
+    <div class="arch-diagram">
+      <img src="../book/diagrams/week06-pylistobject.png" alt="PyListObject 메모리 레이아웃 다이어그램" class="diagram-img">
+    </div>
     <p>
       <code>lst[i]</code>의 실행 경로:
     </p>
@@ -677,7 +681,7 @@ None
 [5, 4, 3, 1, 1]
     </div>
     <div class="callout callout-warning">
-      <strong>🚨 흔한 실수 — <code>list.sort()</code>는 None을 반환합니다:</strong>
+      <strong>🚨 흔한 실수 — <code>list.sort()</code>는 None를 반환합니다:</strong>
       <div class="code-block">
 <pre><code class="language-python" tabindex="0">numbers = [3, 1, 4, 1, 5, 9, 2]
 
@@ -761,7 +765,7 @@ print(f"무작위 데이터: {t2:.4f}초")
 </div>
     <div class="callout callout-info">
       <strong>Python 공식 문서(howto/sorting §Sort Stability):</strong><br>
-      <em>"Python's sort is guaranteed to be stable. That means that when multiple records have the same key, their original order is preserved."</em>
+      <em>"Python's sort is guaranteed to be stable. That means that when multiple records have the same key, their original order is preserved."</em><sup class="cite"><a href="#ref-2">[2]</a></sup>
     </div>
 
     <h3>Part A (계속): PyListObject의 동적 할당 — allocated vs ob_size</h3>
@@ -792,7 +796,7 @@ for i in range(17):
 항목 1개: 88 bytes ← resize 발생! (0 → 4슬롯)
 항목 5개: 120 bytes ← resize 발생! (4 → 8슬롯)
 항목 9개: 184 bytes ← resize 발생! (8 → 16슬롯)
-항목 17개: 312 bytes ← resize 발생! (16 → 24슬롯)
+항목 17개: 248 bytes ← resize 발생! (16 → 24슬롯)
     </div>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0">import dis
@@ -1064,6 +1068,10 @@ dis.dis(get_step_slice)</code></pre>
 <!-- ==================== 06. 튜플 ==================== -->
 <section id="tuple">
   <h2>튜플 — 변경 불가능한 이유</h2>
+
+  <div class="arch-diagram">
+    <img src="../book/diagrams/week06-list-vs-tuple.svg" alt="리스트(가변 ob_item 별도 힙)와 튜플(고정 길이 구조체 내부) 메모리 구조 비교" class="diagram-img">
+  </div>
 
   <!-- 초급 -->
   <div class="level-section elementary">
@@ -1584,7 +1592,7 @@ print(결과)         # (0, 1, 4, 9, 16)</code></pre>
     <h3>Part A: PEP 709 — Python 3.12 인라인 컴프리헨션</h3>
     <p>
       Python 3.11 이하: 리스트 컴프리헨션은 <strong>별도의 코드 오브젝트(nested function)</strong>로 컴파일됐습니다.
-      Python 3.12 (PEP 709): 컴프리헨션이 <strong>인라인</strong>으로 컴파일됩니다.
+      Python 3.12 (PEP 709<sup class="cite"><a href="#ref-3">[3]</a></sup>): 컴프리헨션이 <strong>인라인</strong>으로 컴파일됩니다.
     </p>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0">import dis
@@ -1648,7 +1656,7 @@ dis.dis(f)</code></pre>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0"># ❌ AI가 자주 쓰는 패턴 (버그!)
 nums = [3, 1, 4, 1, 5]
-sorted_nums = nums.sort()   # sort()는 None을 반환!
+sorted_nums = nums.sort()   # sort()는 None를 반환!
 print(sorted_nums)           # None — 버그
 
 # ✅ 올바른 방법
@@ -1705,7 +1713,7 @@ print(nums)   # [1, 3, 5] — 정확</code></pre>
     <pre><code class="language-text">데이터를 나중에 추가/삭제할 예정인가?
   ├── Yes → list
   └── No  → 딕셔너리 키로 사용할 건가?
-              ├── Yes → tuple  (list는 unhashable → TypeError)
+              ├── Yes → tuple  (list은 unhashable → TypeError)
               └── No  → 의미론적으로 단일 구조체인가? (좌표, RGB, 날짜)
                           ├── Yes → tuple  (의도를 코드로 표현)
                           └── No  → list  (기본값)</code></pre>
@@ -1715,7 +1723,7 @@ def get_rgb(name):
     colors = {"red": [255, 0, 0], "blue": [0, 0, 255]}
     return colors.get(name, [0, 0, 0])
 
-DAYS = ["월", "화", "수", "목", "금"]   # 불변 상수를 list로
+DAYS = ["월", "화", "수", "목", "금"]   # 불변 상수를 list으로
 
 # ✅ 개선: 의도를 코드로 표현
 def get_rgb_v2(name):
@@ -1724,7 +1732,7 @@ def get_rgb_v2(name):
 
 DAYS = ("월", "화", "수", "목", "금")   # 불변 상수 → tuple
 
-# tuple은 딕셔너리 키로 사용 가능 (list는 불가)
+# tuple은 딕셔너리 키로 사용 가능 (list은 불가)
 visited = {(0, 0): True, (1, 2): True}   # ✅
 # visited = {[0, 0]: True}               # ❌ TypeError: unhashable type: 'list'
 
@@ -1733,9 +1741,9 @@ lat, lon = (37.5665, 126.9780)
 r, g, b = get_rgb_v2("red")</code></pre>
 </div>
     <div class="callout callout-warning">
-      <strong>실전 팁:</strong> AI가 준 코드에서 list를 보면
+      <strong>실전 팁:</strong> AI가 준 코드에서 list을 보면
       "이 데이터가 나중에 변경될 필요가 있는가?"를 물어보세요.
-      No라면 tuple로 바꾸면 코드 의도가 더 명확해집니다.
+      No라면 tuple으로 바꾸면 코드 의도가 더 명확해집니다.
     </div>
   </div>
 
@@ -1988,7 +1996,7 @@ def create_student_record(names):
 mixed = [3, -7, 1, -9, 4, -6, 2, 8, -5]</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2030,7 +2038,7 @@ print(positives)   # [3, 1, 4, 2, 8]</code></pre>
 # 4. 상위 3명의 점수 (슬라이싱 활용)</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2074,7 +2082,7 @@ print(rot13("hello"))   # "uryyb"
 print(rot13("uryyb"))   # "hello" (두 번 적용하면 원문)</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2126,7 +2134,7 @@ deep = copy.deepcopy(original) # 깊은 복사
 # 표로 정리하고, id()를 사용해 각 경우의 객체 동일성을 확인하세요</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2175,7 +2183,7 @@ deep[2].append(99)       # original[2]는 안 바뀜 (완전 분리)
 # 3. 도시명만 추출한 튜플을 만드세요 (tuple() 사용)</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2222,7 +2230,7 @@ print(rotate([1, 2, 3, 4, 5], 0))   # [1, 2, 3, 4, 5]
 print(rotate([1, 2, 3, 4, 5], 7))   # k가 len보다 클 때도 처리하세요</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2273,7 +2281,7 @@ print(s2.items)   # (1, 2, 3)
 print(s3.items)   # (1, 2)</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2338,7 +2346,7 @@ for i in range(20):
 # Q3: 이 전략의 amortized O(1) 증명: n번 append의 총 복사 횟수는 O(n)임을 보이세요</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2392,7 +2400,7 @@ dis.dis(access_list, adaptive=True)
 # Q3: dis.findlinestarts() 또는 코드 오브젝트의 co_code를 직접 검사해보세요</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
@@ -2442,11 +2450,11 @@ print("\nco_consts:", comprehension_func.__code__.co_consts)
 # Q3: 3.12에서 컴프리헨션 내 변수가 외부 함수의 locals에 영향을 주는가?</code></pre>
 </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-content">
         <div class="answer-body">
           <div class="code-block">
-<pre><code class="language-python" tabindex="0"># Q1: 3.11에서는 co_consts에 code object가 포함됨
+<pre><code class="language-python" tabindex="0"># Q1: 3.11에서는 co_consts에 code object이 포함됨
 # 3.12에서는 PEP 709 인라인 컴파일로 co_consts에 code object 없음
 # → 3.11: co_consts = (None, <code object <listcomp> at ...>)
 # → 3.12: co_consts = (None,)
@@ -2543,91 +2551,91 @@ GET_ITER  →  BUILD_LIST 0  →  FOR_ITER loop {
   <h2>용어 사전 (22개)</h2>
   <div class="glossary-grid">
     <div class="glossary-item">
-      <h4>Sequence (시퀀스)</h4>
+      <h3>Sequence (시퀀스)</h3>
       <p>순서 있는 컨테이너. 인덱싱, 슬라이싱, len() 지원. list, tuple, str, range 등.</p>
     </div>
     <div class="glossary-item">
-      <h4>Mutable Sequence (가변 시퀀스)</h4>
+      <h3>Mutable Sequence (가변 시퀀스)</h3>
       <p>생성 후 내용 변경 가능한 시퀀스. list, bytearray 등.</p>
     </div>
     <div class="glossary-item">
-      <h4>Immutable Sequence (불변 시퀀스)</h4>
+      <h3>Immutable Sequence (불변 시퀀스)</h3>
       <p>생성 후 변경 불가. tuple, str, bytes. 원소가 모두 hashable이면 딕셔너리 키로 사용 가능.</p>
     </div>
     <div class="glossary-item">
-      <h4>Index (인덱스)</h4>
+      <h3>Index (인덱스)</h3>
       <p>시퀀스에서 특정 항목의 위치 번호. 0부터 시작. 음수는 뒤에서 셈.</p>
     </div>
     <div class="glossary-item">
-      <h4>Slicing (슬라이싱)</h4>
+      <h3>Slicing (슬라이싱)</h3>
       <p>시퀀스의 일부를 추출하는 연산. seq[start:stop:step]. 새 시퀀스 반환.</p>
     </div>
     <div class="glossary-item">
-      <h4>Dynamic Array (동적 배열)</h4>
+      <h3>Dynamic Array (동적 배열)</h3>
       <p>크기가 변할 수 있는 배열. CPython 리스트의 구현 방식. Over-allocation으로 amortized O(1) append.</p>
     </div>
     <div class="glossary-item">
-      <h4>Over-allocation (과할당)</h4>
+      <h3>Over-allocation (과할당)</h3>
       <p>CPython 리스트가 resize 시 필요한 것보다 더 많은 메모리를 확보하는 전략. append O(1) amortized 보장.</p>
     </div>
     <div class="glossary-item">
-      <h4>PyListObject</h4>
+      <h3>PyListObject</h3>
       <p>CPython의 리스트 내부 구조체. ob_item(포인터 배열), ob_size(현재 크기), allocated(할당된 크기) 포함.</p>
     </div>
     <div class="glossary-item">
-      <h4>PyTupleObject</h4>
+      <h3>PyTupleObject</h3>
       <p>CPython의 튜플 내부 구조체. ob_item이 구조체 내부에 포함. allocated 없음. 메모리 효율적.</p>
     </div>
     <div class="glossary-item">
-      <h4>Shallow Copy (얕은 복사)</h4>
+      <h3>Shallow Copy (얕은 복사)</h3>
       <p>새 컨테이너를 만들지만 내부 객체는 공유. list.copy(), list[:]. 중첩 구조에는 주의.</p>
     </div>
     <div class="glossary-item">
-      <h4>Deep Copy (깊은 복사)</h4>
+      <h3>Deep Copy (깊은 복사)</h3>
       <p>모든 중첩 객체까지 재귀적으로 복사. copy.deepcopy(). 완전히 독립적인 복사본.</p>
     </div>
     <div class="glossary-item">
-      <h4>Hashable (해시 가능)</h4>
+      <h3>Hashable (해시 가능)</h3>
       <p>hash() 함수를 사용할 수 있는 객체. 내장 타입 중 str, int, float 등은 항상 hashable. tuple은 원소가 모두 hashable일 때만 hashable. 사용자 정의 클래스는 기본적으로 id() 기반 해시를 가짐. 딕셔너리 키, set 요소가 될 수 있음.</p>
     </div>
     <div class="glossary-item">
-      <h4>Unpacking (언패킹)</h4>
+      <h3>Unpacking (언패킹)</h3>
       <p>시퀀스의 각 항목을 개별 변수에 배정. <code>x, y = (1, 2)</code>. UNPACK_SEQUENCE 바이트코드.</p>
     </div>
     <div class="glossary-item">
-      <h4>Extended Unpacking (확장 언패킹)</h4>
+      <h3>Extended Unpacking (확장 언패킹)</h3>
       <p>*를 사용해 나머지 항목을 리스트로 수집. <code>first, *rest = lst</code>. UNPACK_EX 바이트코드.</p>
     </div>
     <div class="glossary-item">
-      <h4>List Comprehension (리스트 컴프리헨션)</h4>
+      <h3>List Comprehension (리스트 컴프리헨션)</h3>
       <p>[expr for x in iter if cond] 형태의 리스트 생성 표현식. Python 3.12부터 인라인 컴파일 (PEP 709).</p>
     </div>
     <div class="glossary-item">
-      <h4>BINARY_SUBSCR</h4>
+      <h3>BINARY_SUBSCR</h3>
       <p>인덱싱 바이트코드. lst[i] → ob_item[i] O(1) 접근. 3.12에서 BINARY_SUBSCR_LIST_INT로 특화 가능.</p>
     </div>
     <div class="glossary-item">
-      <h4>BINARY_SLICE</h4>
+      <h3>BINARY_SLICE</h3>
       <p>Python 3.12+의 슬라이싱 전용 바이트코드. 스텝 없는 [a:b] 슬라이스에 최적화.</p>
     </div>
     <div class="glossary-item">
-      <h4>Timsort</h4>
+      <h3>Timsort</h3>
       <p>Python list.sort()와 sorted()가 사용하는 안정 정렬 알고리즘. O(n log n) worst, O(n) best (이미 정렬된 경우).</p>
     </div>
     <div class="glossary-item">
-      <h4>Amortized O(1) (상각 O(1))</h4>
+      <h3>Amortized O(1) (상각 O(1))</h3>
       <p>개별 연산이 가끔 O(n)이지만 n번 연산의 평균이 O(1). 리스트 append의 시간 복잡도.</p>
     </div>
     <div class="glossary-item">
-      <h4>PEP 709 (인라인 컴프리헨션)</h4>
+      <h3>PEP 709 (인라인 컴프리헨션)</h3>
       <p>Python 3.12에서 리스트/딕셔너리/집합 컴프리헨션을 별도 함수 없이 인라인으로 컴파일. 성능 ~2배 향상.</p>
     </div>
     <div class="glossary-item">
-      <h4>__getitem__</h4>
+      <h3>__getitem__</h3>
       <p>[] 인덱싱/슬라이싱 연산자를 구현하는 매직 메서드. lst[i] → lst.__getitem__(i).</p>
     </div>
     <div class="glossary-item">
-      <h4>slice 객체</h4>
+      <h3>slice 객체</h3>
       <p>start, stop, step 속성을 갖는 내장 타입. lst[1:4:2] → __getitem__(slice(1,4,2)). indices() 메서드 제공.</p>
     </div>
   </div>
@@ -2664,6 +2672,34 @@ while True:
       <strong>Iterator Protocol</strong>이란 무엇이고, 왜 모든 반복 가능한 객체에 이것이 있는가?
     </p>
   </div>
+</section>
+
+<!-- ==================== 참고문헌 ==================== -->
+<section id="references" class="references-section">
+  <h2>참고문헌</h2>
+  <p class="references-intro">본 챕터의 기술적 주장은 모두 아래 1차 출처와 대조하여 검증되었습니다. URL은 모두 2026년 5월 1일 마지막 접속 기준입니다.</p>
+  <ol class="references-list">
+    <li id="ref-1">
+      <span class="ref-title">Python Software Foundation. <em>Python 3.14 Library Reference — 4.6 Sequence Types: list, tuple, range.</em></span>
+      <span class="ref-meta">docs.python.org/3/library/stdtypes.html#sequence-types-list-tuple-range (한국어판: <code>library/stdtypes.txt</code>) — 6가지 시퀀스 타입 정의 (str, bytes, bytearray, list, tuple, range), 가변/불변 분류, 공통 연산.</span>
+    </li>
+    <li id="ref-2">
+      <span class="ref-title">Andrew Dalke, Raymond Hettinger. <em>Sorting HOW TO.</em> Python Documentation.</span>
+      <span class="ref-meta">docs.python.org/3/howto/sorting.html (한국어판: <code>howto/sorting.txt</code>) — Timsort 안정성 보장, key/reverse 매개변수, sort()와 sorted()의 차이.</span>
+    </li>
+    <li id="ref-3">
+      <span class="ref-title">Jelle Zijlstra. <em>PEP 709 — Inlined comprehensions.</em> Python.org, 2023.</span>
+      <span class="ref-meta">peps.python.org/pep-0709/ — Python 3.12 도입. 컴프리헨션이 별도 함수가 아닌 인라인 바이트코드로 컴파일되어 호출 오버헤드 제거. 단 변수 격리는 유지.</span>
+    </li>
+    <li id="ref-4">
+      <span class="ref-title">Tim Peters. <em>Timsort description.</em> CPython source: <code>Objects/listsort.txt</code>.</span>
+      <span class="ref-meta">github.com/python/cpython/blob/main/Objects/listsort.txt — Tim Peters가 2002년 Python을 위해 설계한 안정 정렬 알고리즘. Run 탐지 + Galloping 모드 + Merge 전략. 이미 정렬된 데이터에서 O(n).</span>
+    </li>
+    <li id="ref-5">
+      <span class="ref-title">CPython source — <code>Include/cpython/listobject.h</code>, <code>Objects/listobject.c</code> (PyListObject struct, list_resize over-allocation 공식, list_subscript), <code>Objects/tupleobject.c</code>.</span>
+      <span class="ref-meta">github.com/python/cpython — list[i] = O(1), append amortized O(1), pop(0) = O(n) 복잡도의 구현 1차 출처. <code>list_resize</code>의 새 용량 공식: <code>((size_t)newsize + (newsize >> 3) + 6) &amp; ~(size_t)3</code>.</span>
+    </li>
+  </ol>
 </section>
 
 </main>

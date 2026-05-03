@@ -41,9 +41,9 @@
 <main id="main-content">
 
 <!-- ==================== WEEK HEADER ==================== -->
-<div class="week-header">
+<div class="week-header" id="header">
   <div class="week-number">WEEK 11</div>
-  <h1 class="week-title">컴프리헨션 &amp; 제너레이터<br>— 의도대로 읽히는 코드, 필요할 때만 계산하는 코드</h1>
+  <h1 class="week-title">컴프리헨션 &amp; 제너레이터 — 의도대로 읽히는 코드, 필요할 때만 계산하는 코드</h1>
   <p class="week-subtitle">
     4줄짜리 for문이 1줄로 줄어듭니다 — 그런데 이것은 "축약"이 아닙니다.<br>
     1억 개의 데이터를 메모리 200바이트로 처리합니다 — 어떻게?<br>
@@ -170,7 +170,7 @@ print(len(result))  # 50</code></pre>
       Guido van Rossum은 2000년 <strong>PEP 202</strong>에서 이것을 Python에 도입했습니다.
       이유: "list comprehensions provide a more concise way to create lists in situations where
       <code>map()</code> and <code>filter()</code> would currently be used."
-    </p>
+    <sup class="cite"><a href="#ref-1">[1]</a></sup></p>
     <p>
       이제 다른 문제입니다. 1부터 <strong>1억</strong>까지 중 짝수의 제곱이 필요합니다.
       한 번에 다 구해서 메모리에 올리면?
@@ -196,6 +196,11 @@ print(f"제너레이터 크기: {sys.getsizeof(gen)} bytes")   # 200 bytes — 1
 print(next(gen))   # 4      (첫 번째 값만 계산)
 print(next(gen))   # 16     (두 번째 값만 계산)
 print(next(gen))   # 36     (세 번째 값만 계산)</code></pre>
+
+    <div class="arch-diagram">
+      <img src="../book/diagrams/week11-list-vs-generator.png" alt="리스트 컴프리헨션 vs 제너레이터 메모리 비교" class="diagram-img">
+    </div>
+
     <div class="callout callout-warning">
       <strong>이번 주 핵심 질문</strong><br>
       컴프리헨션은 for문을 "축약"한 것인가, 아니면 다른 무언가인가?<br>
@@ -496,7 +501,7 @@ dis.dis(with_comp)
       for문이 루프 변수를 외부에 노출하므로, 컴프리헨션도 당연히 노출했습니다.
       당시에는 이것이 문제가 아니었습니다 — 컴프리헨션이 새 기능이었고,
       "for문과 동일하게 동작한다"는 것이 학습 비용을 줄여주는 장점이었습니다.
-    </p>
+    <sup class="cite"><a href="#ref-3">[3]</a></sup></p>
     <p>
       문제가 드러난 것은 프로젝트가 커지면서입니다.
       컴프리헨션 안의 <code>x</code>가 바깥의 <code>x</code>를 덮어쓰는 버그가 보고되기 시작했습니다.
@@ -583,7 +588,7 @@ print(grade_to_name)   # {85: '민수', 90: '영희'}
     </div>
 
     <h3>실용 패턴: 조건부 딕셔너리 생성</h3>
-<pre><code># 환경설정에서 None이 아닌 값만 추출
+<pre><code># 환경설정에서 None가 아닌 값만 추출
 config = {"host": "localhost", "port": 8080, "debug": None, "workers": 4}
 active_config = {k: v for k, v in config.items() if v is not None}
 print(active_config)   # {'host': 'localhost', 'port': 8080, 'workers': 4}
@@ -670,7 +675,7 @@ dis.dis(dict_comp)
       Python의 딕셔너리/세트 컴프리헨션은 Python 2.7/3.0(PEP 274)에서 추가되었습니다 —
       리스트 컴프리헨션보다 7년 늦게. 필요성이 충분히 입증된 후 추가하는
       Python의 보수적 설계 철학("We need to resist the temptation to add features." — Zen of Python)을 보여줍니다.
-    </p>
+    <sup class="cite"><a href="#ref-2">[2]</a></sup></p>
   </div>
 </section>
 
@@ -778,13 +783,17 @@ print(results)   # ['123', '456']</code></pre>
 <section id="generator-func">
   <h2>05 — 제너레이터 함수 &amp; yield</h2>
 
+  <div class="arch-diagram">
+    <img src="../book/diagrams/week11-yield-flow.svg" alt="def gen() → gen() 제너레이터 객체 → next() 호출마다 yield까지 실행 후 frame 보존, StopIteration 시 종료" class="diagram-img">
+  </div>
+
   <div class="why-box">
     <h3>핵심 비유: 자판기 (Vending Machine)</h3>
     <p>
       리스트는 <strong>과일 바구니</strong>입니다 — 모든 과일이 이미 담겨 있고, 바구니가 클수록 무겁습니다.<br>
       제너레이터는 <strong>자판기</strong>입니다 — 버튼을 누를 때마다(next()) 과일이 하나씩 나옵니다.
       자판기 안에 모든 과일이 미리 만들어져 있는 게 아닙니다 — <em>주문 시 즉석 제조</em>입니다.
-    </p>
+    <sup class="cite"><a href="#ref-4">[4]</a></sup></p>
     <p>
       <code>yield</code>는 자판기의 <strong>배출구</strong>입니다 — 과일을 내보내고 다음 주문까지 대기합니다.
     </p>
@@ -973,14 +982,14 @@ list(gen3)                  # [2, 3]  ← 나머지 소비
 print(gen3.gi_frame)        # None  ← 소진됨</code></pre>
 
     <h3>Iterable vs Iterator — 핵심 구분</h3>
-<pre><code># Iterable: __iter__를 구현 → iter()로 Iterator를 만들 수 있는 객체
+<pre><code># Iterable: __iter__를 구현 → iter()로 Iterator을 만들 수 있는 객체
 # Iterator: __iter__ + __next__를 구현 → next()로 값을 꺼낼 수 있는 객체
 
-# 리스트는 Iterable이지만 Iterator가 아닙니다
+# 리스트는 Iterable이지만 Iterator이 아닙니다
 lst = [1, 2, 3]
 # next(lst)  # TypeError: 'list' object is not an iterator
 
-# iter()로 Iterator를 만듭니다
+# iter()로 Iterator을 만듭니다
 it = iter(lst)
 print(next(it))   # 1
 print(next(it))   # 2
@@ -1003,7 +1012,7 @@ class MyRangeIterator:
         self.n = n
         self.current = 0
     def __iter__(self):
-        return self   # Iterator는 자기 자신 반환
+        return self   # Iterator은 자기 자신 반환
     def __next__(self):
         if self.current >= self.n:
             raise StopIteration
@@ -1022,7 +1031,7 @@ print(list(gen))  # []  ← 소진됨! (Iterator이므로 1회용)</code></pre>
     <div class="callout callout-warning">
       <strong>핵심 구분:</strong>
       <strong>Iterable</strong>: <code>iter()</code>를 호출할 수 있음 (list, dict, str, range).
-      여러 번 순회 가능 — 매번 새 Iterator를 생성하므로.<br>
+      여러 번 순회 가능 — 매번 새 Iterator을 생성하므로.<br>
       <strong>Iterator</strong>: <code>next()</code>를 호출할 수 있음 (generator, map, filter, file).
       한 번만 순회 가능 — 소진되면 끝.
     </div>
@@ -1261,7 +1270,7 @@ g2.close()         # "제너레이터가 닫힙니다" 출력</code></pre>
       이 경우 <code>send()</code>가 서브코루틴에 전달되지 않았습니다.
       <strong>PEP 380 (Python 3.3)</strong>: <code>yield from</code>이 이것을 해결합니다 —
       send/throw가 서브제너레이터로 <strong>자동 전달</strong>됩니다.
-    </p>
+    <sup class="cite"><a href="#ref-6">[6]</a></sup></p>
     <p>
       <strong>마지막 문제</strong>: 제너레이터와 코루틴이 같은 <code>yield</code>를 쓰다 보니
       "이 함수가 값을 생성하는 건지, 비동기 작업을 하는 건지" 구분이 안 되었습니다.
@@ -1360,11 +1369,11 @@ def with_gen():
 # Python 3.12+
 # with_list: 인라인 (별도 code object 없음)
 print(with_list.__code__.co_consts)
-# (None,)  ← 내부 code object 없음 (인라인)
+# (None, 5)  ← range(5)의 5만 상수로 — 내부 code object 없음 (인라인)
 
 # with_gen: 별도 code object 존재
 print(with_gen.__code__.co_consts)
-# (None, &lt;code object &lt;genexpr&gt; ...&gt;)  ← genexpr code object 있음!</code></pre>
+# (None, &lt;code object &lt;genexpr&gt; ...&gt;, 5)  ← genexpr code object 있음!</code></pre>
 
     <div class="callout callout-warning">
       <strong>Part A — 왜 제너레이터 표현식은 인라인되지 않는가:</strong>
@@ -1506,7 +1515,7 @@ for key, group in itertools.groupby(data):
     <p>
       Python 표준 라이브러리 대부분은 Python으로 작성됩니다(json, collections, functools 등).
       그런데 itertools는 <strong>전부 C</strong>입니다. 왜?
-    </p>
+    <sup class="cite"><a href="#ref-5">[5]</a></sup></p>
     <p>
       itertools의 함수들은 <strong>루프 안에서 수백만~수억 번 호출</strong>됩니다.
       <code>chain</code>이 1억 개를 연결할 때, Python 함수 호출 1회의 오버헤드(~100ns)가
@@ -2157,6 +2166,38 @@ print(len(v1))    # ???           ← __len__ 필요</code></pre>
     <code>__init__</code>은 생성자가 아니라면, 진짜 생성자는 누구인가?
     <code>super()</code>는 정말 부모 클래스를 호출하는가?
   </div>
+</section>
+
+<!-- ==================== 참고문헌 ==================== -->
+<section id="references" class="references-section">
+  <h2>참고문헌</h2>
+  <p class="references-intro">본 챕터의 기술적 주장은 모두 아래 1차 출처와 대조하여 검증되었습니다. URL은 모두 2026년 5월 1일 마지막 접속 기준입니다.</p>
+  <ol class="references-list">
+    <li id="ref-1">
+      <span class="ref-title">Barry Warsaw. <em>PEP 202 — List Comprehensions.</em> Python.org, 2000.</span>
+      <span class="ref-meta">peps.python.org/pep-0202/ — Python 2.0 도입. Haskell의 리스트 컴프리헨션에서 영감.</span>
+    </li>
+    <li id="ref-2">
+      <span class="ref-title">Barry Warsaw, Just van Rossum, Raymond Hettinger. <em>PEP 274 — Dict Comprehensions.</em> Python.org, 2001.</span>
+      <span class="ref-meta">peps.python.org/pep-0274/ — Python 2.7/3.0 도입. set/dict 컴프리헨션 추가.</span>
+    </li>
+    <li id="ref-3">
+      <span class="ref-title">Carl Meyer, Jelle Zijlstra. <em>PEP 709 — Inlined comprehensions.</em> Python.org, 2023.</span>
+      <span class="ref-meta">peps.python.org/pep-0709/ — Python 3.12. 컴프리헨션 인라인 처리, LOAD_FAST_AND_CLEAR로 스코프 격리 유지. 최대 2배 속도 향상.</span>
+    </li>
+    <li id="ref-4">
+      <span class="ref-title">Chris Angelico, Tim Peters, Guido van Rossum. <em>PEP 572 — Assignment Expressions.</em> Python.org, 2018.</span>
+      <span class="ref-meta">peps.python.org/pep-0572/ — Python 3.8 walrus(:=). 컴프리헨션 내 walrus 변수는 의도적으로 외부 스코프로 누출.</span>
+    </li>
+    <li id="ref-5">
+      <span class="ref-title">Python Software Foundation. <em>Python 3.14 Library Reference — itertools.</em></span>
+      <span class="ref-meta">docs.python.org/3/library/itertools.html — chain, islice, takewhile, accumulate, groupby 등 lazy iterator 빌딩 블록.</span>
+    </li>
+    <li id="ref-6">
+      <span class="ref-title">CPython source — <code>Python/ceval.c</code> (LIST_APPEND, MAP_ADD, SET_ADD, GEN_START, YIELD_VALUE), <code>Objects/genobject.c</code> (PyGenObject), PEP 380 (yield from).</span>
+      <span class="ref-meta">github.com/python/cpython — 컴프리헨션과 제너레이터 바이트코드, generator frame 보존/재개 메커니즘의 1차 출처.</span>
+    </li>
+  </ol>
 </section>
 
 </main>

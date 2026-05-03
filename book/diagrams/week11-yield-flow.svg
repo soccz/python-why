@@ -1,0 +1,57 @@
+<svg width="660" height="320" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="22" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="14" fill="#1a1410">yield — 함수가 어떻게 자기 상태를 보존하고 재개되는가</text>
+  <text x="360" y="42" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">제너레이터: 일반 함수와 달리 호출 사이에 frame을 살려둔다</text>
+
+  <!-- 제너레이터 함수 정의 -->
+  <rect x="20" y="60" width="200" height="80" rx="4" fill="#1e1e2e"/>
+  <text x="35" y="80" font-family="JetBrains Mono" font-size="10" fill="#cdd6f4">def gen():</text>
+  <text x="35" y="96" font-family="JetBrains Mono" font-size="10" fill="#cdd6f4">    yield 1</text>
+  <text x="35" y="112" font-family="JetBrains Mono" font-size="10" fill="#cdd6f4">    yield 2</text>
+  <text x="35" y="128" font-family="JetBrains Mono" font-size="10" fill="#cdd6f4">    yield 3</text>
+  <text x="120" y="155" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">제너레이터 함수</text>
+
+  <!-- 화살표 -->
+  <line x1="225" y1="100" x2="252" y2="100" stroke="#706b66" stroke-width="1.5" marker-end="url(#aY)"/>
+  <text x="238" y="92" text-anchor="middle" font-family="Noto Sans KR" font-size="8" fill="#706b66">호출</text>
+  <text x="238" y="110" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#706b66">gen()</text>
+
+  <!-- 제너레이터 객체 -->
+  <rect x="255" y="60" width="200" height="80" rx="4" fill="#fdf8ef" stroke="#c48b2c"/>
+  <text x="355" y="82" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#8a5f0e">제너레이터 객체</text>
+  <text x="265" y="100" font-family="JetBrains Mono" font-size="8.5" fill="#1a1410">PyGenObject:</text>
+  <text x="270" y="114" font-family="JetBrains Mono" font-size="8" fill="#706b66">gi_frame  ← Frame 객체</text>
+  <text x="270" y="126" font-family="JetBrains Mono" font-size="8" fill="#706b66">gi_code   ← Code 객체</text>
+  <text x="355" y="155" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">실행은 안 됨 — 객체만 생성</text>
+
+  <!-- 화살표 -->
+  <line x1="460" y1="100" x2="487" y2="100" stroke="#706b66" stroke-width="1.5" marker-end="url(#aY)"/>
+  <text x="473" y="92" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#706b66">next()</text>
+
+  <!-- 첫 next: yield 1 -->
+  <rect x="490" y="60" width="200" height="80" rx="4" fill="#f0f9f4" stroke="#3b9b6e"/>
+  <text x="590" y="82" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#267547">실행 시작</text>
+  <text x="500" y="100" font-family="Noto Sans KR" font-size="9" fill="#1a1410">1. RESUME 0</text>
+  <text x="500" y="114" font-family="Noto Sans KR" font-size="9" fill="#1a1410">2. yield 1 ← 1 반환 + 일시중지</text>
+  <text x="500" y="128" font-family="Noto Sans KR" font-size="9" fill="#963434" font-weight="700">3. frame 보존, 함수 종료 X</text>
+
+  <!-- 두 번째 next() -->
+  <text x="20" y="200" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#1a1410">두 번째 next() 호출:</text>
+  <rect x="20" y="210" width="430" height="60" rx="3" fill="#fdf8ef" stroke="#c48b2c" stroke-width="0.8"/>
+  <text x="35" y="230" font-family="Noto Sans KR" font-size="9.5" fill="#1a1410">→ 보존된 gi_frame을 다시 활성화 (RESUME ≠ 0)</text>
+  <text x="35" y="246" font-family="Noto Sans KR" font-size="9.5" fill="#1a1410">→ <tspan font-family="JetBrains Mono" fill="#963434">yield 2</tspan>까지 실행, 다시 일시중지</text>
+  <text x="35" y="262" font-family="Noto Sans KR" font-size="9.5" fill="#1a1410">→ 지역 변수, 실행 위치 모두 그대로 (마치 멈췄던 영화 다시 재생)</text>
+
+  <!-- 세 번째 next 후 -->
+  <rect x="465" y="210" width="220" height="60" rx="3" fill="#fdf2f2" stroke="#c45858" stroke-width="0.8"/>
+  <text x="575" y="228" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="10" fill="#963434">함수 본문 끝나면</text>
+  <text x="575" y="245" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#963434">StopIteration 예외</text>
+  <text x="575" y="262" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">for 루프가 잡아 정상 종료</text>
+
+  <!-- 결론 -->
+  <rect x="20" y="285" width="670" height="22" rx="3" fill="#1e1e2e"/>
+  <text x="355" y="301" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#cdd6f4">핵심: 일반 함수는 return 시 frame 폐기 / 제너레이터는 yield 시 frame 보존 → CO_GENERATOR 플래그</text>
+
+  <defs>
+    <marker id="aY" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#706b66"/></marker>
+  </defs>
+</svg>

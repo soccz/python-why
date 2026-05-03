@@ -1,0 +1,65 @@
+<svg width="660" height="320" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="22" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="14" fill="#1a1410">리스트(가변) vs 튜플(불변) — 메모리 구조의 차이</text>
+  <text x="360" y="42" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">왜 리스트는 append 가능하고 튜플은 안 되는가</text>
+
+  <!-- 왼쪽: 리스트 -->
+  <rect x="40" y="60" width="320" height="240" rx="6" fill="#fdf2f2" stroke="#c45858" stroke-width="2"/>
+  <text x="200" y="82" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="13" fill="#963434">list — Mutable</text>
+  <text x="200" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#706b66">[10, 20, 30]</text>
+
+  <!-- 헤더 -->
+  <rect x="60" y="115" width="280" height="40" rx="3" fill="#ffffff" stroke="#c45858" stroke-width="1"/>
+  <text x="80" y="132" font-family="JetBrains Mono" font-size="9" fill="#963434" font-weight="700">PyListObject</text>
+  <text x="80" y="146" font-family="JetBrains Mono" font-size="8.5" fill="#1a1410">ob_size=3 · allocated=4</text>
+  <text x="240" y="138" font-family="JetBrains Mono" font-size="8" fill="#706b66">+ ob_item *</text>
+
+  <!-- 화살표 -->
+  <line x1="200" y1="155" x2="200" y2="170" stroke="#706b66" stroke-width="1.5" marker-end="url(#aL)"/>
+
+  <!-- 별도 배열 -->
+  <rect x="60" y="175" width="280" height="55" rx="3" fill="#ffffff" stroke="#c45858"/>
+  <text x="80" y="190" font-family="JetBrains Mono" font-size="8" fill="#706b66">ob_item (별도 힙 영역)</text>
+  <g font-family="JetBrains Mono" font-size="9">
+    <rect x="80" y="198" width="50" height="22" fill="#fdf2f2" stroke="#c45858"/>
+    <text x="105" y="212" text-anchor="middle" fill="#963434">→ 10</text>
+    <rect x="135" y="198" width="50" height="22" fill="#fdf2f2" stroke="#c45858"/>
+    <text x="160" y="212" text-anchor="middle" fill="#963434">→ 20</text>
+    <rect x="190" y="198" width="50" height="22" fill="#fdf2f2" stroke="#c45858"/>
+    <text x="215" y="212" text-anchor="middle" fill="#963434">→ 30</text>
+    <rect x="245" y="198" width="50" height="22" fill="#ffffff" stroke="#c45858" stroke-dasharray="2,2"/>
+    <text x="270" y="212" text-anchor="middle" fill="#706b66">예약</text>
+  </g>
+
+  <text x="200" y="252" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#963434" font-weight="700">append(40) 가능 — ob_item 끝에 추가</text>
+  <text x="200" y="268" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">초과 시 over-allocate (~12.5%) 후 realloc</text>
+  <text x="200" y="285" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">resize 비용 평균 O(1) (amortized)</text>
+
+  <!-- 오른쪽: 튜플 -->
+  <rect x="400" y="60" width="280" height="240" rx="6" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="2"/>
+  <text x="540" y="82" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="13" fill="#267547">tuple — Immutable</text>
+  <text x="540" y="100" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#706b66">(10, 20, 30)</text>
+
+  <!-- 일체형 구조 -->
+  <rect x="420" y="115" width="240" height="115" rx="3" fill="#ffffff" stroke="#3b9b6e"/>
+  <text x="440" y="132" font-family="JetBrains Mono" font-size="9" fill="#267547" font-weight="700">PyTupleObject</text>
+  <text x="440" y="146" font-family="JetBrains Mono" font-size="8.5" fill="#1a1410">ob_size=3 (고정)</text>
+  <text x="440" y="166" font-family="JetBrains Mono" font-size="8" fill="#706b66">ob_item[3] (구조체 내부)</text>
+
+  <g font-family="JetBrains Mono" font-size="9">
+    <rect x="440" y="173" width="55" height="22" fill="#f0f9f4" stroke="#3b9b6e"/>
+    <text x="467" y="187" text-anchor="middle" fill="#267547">→ 10</text>
+    <rect x="500" y="173" width="55" height="22" fill="#f0f9f4" stroke="#3b9b6e"/>
+    <text x="527" y="187" text-anchor="middle" fill="#267547">→ 20</text>
+    <rect x="560" y="173" width="55" height="22" fill="#f0f9f4" stroke="#3b9b6e"/>
+    <text x="587" y="187" text-anchor="middle" fill="#267547">→ 30</text>
+  </g>
+  <text x="540" y="216" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">길이가 구조체에 박혀 있음 — 변경 불가</text>
+
+  <text x="540" y="252" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#267547" font-weight="700">append() 없음 — 메서드 자체 부재</text>
+  <text x="540" y="268" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">크기 = 1회 할당, hashable 가능</text>
+  <text x="540" y="285" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">dict key/set 원소로 사용 가능</text>
+
+  <defs>
+    <marker id="aL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#706b66"/></marker>
+  </defs>
+</svg>

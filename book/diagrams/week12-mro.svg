@@ -1,0 +1,69 @@
+<svg width="660" height="320" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="22" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="14" fill="#1a1410">super()와 MRO — 다이아몬드 상속에서 호출 순서</text>
+  <text x="360" y="42" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">super()는 "부모"가 아니라 "MRO의 다음 클래스" (C3 Linearization)</text>
+
+  <!-- 클래스 다이어그램 (왼쪽) -->
+  <text x="160" y="70" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#1a1410">상속 다이어그램</text>
+
+  <!-- A (최상위) -->
+  <rect x="125" y="85" width="70" height="34" rx="3" fill="#f2f0fc" stroke="#5a48c0" stroke-width="1.5"/>
+  <text x="160" y="107" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#4835a0" font-weight="700">A</text>
+
+  <!-- B, C -->
+  <line x1="148" y1="119" x2="100" y2="155" stroke="#706b66" stroke-width="1.2"/>
+  <line x1="172" y1="119" x2="220" y2="155" stroke="#706b66" stroke-width="1.2"/>
+
+  <rect x="65" y="160" width="70" height="34" rx="3" fill="#fdf2f2" stroke="#c45858" stroke-width="1.5"/>
+  <text x="100" y="182" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#963434" font-weight="700">B(A)</text>
+
+  <rect x="185" y="160" width="70" height="34" rx="3" fill="#fdf8ef" stroke="#c48b2c" stroke-width="1.5"/>
+  <text x="220" y="182" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#8a5f0e" font-weight="700">C(A)</text>
+
+  <!-- D -->
+  <line x1="100" y1="194" x2="148" y2="225" stroke="#706b66" stroke-width="1.2"/>
+  <line x1="220" y1="194" x2="172" y2="225" stroke="#706b66" stroke-width="1.2"/>
+
+  <rect x="125" y="230" width="70" height="34" rx="3" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="2"/>
+  <text x="160" y="252" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#267547" font-weight="700">D(B,C)</text>
+
+  <text x="160" y="285" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">D ← B(A) ← C(A) ← A (다이아몬드)</text>
+
+  <!-- 오른쪽: MRO + super() 호출 순서 -->
+  <rect x="320" y="65" width="360" height="240" rx="6" fill="#faf7f2" stroke="#c4724e" stroke-width="1.5"/>
+  <text x="500" y="85" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="12" fill="#c4724e">D.__mro__ — C3 Linearization</text>
+
+  <text x="335" y="108" font-family="JetBrains Mono" font-size="10" fill="#1a1410">D.__mro__ = (D, B, C, A, object)</text>
+
+  <!-- MRO 시각화 -->
+  <g font-family="JetBrains Mono" font-size="10">
+    <rect x="335" y="120" width="50" height="28" rx="3" fill="#f0f9f4" stroke="#3b9b6e"/>
+    <text x="360" y="138" text-anchor="middle" fill="#267547" font-weight="700">D</text>
+    <text x="395" y="138" font-size="14">→</text>
+
+    <rect x="410" y="120" width="50" height="28" rx="3" fill="#fdf2f2" stroke="#c45858"/>
+    <text x="435" y="138" text-anchor="middle" fill="#963434" font-weight="700">B</text>
+    <text x="470" y="138" font-size="14">→</text>
+
+    <rect x="485" y="120" width="50" height="28" rx="3" fill="#fdf8ef" stroke="#c48b2c"/>
+    <text x="510" y="138" text-anchor="middle" fill="#8a5f0e" font-weight="700">C</text>
+    <text x="545" y="138" font-size="14">→</text>
+
+    <rect x="560" y="120" width="50" height="28" rx="3" fill="#f2f0fc" stroke="#5a48c0"/>
+    <text x="585" y="138" text-anchor="middle" fill="#4835a0" font-weight="700">A</text>
+    <text x="620" y="138" font-size="14">→</text>
+
+    <rect x="635" y="120" width="40" height="28" rx="3" fill="#1e1e2e"/>
+    <text x="655" y="138" text-anchor="middle" fill="#cdd6f4" font-size="9">obj</text>
+  </g>
+
+  <!-- super() 흐름 -->
+  <text x="335" y="175" font-family="Noto Sans KR" font-weight="700" font-size="10" fill="#1a1410">D 안에서 super().method() 호출 시:</text>
+  <text x="345" y="193" font-family="JetBrains Mono" font-size="9.5" fill="#1a1410">→ MRO에서 D 다음인 <tspan fill="#963434" font-weight="700">B</tspan>의 method 호출</text>
+  <text x="345" y="208" font-family="Noto Sans KR" font-size="9.5" fill="#1a1410">B에서 또 super() 호출 시:</text>
+  <text x="355" y="223" font-family="JetBrains Mono" font-size="9.5" fill="#1a1410">→ B 다음인 <tspan fill="#8a5f0e" font-weight="700">C</tspan>로 (A가 아니다!)</text>
+  <text x="345" y="240" font-family="Noto Sans KR" font-size="9.5" fill="#1a1410">C에서 super() 호출 시:</text>
+  <text x="355" y="255" font-family="JetBrains Mono" font-size="9.5" fill="#1a1410">→ C 다음인 <tspan fill="#4835a0" font-weight="700">A</tspan></text>
+
+  <text x="500" y="280" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">A가 한 번만 호출되도록 C3가 보장한다</text>
+  <text x="500" y="295" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#c4724e">type(d).__mro__로 직접 확인 가능</text>
+</svg>

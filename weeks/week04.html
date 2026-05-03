@@ -41,9 +41,9 @@
 <main id="main-content">
 
 <!-- ==================== WEEK HEADER ==================== -->
-<div class="week-header">
+<div class="week-header" id="header">
   <div class="week-number">WEEK 04</div>
-  <h1 class="week-title">연산자와 표현식<br>컴퓨터는 어떻게 계산하는가?</h1>
+  <h1 class="week-title">연산자와 표현식 — 컴퓨터의 계산 원리</h1>
   <p class="week-subtitle">
     <code>2 + 3 * 4</code>는 왜 20이 아니라 14일까요?<br>
     <code>"ha" * 3</code>은 왜 <code>"hahaha"</code>가 될까요?<br>
@@ -280,8 +280,9 @@ print(10 ** 3)   # 거듭제곱</code></pre>
       <span class="level-badge level-inter">중급</span>
       <h3 class="level-section-title">표현식(Expression) — 값을 만드는 코드 조각</h3>
     </div>
+
     <p>
-      Python 공식 문서(reference/expressions): <em>"표현식(Expression)은 값으로 평가(evaluate)되는 코드 조각입니다."</em>
+      Python 공식 문서(reference/expressions): <em>"표현식(Expression)은 값으로 평가(evaluate)되는 코드 조각입니다."</em><sup class="cite"><a href="#ref-1">[1]</a></sup>
     </p>
     <div class="code-block">
       <div class="code-header">
@@ -350,7 +351,7 @@ if m := re.search(r'\d{3}-\d{4}-\d{4}', text):
     </div>
     <div class="callout callout-info">
       <strong>왜 := 가 필요한가?</strong> 기존 = 은 문(Statement)이라 if/while 조건식, 리스트 컴프리헨션 내부에서 사용 불가.
-      := 는 표현식(Expression)이라 어디서든 사용 가능. PEP 572에서 도입.
+      := 는 표현식(Expression)이라 어디서든 사용 가능. PEP 572<sup class="cite"><a href="#ref-2">[2]</a></sup>에서 도입.
     </div>
     <div class="callout callout-warning">
       <strong>함정 — if 안에서 = 을 쓰면?</strong><br>
@@ -567,8 +568,8 @@ Hello, World!
     </div>
     <div class="callout callout-info">
       <strong>Python 공식 문서(tutorial):</strong><br>
-      <em>"나눗셈('/')은 항상 float를 돌려줍니다."</em><br>
-      PEP 238(2001)에서 제안, Python 3에서 기본 동작이 되었습니다.
+      <em>"나눗셈('/')은 항상 float을 돌려줍니다."</em><br>
+      PEP 238(2001)<sup class="cite"><a href="#ref-3">[3]</a></sup>에서 제안, Python 3에서 기본 동작이 되었습니다.
     </div>
   </div>
 
@@ -676,7 +677,7 @@ dis.dis(compile("-2 ** 2", "&lt;s&gt;", "eval"))</code></pre>
     </div>
     <p>
       <code>-2 ** 2</code>는 컴파일 타임에 상수 폴딩으로 <code>-4</code>로 계산됩니다.<br>
-      Python 공식 문서(reference/expressions §6.17): <em>"거듭제곱과 조건 표현식은 오른쪽에서 왼쪽으로 그룹 짓습니다."</em>
+      Python 공식 문서(reference/expressions §6.17): <em>"거듭제곱과 조건 표현식은 오른쪽에서 왼쪽으로 그룹 짓습니다."</em><sup class="cite"><a href="#ref-1">[1]</a></sup>
     </p>
   </div>
 </section>
@@ -694,6 +695,9 @@ dis.dis(compile("-2 ** 2", "&lt;s&gt;", "eval"))</code></pre>
     <p>
       수학에서 <code>2 + 3 × 4 = 14</code>인 것처럼, Python도 같은 우선순위 규칙을 따릅니다.
     </p>
+    <div class="arch-diagram">
+      <img src="../book/diagrams/week04-operator-precedence.svg" alt="2 + 3 * 4를 AST 트리로 분해하면 곱셈이 먼저 평가되어 14가 된다" class="diagram-img">
+    </div>
     <div class="code-block">
       <div class="code-header">
         <span class="code-label">우선순위 확인</span>
@@ -830,7 +834,7 @@ True
     <div class="callout callout-info">
       <strong>Python 공식 문서(reference/expressions §6.10):</strong><br>
       <em>"비교는 자유롭게 연결될 수 있습니다, 예를 들어, x &lt; y &lt;= z는 x &lt; y and y &lt;= z와 동등한데,
-      차이점은 y의 값을 오직 한 번만 구한다는 것입니다."</em>
+      차이점은 y의 값을 오직 한 번만 구한다는 것입니다."</em><sup class="cite"><a href="#ref-1">[1]</a></sup>
     </div>
   </div>
 
@@ -1015,9 +1019,9 @@ x = 257
 y = 257
 print(x is y)   # False ← 257은 캐시 없음 (CPython 구현 세부사항)
 # ⚠️ 구현 의존적: .py 파일에서는 상수 폴딩으로 True가 될 수 있고,
-#    REPL에서도 버전에 따라 결과가 다를 수 있음 → is로 정수를 비교하지 말 것
+#    REPL에서도 버전에 따라 결과가 다를 수 있음 → is으로 정수를 비교하지 말 것
 
-# 결론: 값 비교는 항상 ==, is는 None 비교에만
+# 결론: 값 비교는 항상 ==, is은 None 비교에만
 print(None is None)   # True ← 유일한 None 객체</code></pre>
 </div>
     </div>
@@ -1143,7 +1147,7 @@ True
     def __eq__(self, other):
         return self.학번 == other.학번
 
-# __eq__만 정의하면 __hash__는 None이 됨
+# __eq__만 정의하면 __hash__는 None가 됨
 철수 = 학생("철수", 2024001)
 # {철수}  # TypeError: unhashable type: '학생'
 
@@ -1174,7 +1178,7 @@ True
     <div class="callout callout-warning">
       <strong>위반 시 결과:</strong> <code>a == b</code>인데 <code>hash(a) != hash(b)</code>이면,
       딕셔너리와 집합이 "같은 키"를 두 개로 저장합니다.
-      Python이 자동으로 <code>__hash__ = None</code>으로 만드는 이유입니다 (reference/datamodel §3.3.1).
+      Python이 자동으로 <code>__hash__ = None</code>으로 만드는 이유입니다 (reference/datamodel §3.3.1)<sup class="cite"><a href="#ref-4">[4]</a></sup>.
     </div>
   </div>
 </section>
@@ -1273,7 +1277,7 @@ True
       <h3 class="level-section-title">Truthiness 커스터마이제이션 — __bool__ 과 __len__</h3>
     </div>
     <p>
-      Python 공식 문서(reference/datamodel): 클래스는 <code>__bool__</code> 또는 <code>__len__</code>으로 Truthiness를 정의할 수 있습니다.
+      Python 공식 문서(reference/datamodel): 클래스는 <code>__bool__</code> 또는 <code>__len__</code>으로 Truthiness를 정의할 수 있습니다<sup class="cite"><a href="#ref-4">[4]</a></sup>.
     </p>
     <div class="code-block">
       <div class="code-header">
@@ -1625,7 +1629,7 @@ True
     </div>
     <div class="callout callout-info">
       <strong>Python 공식 문서(reference/expressions §6.11):</strong><br>
-      <em>"The expression <code>x and y</code> first evaluates x; if x is false, its value is returned; otherwise, y is evaluated and the resulting value is returned."</em>
+      <em>"The expression <code>x and y</code> first evaluates x; if x is false, its value is returned; otherwise, y is evaluated and the resulting value is returned."</em><sup class="cite"><a href="#ref-1">[1]</a></sup>
     </div>
   </div>
 </section>
@@ -1819,7 +1823,7 @@ d += {"b": 2}  # TypeError: unsupported operand type(s) for +=: 'dict' and 'dict
       <li>합집합(union) semantics인가, 업데이트(update) semantics인가?</li>
     </ul>
     <p>
-      Python 3.9에서 PEP 584가 이 문제를 해결했다: <code>|</code>(merge, 새 dict 반환)와
+      Python 3.9에서 PEP 584<sup class="cite"><a href="#ref-5">[5]</a></sup>가 이 문제를 해결했다: <code>|</code>(merge, 새 dict 반환)와
       <code>|=</code>(update, in-place) 연산자를 추가. 충돌 시 오른쪽이 우선:
     </p>
     <div class="code-block">
@@ -1839,7 +1843,7 @@ print(d1)           # {'a': 1, 'b': 99, 'c': 3}</code></pre>
     </div>
     <div class="callout callout-info">
       <strong>Python 공식 문서(PEP 584 — Add Union Operators To dict):</strong><br>
-      <em>"The augmented assignment version operates in-place when the left operand is a dict. For dict subclasses, |= updates self in place."</em>
+      <em>"The augmented assignment version operates in-place when the left operand is a dict. For dict subclasses, |= updates self in place."</em><sup class="cite"><a href="#ref-5">[5]</a></sup>
     </div>
   </div>
 </section>
@@ -1916,8 +1920,8 @@ print(safe_divide(10, 2))   # 5.0
 print(safe_divide(10, 0))   # 0 (단락)
 
 # 주의: 이 패턴의 함정
-# safe_divide(10, 0)는 None이 아닌 0을 반환
-# None 체크나 except가 필요한 경우에는 try/except 사용</code></pre>
+# safe_divide(10, 0)는 None가 아닌 0을 반환
+# None 체크나 except이 필요한 경우에는 try/except 사용</code></pre>
     </div>
     <div class="output-block">
       <div class="output-label">실행 결과:</div>
@@ -2257,7 +2261,7 @@ print(2 ** 8)
 print(-3 ** 2)</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="output-block">
           <div class="output-label">실행 결과:</div>
@@ -2291,7 +2295,7 @@ print(-3 ** 2)</code></pre>
       (예: 3661초 → 1시간 1분 1초)
     </p>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="code-block">
           <div class="code-header"><span class="code-label">정답</span></div>
@@ -2329,7 +2333,7 @@ print(bool(0.0))
 print(bool(0.001))</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="output-block">
           <div class="output-label">실행 결과:</div>
@@ -2371,7 +2375,7 @@ print([] or {} or "hello")
 print(1 and 2 and 3)</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="output-block">
           <div class="output-label">실행 결과:</div>
@@ -2420,7 +2424,7 @@ print(d)
 print(c is d)</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="output-block">
           <div class="output-label">실행 결과:</div>
@@ -2458,7 +2462,7 @@ print(is_valid_age(-5))    # False
 print(is_valid_age(200))   # False</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <p>실제로 이 코드는 버그가 없습니다. <code>0 &lt; -5 &lt; 150</code>은 <code>False</code>이고, <code>0 &lt; 200 &lt; 150</code>도 <code>False</code>입니다. 체이닝 비교가 올바르게 동작합니다.</p>
         <div class="code-block">
@@ -2489,7 +2493,7 @@ print(is_valid_age(200))   # False ← 올바름</code></pre>
       <code>Temperature(20) + Temperature(5)</code>는 <code>Temperature(25)</code>를 반환해야 합니다.
     </p>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="code-block">
           <div class="code-header"><span class="code-label">정답</span></div>
@@ -2547,7 +2551,7 @@ print(1 < x and x < 10)
 print((1 < x) < 10)</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="output-block">
           <div class="output-label">실행 결과:</div>
@@ -2579,7 +2583,7 @@ True
       <code>BINARY_OP</code>가 직접 <code>__add__</code>를 호출하는 것보다 왜 더 효율적인지 설명하세요.
     </p>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="code-block">
           <div class="code-header"><span class="code-label">분석 코드</span></div>
@@ -2616,7 +2620,7 @@ dis.dis(compile("a.__add__(b)", "&lt;s&gt;", "eval"))</code></pre>
       실험으로 증명하세요.
     </p>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="code-block">
           <div class="code-header"><span class="code-label">실험 코드</span></div>
@@ -2666,7 +2670,7 @@ True
 print(5 + MyNum(10))</code></pre>
     </div>
     <details class="answer">
-      <summary>💡 힌트 / 정답 보기</summary>
+      <summary>정답 및 해설</summary>
       <div class="answer-body">
         <div class="output-block">
           <div class="output-label">실행 결과:</div>
@@ -2675,7 +2679,7 @@ print(5 + MyNum(10))</code></pre>
         <p>
           1. <code>5 + MyNum(10)</code> → <code>PyNumber_Add(int(5), MyNum(10))</code><br>
           2. <code>MyNum</code>은 <code>int</code>의 서브클래스가 <strong>아님</strong> → 서브클래스 우선 규칙 없음<br>
-          3. <code>int.__add__(5, MyNum(10))</code> 시도 → <code>NotImplemented</code> (int는 MyNum 덧셈 모름)<br>
+          3. <code>int.__add__(5, MyNum(10))</code> 시도 → <code>NotImplemented</code> (int은 MyNum 덧셈 모름)<br>
           4. <code>MyNum.__radd__(MyNum(10), 5)</code> 시도 → <code>15</code> 반환<br>
           <br>
           만약 <code>MyNum(int)</code> (서브클래스)였다면:<br>
@@ -2765,7 +2769,7 @@ print(5 + MyNum(10))</code></pre>
     </div>
     <div class="glossary-item">
       <div class="glossary-term">Truthiness (진리성)</div>
-      <div class="glossary-def">모든 Python 객체가 가지는 True/False 해석. if문에서 bool이 아닌 값도 사용 가능.</div>
+      <div class="glossary-def">모든 Python 객체가 가지는 True/False 해석. if문에서 bool이 아닌 값도 사용 가능. 5주차에서 <code>__bool__</code>/<code>__len__</code> 프로토콜로 정의되는 판단 체계 자체로 더 깊게 다룬다.</div>
     </div>
     <div class="glossary-item">
       <div class="glossary-term">Falsy (거짓값)</div>
@@ -2867,6 +2871,45 @@ print(grade)   # C — 내부에서 어떤 비교가 몇 번 이루어지는가?
     </div>
     <p>이 질문의 답은 5주차에서 밝혀집니다.</p>
   </div>
+</section>
+
+<!-- ==================== 참고문헌 ==================== -->
+<section id="references" class="references-section">
+  <h2>참고문헌</h2>
+  <p class="references-intro">
+    본 챕터의 기술적 주장은 모두 아래 1차 출처와 대조하여 검증되었습니다.
+    URL은 모두 2026년 5월 1일 마지막 접속 기준입니다.
+  </p>
+  <ol class="references-list">
+    <li id="ref-1">
+      <span class="ref-title">Python Software Foundation. <em>Python 3.14 Language Reference — 6. Expressions.</em></span>
+      <span class="ref-meta">docs.python.org/3/reference/expressions.html (한국어판: <code>reference/expressions.txt</code>) — §6.10 비교 (<em>"comparisons can be chained arbitrarily"</em>), §6.11 boolean operations (<em>"x and y first evaluates x..."</em>), §6.17 연산자 우선순위.</span>
+    </li>
+    <li id="ref-2">
+      <span class="ref-title">Chris Angelico, Tim Peters, Guido van Rossum. <em>PEP 572 — Assignment Expressions.</em> Python.org, 2018.</span>
+      <span class="ref-meta">peps.python.org/pep-0572/ — Python 3.8 왈러스 연산자(<code>:=</code>) 도입.</span>
+    </li>
+    <li id="ref-3">
+      <span class="ref-title">Moshe Zadka, Guido van Rossum. <em>PEP 238 — Changing the Division Operator.</em> Python.org, 2001.</span>
+      <span class="ref-meta">peps.python.org/pep-0238/ — Python 3에서 <code>/</code>는 항상 true division (float 결과). <code>//</code>는 floor division.</span>
+    </li>
+    <li id="ref-4">
+      <span class="ref-title">Python Software Foundation. <em>Python 3.14 Language Reference — 3. Data Model.</em></span>
+      <span class="ref-meta">docs.python.org/3/reference/datamodel.html (한국어판: <code>reference/datamodel.txt</code>) — §3.3.1 <code>__bool__</code>, <code>__len__</code>, <code>__eq__</code>, <code>__hash__</code> 프로토콜과 해시 일관성 계약.</span>
+    </li>
+    <li id="ref-5">
+      <span class="ref-title">Brandt Bucher, Steven D'Aprano. <em>PEP 584 — Add Union Operators To dict.</em> Python.org, 2019.</span>
+      <span class="ref-meta">peps.python.org/pep-0584/ — Python 3.9에 <code>|</code>(merge)와 <code>|=</code>(in-place update) 연산자 추가. 충돌 시 오른쪽 우선.</span>
+    </li>
+    <li id="ref-6">
+      <span class="ref-title">Guido van Rossum, Pablo Galindo, Lysandros Nikolaou. <em>PEP 617 — New PEG parser for CPython.</em> Python.org, 2020.</span>
+      <span class="ref-meta">peps.python.org/pep-0617/ — Python 3.9부터 LL(1) 파서를 PEG로 교체. 문법 우선순위는 <code>Grammar/python.gram</code>의 중첩 깊이로 인코딩됨.</span>
+    </li>
+    <li id="ref-7">
+      <span class="ref-title">CPython source — <code>Objects/abstract.c</code> (PyNumber_Add, PyObject_RichCompare, PyObject_IsTrue), <code>Python/ceval.c</code> (BINARY_OP, COPY, POP_JUMP_IF_FALSE, UNARY_NOT), <code>Python/ast_opt.c</code> (constant folding).</span>
+      <span class="ref-meta">github.com/python/cpython — 본 챕터에서 인용한 모든 연산자 디스패치/단락평가/상수폴딩 동작의 1차 출처.</span>
+    </li>
+  </ol>
 </section>
 
 </main>

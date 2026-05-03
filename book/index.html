@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <script>try{var t=localStorage.getItem("python-why-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PyWhy v1.0 — 1,010쪽 PDF 전자책</title>
+  <meta name="description" content="공식 문서로 분해하는 파이썬 사고법. 15주차 1,010쪽 / Python 3.14 / CPython 내부 / 4단계 학습 시스템. 무료 미리보기 70쪽 다운로드.">
+  <link rel="canonical" href="https://soccz.github.io/python-why/book/">
+  <meta property="og:type" content="book">
+  <meta property="og:title" content="PyWhy v1.0 — 1,010쪽 PDF 전자책">
+  <meta property="og:description" content="공식 문서로 분해하는 파이썬 사고법. 15주차 / Python 3.14 / CPython / 4단계 학습. 무료 70쪽 미리보기.">
+  <meta property="og:url" content="https://soccz.github.io/python-why/book/">
+  <meta property="og:site_name" content="PyWhy">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:image" content="https://soccz.github.io/python-why/assets/og-card-book.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://soccz.github.io/python-why/assets/og-card-book.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    "name": "PyWhy — 공식 문서로 분해하는 파이썬 사고법",
+    "alternateName": "PyWhy",
+    "author": {"@type": "Person", "name": "H0NG"},
+    "inLanguage": "ko",
+    "numberOfPages": 1010,
+    "bookFormat": "https://schema.org/EBook",
+    "isbn": "준비 중",
+    "url": "https://soccz.github.io/python-why/book/",
+    "image": "https://soccz.github.io/python-why/assets/gallery/page-1.png",
+    "description": "Python 3.14 공식 문서 기반 1,010쪽 PDF. 4단계(초급/중급/고급/전공자) 학습 시스템 + CPython 바이트코드 내부.",
+    "publisher": {"@type": "Person", "name": "H0NG"},
+    "offers": {
+      "@type": "Offer",
+      "availability": "https://schema.org/PreOrder",
+      "priceCurrency": "KRW",
+      "price": "29900",
+      "url": "https://soccz.github.io/python-why/book/"
+    }
+  }
+  </script>
+
+  <link rel="stylesheet" href="../css/style.min.css">
+  <style>
+    /* ====== /book/ landing — sales-focused ====== */
+    .book-page { padding-bottom: 120px; }
+
+    /* ── HERO ─────────────────────────────────────────── */
+    .book-hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 56px;
+      align-items: center;
+      padding: 64px 0 48px;
+    }
+    .book-hero-cover img {
+      width: 100%;
+      max-width: 360px;
+      display: block;
+      margin: 0 auto;
+      border-radius: 6px;
+      box-shadow:
+        0 14px 40px rgba(26,20,16,0.18),
+        0 2px 8px rgba(196,114,78,0.12);
+      transform: rotate(-1.5deg);
+      transition: transform 0.25s ease;
+    }
+    .book-hero-cover img:hover { transform: rotate(0deg) scale(1.02); }
+
+    .book-hero-text { max-width: 540px; }
+    .book-hero-eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 1.6px;
+      color: var(--accent-text);
+      background: var(--accent-soft);
+      padding: 5px 12px;
+      border-radius: var(--radius-full);
+      margin-bottom: 18px;
+    }
+    .book-hero-title {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 2.6rem;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: -0.025em;
+      margin: 0 0 16px;
+      color: var(--text);
+    }
+    .book-hero-title .accent { color: var(--accent-text); }
+    .book-hero-sub {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: var(--text-muted);
+      margin: 0 0 26px;
+    }
+    .book-hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 18px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 26px;
+    }
+    .book-hero-meta strong {
+      color: var(--accent-text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+    }
+    .book-hero-price {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .book-hero-price .price-num {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: var(--text);
+    }
+    .book-hero-price .price-tag {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      padding: 3px 8px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border);
+    }
+    .book-hero-cta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .book-hero-note {
+      margin-top: 14px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* ── SECTION SHELL ────────────────────────────────── */
+    .book-section { padding: 56px 0; }
+    .book-section-eyebrow {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 1.6px;
+      color: var(--accent-text);
+      margin-bottom: 10px;
+    }
+    .book-section-h2 {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 1.9rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin: 0 0 22px;
+      color: var(--text);
+    }
+    .book-section-lead {
+      font-size: 1.0rem;
+      line-height: 1.7;
+      color: var(--text-muted);
+      max-width: 64ch;
+      margin: 0 0 28px;
+    }
+
+    /* ── 2. GALLERY ───────────────────────────────────── */
+    .book-gallery {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .book-gallery a {
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg-elevated);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .book-gallery a:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-accent);
+    }
+    .book-gallery img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      object-position: top;
+      display: block;
+    }
+    .book-gallery .gcap {
+      display: block;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── 3. WHY THIS BOOK ─────────────────────────────── */
+    .why-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    .why-card {
+      padding: 24px 26px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      border-left: 3px solid var(--accent-text);
+    }
+    .why-card h3 {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+      color: var(--accent-text);
+    }
+    .why-card p {
+      font-size: 0.92rem;
+      line-height: 1.65;
+      color: var(--text-muted);
+      margin: 0;
+    }
+    .why-card code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+      color: var(--text);
+      background: var(--bg);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    /* ── 4. 4-LEVEL SYSTEM ────────────────────────────── */
+    .level-system {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .level-card {
+      padding: 22px 18px;
+      border-radius: var(--radius);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-top: 4px solid;
+      text-align: left;
+    }
+    .level-card.lc-elem    { border-top-color: #3b9b6e; }
+    .level-card.lc-inter   { border-top-color: #c48b2c; }
+    .level-card.lc-adv     { border-top-color: #c45858; }
+    .level-card.lc-expert  { border-top-color: #5a48c0; }
+    .level-card .lc-tag {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .lc-elem    .lc-tag { color: #3b9b6e; }
+    .lc-inter   .lc-tag { color: #c48b2c; }
+    .lc-adv     .lc-tag { color: #c45858; }
+    .lc-expert  .lc-tag { color: #5a48c0; }
+    .level-card h4 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+    .level-card p {
+      margin: 0;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+
+    /* ── 5. CURRICULUM ────────────────────────────────── */
+    .curr-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .curr-card {
+      padding: 14px 16px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.88rem;
+      transition: border-color 0.15s ease;
+    }
+    .curr-card:hover { border-color: var(--border-accent); }
+    .curr-card .cc-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--accent-text);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+    .curr-card .cc-title {
+      display: block;
+      font-weight: 700;
+      color: var(--text);
+      margin: 4px 0 2px;
+    }
+    .curr-card .cc-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* ── 6. VERIFICATION ──────────────────────────────── */
+    .verify-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .verify-stat {
+      text-align: center;
+      padding: 22px 14px;
+      background: var(--accent-soft);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius);
+    }
+    .verify-stat .vs-num {
+      display: block;
+      font-family: 'Noto Serif KR', serif;
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent-text);
+      line-height: 1;
+    }
+    .verify-stat .vs-label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    .verify-links {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .verify-links li {
+      padding: 10px 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    .verify-links a { color: var(--text); text-decoration: none; }
+    .verify-links a:hover { color: var(--accent-text); text-decoration: underline; }
+    .verify-links small { color: var(--text-muted); display: block; margin-top: 2px; font-size: 0.72rem; }
+
+    /* ── 7. NOT FOR YOU ────────────────────────────────── */
+    .not-for-you {
+      padding: 28px 30px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-left: 3px solid #c48b2c;
+      border-radius: var(--radius);
+    }
+    .not-for-you ul {
+      margin: 12px 0 0;
+      padding-left: 22px;
+      font-size: 0.92rem;
+      line-height: 1.85;
+      color: var(--text-muted);
+    }
+    .not-for-you ul li strong { color: var(--text); }
+
+    /* ── 8. FAQ ────────────────────────────────────────── */
+    .faq-list {
+      display: grid;
+      gap: 10px;
+    }
+    .faq-list details {
+      padding: 16px 20px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: border-color 0.15s ease;
+    }
+    .faq-list details[open] { border-color: var(--border-accent); }
+    .faq-list summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--text);
+      list-style: none;
+      position: relative;
+      padding-right: 28px;
+    }
+    .faq-list summary::after {
+      content: "＋";
+      position: absolute;
+      right: 0;
+      top: 0;
+      color: var(--accent-text);
+      font-weight: 400;
+      transition: transform 0.18s ease;
+    }
+    .faq-list details[open] summary::after { content: "−"; }
+    .faq-list .faq-body {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+      font-size: 0.92rem;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+
+    /* ── 9. AUTHOR MESSAGE ────────────────────────────── */
+    .author-msg {
+      padding: 36px 38px;
+      background: linear-gradient(155deg, var(--bg-elevated) 0%, var(--accent-soft) 100%);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius);
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .author-msg .am-quote {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 1.25rem;
+      line-height: 1.6;
+      color: var(--text);
+      margin: 0 0 18px;
+      font-style: italic;
+    }
+    .author-msg .am-body {
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: var(--text-muted);
+      margin: 0 0 14px;
+    }
+    .author-msg .am-sign {
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.4em;
+      color: var(--accent-text);
+      font-weight: 700;
+    }
+
+    /* ── 10. PRICING / BUY ────────────────────────────── */
+    .buy-block {
+      padding: 36px 30px;
+      background: var(--bg-elevated);
+      border: 2px solid var(--border-accent);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .buy-block .price-final {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 3.2rem;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1;
+      margin: 0 0 6px;
+    }
+    .buy-block .price-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      border-radius: var(--radius-full);
+      font-size: 0.8rem;
+      margin-bottom: 16px;
+    }
+    .buy-block .price-includes {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      margin: 14px auto 22px;
+      max-width: 50ch;
+      line-height: 1.6;
+    }
+    .buy-block .price-includes ul {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+      text-align: left;
+      max-width: 360px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .buy-block .price-includes li {
+      padding: 4px 0;
+      padding-left: 22px;
+      position: relative;
+    }
+    .buy-block .price-includes li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #3b9b6e;
+      font-weight: 700;
+    }
+
+    /* ── MOBILE BOTTOM BAR ────────────────────────────── */
+    .mobile-bottom-bar {
+      display: none;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+      background: var(--bg-elevated);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+      z-index: 50;
+      gap: 10px;
+    }
+    .mobile-bottom-bar a {
+      flex: 1;
+      text-align: center;
+      padding: 12px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      border-radius: var(--radius);
+      text-decoration: none;
+    }
+    @media (max-width: 768px) {
+      .mobile-bottom-bar { display: flex; }
+      .book-page { padding-bottom: 96px; }
+      .book-hero { grid-template-columns: 1fr; gap: 28px; padding: 32px 0 24px; text-align: center; }
+      .book-hero-text { margin: 0 auto; text-align: left; }
+      .book-hero-cover img { max-width: 240px; }
+      .book-hero-title { font-size: 1.8rem; }
+      .book-section { padding: 36px 0; }
+      .book-section-h2 { font-size: 1.4rem; }
+      .why-grid, .level-system, .verify-stats, .verify-links, .curr-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .level-system { grid-template-columns: 1fr 1fr; }
+      .curr-grid { grid-template-columns: 1fr; }
+      .book-gallery { grid-template-columns: 1fr 1fr; }
+      .book-gallery img { height: 200px; }
+      .author-msg { padding: 24px 20px; }
+      .buy-block .price-final { font-size: 2.2rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="../" class="site-title">PyWhy</a>
+      <nav class="site-nav">
+        <a href="./" aria-current="page">📕 책</a>
+        <a href="../#curriculum">커리큘럼</a>
+        <a href="../weeks/week01.html">무료 강의</a>
+        <a href="../errata/">정오표</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="page-wrapper book-page">
+
+  <!-- ============ 1. HERO ============ -->
+  <section class="book-hero">
+    <div class="book-hero-cover">
+      <img src="../assets/gallery/page-1.png" alt="PyWhy 표지">
+    </div>
+    <div class="book-hero-text">
+      <span class="book-hero-eyebrow">📕 PYWHY V1.0 · PDF 전자책</span>
+      <h1 class="book-hero-title">
+        문법을 외우는 책이 아니라<br>
+        <span class="accent">컴퓨터의 사고법</span>을 배우는 책
+      </h1>
+      <p class="book-hero-sub">
+        <code>print()</code>가 왜 함수인지, <code>for</code> 한 줄 뒤에 어떤 분해가 숨어있는지,
+        <code>x = 1</code>이 왜 "상자에 넣기"가 아니라 "이름표 붙이기"인지.
+        <strong>한 줄 뒤에 숨은 인터프리터의 사고 과정</strong>을 끝까지 따라가는 1,010쪽.
+      </p>
+      <div class="book-hero-meta">
+        <span><strong>1,010</strong>쪽</span>
+        <span><strong>15</strong>주차</span>
+        <span><strong>4</strong>단계 학습</span>
+        <span><strong>Python 3.14</strong> 기준</span>
+        <span><strong>14.6</strong> MB · PDF</span>
+      </div>
+      <div class="book-hero-price">
+        <span class="price-num">출시 예정</span>
+        <span class="price-tag">권장 24,900~29,900원</span>
+      </div>
+      <div class="book-hero-cta">
+        <a href="../assets/PyWhy_preview.pdf" class="btn-primary" download>📥 무료 미리보기 (70쪽)</a>
+        <a href="#buy" class="btn-secondary">출시 알림 받기 →</a>
+      </div>
+      <p class="book-hero-note">미리보기 = 표지 + 머리말 + 1주차 전문(70쪽 / 2.7 MB).</p>
+    </div>
+  </section>
+
+  <!-- ============ 2. GALLERY ============ -->
+  <section class="book-section">
+    <span class="book-section-eyebrow">02 · 책 안 들여다보기</span>
+    <h2 class="book-section-h2">실제 페이지 6장</h2>
+    <p class="book-section-lead">표지부터 색인까지 — 책의 디자인·코드블록·4단계 박스·챕터 디바이더를 미리 확인하세요.</p>
+    <div class="book-gallery">
+      <a href="../assets/gallery/page-1.png"><img src="../assets/gallery/page-1.png" alt="표지" loading="lazy"><span class="gcap">표지</span></a>
+      <a href="../assets/gallery/page-3.png"><img src="../assets/gallery/page-3.png" alt="목차" loading="lazy"><span class="gcap">목차 (TOC)</span></a>
+      <a href="../assets/gallery/page-12.png"><img src="../assets/gallery/page-12.png" alt="1주차 챕터 디바이더" loading="lazy"><span class="gcap">챕터 디바이더</span></a>
+      <a href="../assets/gallery/page-43.png"><img src="../assets/gallery/page-43.png" alt="본문 + 코드" loading="lazy"><span class="gcap">본문 + 코드블록</span></a>
+      <a href="../assets/gallery/page-102.png"><img src="../assets/gallery/page-102.png" alt="4단계 박스" loading="lazy"><span class="gcap">전공자 섹션</span></a>
+      <a href="../assets/gallery/page-996.png"><img src="../assets/gallery/page-996.png" alt="색인" loading="lazy"><span class="gcap">색인 (378개)</span></a>
+    </div>
+  </section>
+
+  <!-- ============ 3. WHY THIS BOOK ============ -->
+  <section class="book-section">
+    <span class="book-section-eyebrow">03 · 왜 이 책인가</span>
+    <h2 class="book-section-h2">"문법 외우기"가 아니라 "사고법" 책</h2>
+    <p class="book-section-lead">
+      대부분의 파이썬 책은 문법을 가르칩니다. PyWhy는 <strong>파이썬 인터프리터가 어떻게 생각하는지</strong>를
+      가르칩니다. 같은 한 줄의 코드를 놓고 4단계로 분해합니다 — 그게 4단계 학습 시스템입니다.
+    </p>
+    <div class="why-grid">
+      <div class="why-card">
+        <h3>De-sugaring 전개</h3>
+        <p><code>for x in seq:</code> 한 줄을 <code>iter()</code>·<code>next()</code>·<code>StopIteration</code>으로 분해.
+          <code>with</code>는 <code>__enter__</code>·<code>__exit__</code>로. <code>x = 1</code>은 "상자"가 아니라 <strong>"이름표(Binding)"</strong>로.</p>
+      </div>
+      <div class="why-card">
+        <h3>비유의 일관성</h3>
+        <p>1주차에 본 "이름표"는 9주차 함수 인자에서 다시 등장하고, 12주차 던더 메서드에서 또 등장합니다.
+          비유 한 번 잡으면 그 다음 챕터들이 자연스럽게 연결됩니다.</p>
+      </div>
+      <div class="why-card">
+        <h3>공식 문서 1차 자료</h3>
+        <p>모든 기술적 주장은 <strong>Python 3.14 공식 문서 / PEP / CPython 소스 코드 / IEEE 754</strong>에서 인용·검증.
+          본문에 각주, 챕터 말미에 참고문헌 — 학술 논문 수준의 출처 표기.</p>
+      </div>
+      <div class="why-card">
+        <h3>AI 시대의 관점</h3>
+        <p>바이브 코딩 시대에 <strong>AI가 코드를 어떻게 만드는지</strong>의 메커니즘과 한계를 통합.
+          AI가 만든 코드를 <em>읽고 판단</em>할 수 있는 능력이 진짜 실력입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. 4-LEVEL SYSTEM ============ -->
+  <section class="book-section">
+    <span class="book-section-eyebrow">04 · 4단계 학습 시스템</span>
+    <h2 class="book-section-h2">같은 책을 4번, 다른 깊이로 읽는다</h2>
+    <p class="book-section-lead">
+      각 주제마다 4단계 박스가 있습니다. 처음 읽을 땐 초급만 따라가도 OK.
+      나중에 다시 펼쳤을 때 같은 주제가 다른 깊이로 보입니다.
+    </p>
+    <div class="level-system">
+      <div class="level-card lc-elem">
+        <span class="lc-tag">● 초급</span>
+        <h4>실생활 비유 + 실행</h4>
+        <p>"포스트잇"으로 변수, "자판기/배출구"로 Iterator. 초등~중학생 이해 가능.</p>
+      </div>
+      <div class="level-card lc-inter">
+        <span class="lc-tag">● 중급</span>
+        <h4>동작 원리 + 오류 상황</h4>
+        <p>왜 이 코드가 깨지는가, 인터프리터가 실제로 어떻게 처리하는가. 고등~대학 비전공.</p>
+      </div>
+      <div class="level-card lc-adv">
+        <span class="lc-tag">● 고급</span>
+        <h4>원서 용어 + 내부 메커니즘</h4>
+        <p>LEGB Rule, Iterator Protocol, MRO. Python 공식 문서 용어 그대로.</p>
+      </div>
+      <div class="level-card lc-expert">
+        <span class="lc-tag">● 전공자</span>
+        <h4>CPython 구현 + CS 이론</h4>
+        <p>Part A: <code>typeobject.c</code>, <code>longobject.c</code> 같은 C 소스 인용.
+          Part B: IEEE 754, PEG 파서, GIL 같은 CS 이론.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. CURRICULUM ============ -->
+  <section class="book-section">
+    <span class="book-section-eyebrow">05 · 커리큘럼</span>
+    <h2 class="book-section-h2">15주차 1,010쪽 — 입문에서 동시성까지</h2>
+    <p class="book-section-lead">
+      1주차 컴퓨터·인터프리터부터 15주차 GIL·asyncio까지. 무료 HTML 강의로 모든 주차를 둘러볼 수 있습니다.
+    </p>
+    <div class="curr-grid">
+      <div class="curr-card"><span class="cc-num">WEEK 01</span><span class="cc-title">컴퓨터, AI, 그리고 코딩</span><span class="cc-sub">인터프리터 / print() / __builtins__</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 02</span><span class="cc-title">데이터와 타입</span><span class="cc-sub">int / float / str / bool / IEEE 754</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 03</span><span class="cc-title">변수와 입출력</span><span class="cc-sub">이름표 / Binding / id()와 is</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 04</span><span class="cc-title">연산자와 표현식</span><span class="cc-sub">우선순위 / Truthiness / dunder</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 05</span><span class="cc-title">조건문</span><span class="cc-sub">POP_JUMP_IF_FALSE / Guard Clause</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 06</span><span class="cc-title">리스트와 튜플</span><span class="cc-sub">시간 복잡도 / 슬라이싱 / Mutable</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 07</span><span class="cc-title">반복문 (for) — Iterator Protocol</span><span class="cc-sub">iter()/next() / De-sugaring</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 08</span><span class="cc-title">반복문 (while)</span><span class="cc-sub">상태 루프 / Sentinel / 정지 문제</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 09</span><span class="cc-title">함수 — 왜 함수가 존재하는가</span><span class="cc-sub">First-class Object / LEGB / Pass by Reference</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 10</span><span class="cc-title">딕셔너리와 세트</span><span class="cc-sub">해시 O(1) / 보편 해시 / Open Addressing</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 11</span><span class="cc-title">컴프리헨션 &amp; 제너레이터</span><span class="cc-sub">PEP 202·274·709 / yield / lazy</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 12</span><span class="cc-title">클래스 심화 &amp; 던더 메서드</span><span class="cc-sub">__new__ / MRO / super() / 디스패치</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 13</span><span class="cc-title">클로저 &amp; 데코레이터</span><span class="cc-sub">__closure__ / functools.wraps / Descriptor</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 14</span><span class="cc-title">타입 힌트 &amp; Protocol</span><span class="cc-sub">PEP 484·585·604 / Generic / Gradual Typing</span></div>
+      <div class="curr-card"><span class="cc-num">WEEK 15</span><span class="cc-title">동시성 &amp; 비동기 프로그래밍</span><span class="cc-sub">GIL / threading / asyncio / TaskGroup</span></div>
+    </div>
+    <p style="margin-top:24px;font-size:0.88rem;color:var(--text-muted);text-align:center;">
+      모든 주차의 전문은 <a href="../#curriculum" style="color:var(--accent-text);">무료 HTML 강의</a>에서 읽으실 수 있습니다.
+      책 PDF는 동일 콘텐츠의 <strong>정리·인덱스·hyperlink·1,010쪽 단권</strong> 판본입니다.
+    </p>
+  </section>
+
+  <!-- ============ 6. VERIFICATION ============ -->
+  <section class="book-section">
+    <span class="book-section-eyebrow">06 · 검증 투명성</span>
+    <h2 class="book-section-h2">출처 없는 한 줄도 없습니다</h2>
+    <p class="book-section-lead">
+      "공식 문서 기반"이 캐치프레이즈인 책. 본문의 인용을 본문에서 증명합니다 —
+      자동화 도구와 검수 리포트를 모두 공개합니다.
+    </p>
+    <div class="verify-stats">
+      <div class="verify-stat"><span class="vs-num">29</span><span class="vs-label">인용 URL · 100% 200 OK</span></div>
+      <div class="verify-stat"><span class="vs-num">35/36</span><span class="vs-label">본문 각주 자동 매칭</span></div>
+      <div class="verify-stat"><span class="vs-num">378</span><span class="vs-label">색인 → 본문 hyperlink</span></div>
+      <div class="verify-stat"><span class="vs-num">100%</span><span class="vs-label">폰트 PDF 임베드</span></div>
+    </div>
+    <ul class="verify-links">
+      <li><a href="../docs/editorial/footnote-injection-2026-05-03.md">📋 각주 자동 삽입 리포트<small>week11~15 본문 인용 위치 매핑</small></a></li>
+      <li><a href="../docs/editorial/auto-text-check-2026-05-03.md">📋 텍스트 품질 자동 검사<small>1,010쪽 오탈자/일관성 spot-check</small></a></li>
+      <li><a href="../docs/editorial/accessibility-2026-05-03.md">📋 접근성 검증<small>WCAG AA 콘트라스트 + 색맹 친화도</small></a></li>
+      <li><a href="../errata/">📋 정오표 페이지<small>독자 신고 + 무료 업데이트 약속</small></a></li>
+    </ul>
+  </section>
+
+  <!-- ============ 7. NOT FOR YOU ============ -->
+  <section class="book-section">
+    <span class="book-section-eyebrow">07 · 정직함</span>
+    <h2 class="book-section-h2">이 책을 추천하지 않는 경우</h2>
+    <p class="book-section-lead">아래에 해당하시면 다른 책이 더 적합할 수 있습니다.</p>
+    <div class="not-for-you">
+      <ul>
+        <li><strong>"빠르게 코드 작성 패턴만"</strong> 원하시면 — 이 책은 1,010쪽 깊이 책. 패턴 위주 빠른 학습은 다른 책.</li>
+        <li><strong>물리 책을 선호</strong>하시면 — 현재 PDF only. 1쇄 100부 후 ISBN/물리 출판 검토 예정.</li>
+        <li><strong>모바일에서 주로 읽으</strong>실 거면 — B5 판형 PDF는 모바일에서 작아짐. 태블릿/PC 권장.</li>
+        <li><strong>완전 입문자(컴퓨터 처음)</strong>이시면 — 1주차는 입문 친화적이지만 책 전체 깊이가 부담스러울 수 있음.</li>
+        <li><strong>이미 CPython 컨트리뷰터</strong>이시면 — 전공자 레벨도 익숙한 내용일 수 있음. 단 4단계 시스템의 교육적 정리 자체에 가치가 있다고 판단되시면 OK.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 8. FAQ ============ -->
+  <section class="book-section">
+    <span class="book-section-eyebrow">08 · FAQ</span>
+    <h2 class="book-section-h2">자주 묻는 질문</h2>
+    <div class="faq-list">
+      <details>
+        <summary>환불 정책은 어떻게 되나요?</summary>
+        <div class="faq-body">Gumroad의 기본 환불 정책(구매 후 14일 내 환불 요청 가능)을 따릅니다. 이미 다운로드한 PDF는 환불 후에도 유효하지만, 양심에 맡기는 디지털 책의 특성을 이해해 주시기 바랍니다.</div>
+      </details>
+      <details>
+        <summary>업데이트는 어떻게 받나요?</summary>
+        <div class="faq-body">v1.x 정오표 패치 및 개정판은 <strong>구매자 무료</strong>로 제공됩니다. 정오표는 <a href="../errata/">errata 페이지</a>에 게시되며, 새 빌드가 나오면 Gumroad 라이브러리에서 다운로드 가능합니다.</div>
+      </details>
+      <details>
+        <summary>물리 책으로도 나오나요?</summary>
+        <div class="faq-body">현재는 PDF only입니다. 1쇄 100부 판매 이후 ISBN 발급 + 인쇄 출판 검토 예정. 인쇄가 결정되면 PDF 구매자에게 우선 안내합니다.</div>
+      </details>
+      <details>
+        <summary>팀/기업 라이선스가 있나요?</summary>
+        <div class="faq-body">현재 단일 PDF만 판매합니다. 팀 라이선스(5인/10인 패키지)는 출시 후 수요를 보고 결정합니다. 사내 교육 목적의 대량 구매 문의는 사이트 정오표 채널로 연락 주시기 바랍니다.</div>
+      </details>
+      <details>
+        <summary>Python 3.15가 나오면 어떻게 되나요?</summary>
+        <div class="faq-body">Python 3.15는 2026년 10월 예정입니다. PyWhy v2 (3.15 기준)는 별도 출시 예정이지만, v1 구매자에게 50% 할인 쿠폰 제공을 검토하고 있습니다.</div>
+      </details>
+      <details>
+        <summary>정말 1,010쪽이나 필요한가요?</summary>
+        <div class="faq-body">4단계 학습 시스템 때문입니다. 한 주제를 초급부터 전공자까지 4번 다른 깊이로 다루기 때문에 분량이 큽니다. 처음 읽을 땐 초급만 골라 읽으셔도 OK — 나중에 다시 펼치면 같은 책의 다른 챕터를 새로 읽는 효과가 있습니다.</div>
+      </details>
+      <details>
+        <summary>무료 HTML 강의와 PDF의 차이는?</summary>
+        <div class="faq-body">콘텐츠는 같습니다. PDF는 (1) 1,010쪽 단권 정리 (2) 색인 378개 + 책갈피 (3) 모든 인용 hyperlink (4) 오프라인/인쇄 (5) 다크 테마 코드블록 등 정리된 판본의 가치를 제공합니다.</div>
+      </details>
+      <details>
+        <summary>저자 H0NG는 누구인가요?</summary>
+        <div class="faq-body">자가 출판하는 익명 저자입니다(가운데 0은 숫자 영). 이 책의 신뢰는 저자 인지도가 아니라 <strong>출처 검증의 투명성</strong>(editorial 리포트 공개)으로 증명합니다. 모든 기술적 주장은 1차 출처와 대조 가능합니다.</div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ 9. AUTHOR MESSAGE ============ -->
+  <section class="book-section">
+    <span class="book-section-eyebrow">09 · 저자의 말</span>
+    <h2 class="book-section-h2" style="text-align:center;">왜 이 책을 썼는가</h2>
+    <div class="author-msg">
+      <p class="am-quote">"파이썬을 5년 가르치면서 같은 질문을 매번 받았습니다 — 'for문은 알겠는데 왜 동작하는지 모르겠어요.'"</p>
+      <p class="am-body">
+        문법은 검색하면 나옵니다. AI도 문법은 잘 씁니다. 하지만 <strong>왜</strong>를 설명하는 자료는 흩어져 있고, 깊이는 영문 공식 문서에 가두어져 있습니다.
+      </p>
+      <p class="am-body">
+        이 책은 한 줄의 코드가 인터프리터를 거쳐 CPU에 닿기까지의 사고 과정을 한국어로 정리한 결과입니다. 4단계 학습 시스템은 같은 책을 평생 옆에 두고 다시 펼치는 책으로 만들고 싶어 도입했습니다.
+      </p>
+      <p class="am-body">
+        AI가 코드를 만드는 시대일수록, 그 코드를 <em>읽고 판단할 수 있는 사람</em>의 가치가 커집니다. 이 책이 그 길의 첫 걸음이 되길 바랍니다.
+      </p>
+      <p class="am-sign">H<span style="font-family:'JetBrains Mono',monospace;color:var(--text);">0</span>NG</p>
+    </div>
+  </section>
+
+  <!-- ============ 10. BUY ============ -->
+  <section class="book-section" id="buy">
+    <span class="book-section-eyebrow">10 · 구매</span>
+    <h2 class="book-section-h2" style="text-align:center;">PyWhy v1.0 — 출시 예정</h2>
+    <div class="buy-block">
+      <span class="price-tag">📕 PDF · 1,010쪽 · Python 3.14</span>
+      <div class="price-final">출시 예정</div>
+      <div style="font-size:0.92rem;color:var(--text-muted);margin-bottom:8px;">권장 가격: 24,900원 (early-bird) → 29,900원 (정가)</div>
+      <p class="price-includes">
+        <strong style="color:var(--text);">구매 시 포함</strong>
+      </p>
+      <ul class="price-includes" style="text-align:left;display:inline-block;">
+        <li>PyWhy v1.0 본판 PDF (1,010쪽)</li>
+        <li>v1.x 정오표/패치 무료 업데이트</li>
+        <li>색인 378개 + 책갈피 + 모든 인용 hyperlink</li>
+        <li>Tagged PDF (스크린리더 접근성)</li>
+        <li>Gumroad 14일 환불 보장</li>
+      </ul>
+      <div class="book-hero-cta" style="justify-content:center;margin-top:28px;">
+        <a href="../assets/PyWhy_preview.pdf" class="btn-primary" download>📥 무료 미리보기 (70쪽)</a>
+        <a href="mailto:?subject=PyWhy%20%EC%B6%9C%EC%8B%9C%20%EC%95%8C%EB%A6%BC%20%EC%9A%94%EC%B2%AD&amp;body=PyWhy%20v1.0%20%EC%B6%9C%EC%8B%9C%20%EC%8B%9C%20%EC%95%8C%EB%A0%A4%EC%A3%BC%EC%84%B8%EC%9A%94." class="btn-secondary">출시 알림 요청 (이메일)</a>
+      </div>
+      <p style="font-size:0.78rem;color:var(--text-muted);margin-top:18px;">
+        * 출시 알림 폼은 곧 추가됩니다. 그 사이엔 메일 클라이언트로 요청해 주세요.<br>
+        * Gumroad 등록 완료 후 본 페이지에 직접 구매 버튼이 표시됩니다.
+      </p>
+    </div>
+  </section>
+
+  </div>
+
+  <!-- ============ MOBILE BOTTOM BAR ============ -->
+  <div class="mobile-bottom-bar">
+    <a href="../assets/PyWhy_preview.pdf" download class="btn-secondary">📥 미리보기</a>
+    <a href="#buy" class="btn-primary">구매 알림 →</a>
+  </div>
+</body>
+</html>

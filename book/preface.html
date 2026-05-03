@@ -1,0 +1,140 @@
+<!-- PyWhy 머리말 + 학습 가이드 -->
+<div class="book-preface" id="preface-anchor">
+
+  <header class="preface-header">
+    <div class="preface-eyebrow">PyWhy</div>
+    <h1 class="preface-title">머리말</h1>
+    <p class="preface-tagline">"왜 이렇게 동작하는가"를 외우기 전에 묻는 책</p>
+  </header>
+
+  <section class="preface-section">
+    <h2>이 책이 다른 파이썬 책과 다른 점</h2>
+    <p>
+      파이썬 입문서 대부분은 <strong>"무엇을 쓰는가"</strong>로 시작합니다.
+      <code>for</code>를 쓴다, <code>def</code>로 함수를 만든다, <code>class</code>로 객체를 정의한다.
+      그리고 문법을 외우게 합니다.
+    </p>
+    <p>
+      이 책은 다릅니다. 매 챕터마다 묻는 질문은 하나입니다 — <strong>"왜 이렇게 동작하는가."</strong>
+    </p>
+    <ul class="why-list">
+      <li><code>print()</code>는 왜 명령어가 아니라 함수인가?</li>
+      <li><code>for x in lst:</code> 한 줄 뒤에 어떤 분해가 숨어있는가?</li>
+      <li><code>x = 1</code>은 왜 "상자에 넣기"가 아니라 "이름표 붙이기"인가?</li>
+      <li>왜 리스트는 <code>append</code>되는데 튜플은 안 되는가?</li>
+      <li><code>super()</code>는 왜 "부모"가 아니라 "MRO의 다음 클래스"인가?</li>
+      <li><code>await</code>는 정확히 무엇을 기다리는가?</li>
+    </ul>
+    <p>
+      AI 시대에 코드를 외우는 것은 무의미합니다. AI가 항상 더 빨리 적어줍니다.
+      하지만 <strong>AI가 만든 코드를 검증할 수 있는 사람</strong>은 인터프리터의 사고 방식을 이해한 사람뿐입니다.
+      이 책은 그것을 기르는 책입니다.
+    </p>
+  </section>
+
+  <section class="preface-section">
+    <h2>이 책을 읽는 법 — 4단계 시스템</h2>
+    <p>
+      매 챕터는 같은 질문을 4번 다른 깊이로 답합니다. 처음에는 자기 수준에 맞는 단계만 읽으세요.
+      나중에 같은 챕터를 다시 펼치면, 다음 단계를 읽을 준비가 되어 있을 것입니다.
+    </p>
+
+    <table class="level-guide">
+      <tr>
+        <th>단계</th>
+        <th>대상</th>
+        <th>다루는 깊이</th>
+        <th>독자에게 남기는 것</th>
+      </tr>
+      <tr class="level-row level-elem">
+        <td><span class="level-dot"></span>초급</td>
+        <td>처음 코딩하는 학생</td>
+        <td>실생활 비유, 기본 코드 실행</td>
+        <td>"이 코드는 이렇게 쓴다"</td>
+      </tr>
+      <tr class="level-row level-inter">
+        <td><span class="level-dot"></span>중급</td>
+        <td>고등학생 / 대학 비전공</td>
+        <td>왜 이렇게 동작하는지, 흔한 함정</td>
+        <td>"이 코드는 왜 이렇게 동작한다"</td>
+      </tr>
+      <tr class="level-row level-adv">
+        <td><span class="level-dot"></span>고급</td>
+        <td>대학 입문 ~ 전공 1–2년</td>
+        <td>원서 용어, 내부 메커니즘</td>
+        <td>"이 메커니즘은 어떤 원리에서 나온다"</td>
+      </tr>
+      <tr class="level-row level-expert">
+        <td><span class="level-dot"></span>전공자</td>
+        <td>CS 전공 + 현직 백엔드</td>
+        <td>CPython 바이트코드, C 구조체, PEP·논문 인용</td>
+        <td>"이 메커니즘은 어떻게 구현되어 있다"</td>
+      </tr>
+    </table>
+
+    <div class="reading-tips">
+      <h3>독자별 권장 학습 경로</h3>
+      <ul>
+        <li>
+          <strong>첫 코딩</strong> — 1–9주차의 <em>초급</em>만 차례대로. 모든 코드 직접 실행.
+          중급은 의문이 생긴 부분만.
+        </li>
+        <li>
+          <strong>비전공 백엔드 전환자</strong> — 1–15주차의 <em>초급 + 중급</em>.
+          고급은 자기 업무에 직결된 주차(7 for, 12 클래스, 14 타입 힌트, 15 asyncio)부터.
+        </li>
+        <li>
+          <strong>CS 전공 학부생</strong> — 1–15주차의 <em>중급 + 고급</em>. 전공자 영역은
+          CPython 소스를 옆에 두고. PEP 인용은 직접 peps.python.org에서 확인.
+        </li>
+        <li>
+          <strong>현직 + AI 시대 적응</strong> — 각 주차의 <em>§AI</em> 섹션부터 거꾸로.
+          AI가 만든 코드의 함정 사례 → 원리 이해 → 다른 단계로 깊이 이동.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="preface-section">
+    <h2>인용·검증 정책</h2>
+    <p>
+      이 책의 모든 기술적 주장은 다음 1차 출처와 직접 대조해 검증했습니다:
+    </p>
+    <ol class="verify-sources">
+      <li><strong>Python 3.14 공식 문서</strong> — <code>docs.python.org/3</code> (한국어판: <code>docs.python.org/ko/3</code>)</li>
+      <li><strong>PEP 문서</strong> — <code>peps.python.org</code></li>
+      <li><strong>CPython 소스 코드</strong> — <code>github.com/python/cpython</code></li>
+      <li><strong>국제 표준 문서</strong> — IEEE 754, Unicode, ISO/IEC 9899 등</li>
+    </ol>
+    <p>
+      각 챕터 말미에 참고문헌 섹션이 있습니다. 의심나는 주장은 그 출처를 직접 확인하세요.
+      이 책의 의도는 <strong>독자가 이 책을 검증할 수 있게 만드는 것</strong>입니다.
+    </p>
+  </section>
+
+  <section class="preface-section">
+    <h2>버전 기준</h2>
+    <p>
+      <strong>Python 3.14 (CPython)</strong>를 1차 기준으로 작성됐습니다.
+      바이트코드 출력 예시는 3.12–3.13 환경에서 캡처한 것이 일부 있고, 해당 부분은 별도 안내가 있습니다.
+      3.13에서 도입된 변경(예: PEP 667 frame fast/locals 단일화), 3.14에서 도입·제거된 변경(예: PEP 779 free-threading 정식 지원,
+      <code>RETURN_CONST</code> 옵코드 제거)은 본문에 표시했습니다.
+    </p>
+  </section>
+
+  <section class="preface-section preface-closing">
+    <h2>마지막으로</h2>
+    <p class="preface-closing-text">
+      이 책의 모든 비유는 책의 끝까지 일관됩니다. 1주차에 본 "이름표"는 9주차 함수 인자에서 다시 등장하고,
+      12주차 던더 메서드에서 또 등장합니다. 비유를 한 번 잡으면 그 다음 챕터들이 자연스럽게 연결됩니다.
+    </p>
+    <p class="preface-closing-text">
+      코드를 외우려 하지 말고, 인터프리터의 시선을 빌리세요.
+    </p>
+    <div class="preface-sign">
+      <span class="sign-name">H0NG</span>
+      <span class="sign-meta">PyWhy v1.0</span>
+    </div>
+  </section>
+
+</div>

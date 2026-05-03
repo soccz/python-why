@@ -1,0 +1,52 @@
+<svg width="660" height="320" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="22" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="14" fill="#1a1410">while 루프 — 상태(state)를 보면서 반복</text>
+  <text x="360" y="42" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">for가 Iterator를 따라간다면, while은 조건만으로 흐름을 제어한다</text>
+
+  <!-- 시작 -->
+  <rect x="80" y="70" width="100" height="34" rx="17" fill="#1e1e2e"/>
+  <text x="130" y="92" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#cdd6f4">시작</text>
+
+  <line x1="130" y1="104" x2="130" y2="135" stroke="#706b66" stroke-width="1.5" marker-end="url(#arrow8)"/>
+
+  <!-- 조건 검사 (다이아몬드) -->
+  <polygon points="130,140 230,200 130,260 30,200" fill="#fdf8ef" stroke="#c48b2c" stroke-width="2"/>
+  <text x="130" y="195" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#8a5f0e">조건 검사</text>
+  <text x="130" y="212" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#1a1410">while &lt;cond&gt;</text>
+
+  <!-- True 가지 -->
+  <line x1="230" y1="200" x2="290" y2="200" stroke="#3b9b6e" stroke-width="2" marker-end="url(#arrow8g)"/>
+  <text x="260" y="190" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#267547" font-weight="700">True</text>
+
+  <!-- 본문 실행 -->
+  <rect x="295" y="170" width="200" height="60" rx="6" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="2"/>
+  <text x="395" y="192" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#267547">본문 실행</text>
+  <text x="395" y="208" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">상태 변경 (state mutation)</text>
+  <text x="395" y="222" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#1a1410">i += 1, count -= 1, ...</text>
+
+  <!-- 조건으로 돌아감 (피드백 루프) -->
+  <path d="M 495 200 Q 580 200 580 130 Q 580 90 130 90 Q 130 130 130 138" fill="none" stroke="#c48b2c" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrow8a)"/>
+  <text x="555" y="115" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#8a5f0e" font-weight="700">다시 조건 검사로</text>
+
+  <!-- False 가지 -->
+  <line x1="130" y1="260" x2="130" y2="285" stroke="#c45858" stroke-width="2" marker-end="url(#arrow8r)"/>
+  <text x="155" y="276" font-family="Noto Sans KR" font-size="10" fill="#963434" font-weight="700">False</text>
+
+  <!-- 종료 -->
+  <rect x="80" y="285" width="100" height="30" rx="15" fill="#1e1e2e"/>
+  <text x="130" y="305" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#cdd6f4">종료</text>
+
+  <!-- break/continue 박스 (오른쪽) -->
+  <rect x="540" y="245" width="170" height="60" rx="4" fill="#fdf2f2" stroke="#c45858"/>
+  <text x="625" y="263" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="10" fill="#963434">탈출 명령어</text>
+  <text x="550" y="280" font-family="JetBrains Mono" font-size="10" fill="#1a1410">break</text>
+  <text x="610" y="280" font-family="Noto Sans KR" font-size="9" fill="#706b66">→ 즉시 종료</text>
+  <text x="550" y="296" font-family="JetBrains Mono" font-size="10" fill="#1a1410">continue</text>
+  <text x="610" y="296" font-family="Noto Sans KR" font-size="9" fill="#706b66">→ 조건으로</text>
+
+  <defs>
+    <marker id="arrow8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#706b66"/></marker>
+    <marker id="arrow8g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3b9b6e"/></marker>
+    <marker id="arrow8r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c45858"/></marker>
+    <marker id="arrow8a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c48b2c"/></marker>
+  </defs>
+</svg>

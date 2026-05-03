@@ -1,0 +1,35 @@
+<svg width="660" height="320" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="22" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="14" fill="#1a1410">메모리에는 0과 1뿐 — 그런데 65와 'A'는 어떻게 다른가</text>
+  <text x="360" y="42" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">같은 비트 패턴 01000001을 타입(type)이 다르게 해석한다</text>
+
+  <!-- 비트 패턴 (공통) -->
+  <rect x="240" y="58" width="240" height="36" rx="4" fill="#1e1e2e" stroke="#706b66"/>
+  <text x="360" y="80" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#cdd6f4" font-weight="700">0 1 0 0 0 0 0 1</text>
+  <text x="490" y="80" font-family="Noto Sans KR" font-size="10" fill="#706b66">← 1 byte = 8 bits</text>
+
+  <!-- 왼쪽: int 해석 -->
+  <rect x="40" y="120" width="280" height="180" rx="6" fill="#fdf8ef" stroke="#c48b2c" stroke-width="1.5"/>
+  <text x="180" y="143" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="12" fill="#8a5f0e">int 65 — 숫자로 해석</text>
+  <text x="180" y="163" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">자리값(positional notation) 합산</text>
+
+  <text x="60" y="195" font-family="JetBrains Mono" font-size="10" fill="#1a1410">  0   1   0   0   0   0   0   1</text>
+  <text x="60" y="212" font-family="JetBrains Mono" font-size="10" fill="#706b66">128  64  32  16   8   4   2   1</text>
+  <line x1="60" y1="218" x2="305" y2="218" stroke="#706b66" stroke-width="0.5"/>
+  <text x="180" y="240" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#8a5f0e" font-weight="700">64 + 1 = 65</text>
+
+  <text x="180" y="270" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#1a1410">type(65) → &lt;class 'int'&gt;</text>
+  <text x="180" y="287" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">+ - * / 가능, len() 불가</text>
+
+  <!-- 오른쪽: str 해석 -->
+  <rect x="400" y="120" width="280" height="180" rx="6" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="1.5"/>
+  <text x="540" y="143" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="12" fill="#267547">str 'A' — 문자로 해석</text>
+  <text x="540" y="163" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">Unicode/ASCII 코드 포인트</text>
+
+  <text x="540" y="200" text-anchor="middle" font-family="JetBrains Mono" font-size="13" fill="#267547" font-weight="700">U+0041 = 65</text>
+  <text x="540" y="218" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">→ 유니코드 표에서 'A'</text>
+
+  <rect x="500" y="232" width="80" height="36" rx="4" fill="#ffffff" stroke="#3b9b6e"/>
+  <text x="540" y="258" text-anchor="middle" font-family="Noto Sans KR" font-size="20" fill="#267547" font-weight="700">A</text>
+
+  <text x="540" y="288" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">type('A') → &lt;class 'str'&gt; · len() 가능</text>
+</svg>

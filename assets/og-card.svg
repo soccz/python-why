@@ -1,0 +1,73 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- 배경: 책 표지와 동일한 그라디언트 -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fdf3ec"/>
+      <stop offset="50%" stop-color="#faf7f2"/>
+      <stop offset="100%" stop-color="#f3ede4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- 우하단 거대 ? 워터마크 (옅음) -->
+  <text x="1080" y="700" font-family="Noto Sans CJK KR, sans-serif" font-size="700" font-weight="900" fill="rgba(196, 114, 78, 0.07)" text-anchor="end">?</text>
+
+  <!-- 좌상단 비트 패턴 -->
+  <g font-family="JetBrains Mono, D2Coding, monospace" font-size="32" font-weight="700">
+    <text x="60" y="80" fill="rgba(26, 20, 16, 0.32)">0</text>
+    <text x="100" y="80" fill="#c4724e">1</text>
+    <text x="140" y="80" fill="rgba(26, 20, 16, 0.32)">0</text>
+    <text x="180" y="80" fill="rgba(26, 20, 16, 0.32)">0</text>
+    <text x="220" y="80" fill="rgba(26, 20, 16, 0.32)">0</text>
+    <text x="260" y="80" fill="rgba(26, 20, 16, 0.32)">0</text>
+    <text x="300" y="80" fill="rgba(26, 20, 16, 0.32)">0</text>
+    <text x="340" y="80" fill="#c4724e">1</text>
+  </g>
+  <text x="60" y="110" font-family="JetBrains Mono, monospace" font-size="14" fill="rgba(26, 20, 16, 0.45)" letter-spacing="0.06em">'A' = 65 = 01000001</text>
+
+  <!-- 우상단 H0NG -->
+  <text x="1140" y="80" font-family="Noto Sans CJK KR, sans-serif" font-size="28" font-weight="700" fill="#c4724e" text-anchor="end" letter-spacing="0.4em">H0NG</text>
+
+  <!-- 메인 타이포 (가로 중앙) -->
+  <text x="80" y="280" font-family="Noto Sans CJK KR, sans-serif" font-size="20" font-weight="600" fill="#8e4f30" letter-spacing="0.18em">PYTHON · 공식 문서 기반 · 4단계 학습</text>
+
+  <!-- PyWhy 큰 타이틀 (Py 검정 + Why 번트오렌지) -->
+  <g font-family="Noto Sans CJK KR, sans-serif" font-size="180" font-weight="900" letter-spacing="-0.04em">
+    <text x="80" y="430" fill="#1a1410">Py</text>
+    <text x="280" y="430" fill="#c4724e">Why</text>
+  </g>
+
+  <!-- 부제 -->
+  <text x="80" y="495" font-family="Noto Serif CJK KR, serif" font-size="32" font-weight="600" fill="#1a1410">공식 문서로 분해하는 파이썬 사고법</text>
+
+  <!-- 슬로건 -->
+  <text x="80" y="540" font-family="Noto Sans CJK KR, sans-serif" font-size="18" font-weight="600" fill="#8e4f30" letter-spacing="0.08em">컴퓨터는 어떻게 생각하는가</text>
+
+  <!-- 하단 4레벨 점 + 라벨 -->
+  <g font-family="Noto Sans CJK KR, sans-serif" font-size="16" font-weight="600" fill="#57534e">
+    <circle cx="90" cy="585" r="9" fill="#3b9b6e"/>
+    <text x="105" y="591">초급</text>
+
+    <circle cx="180" cy="585" r="9" fill="#c48b2c"/>
+    <text x="195" y="591">중급</text>
+
+    <circle cx="270" cy="585" r="9" fill="#c45858"/>
+    <text x="285" y="591">고급</text>
+
+    <circle cx="360" cy="585" r="9" fill="#5a48c0"/>
+    <text x="375" y="591">전공자</text>
+  </g>
+
+  <!-- 우측 LEGB 동심원 모티브 -->
+  <g transform="translate(960, 380)">
+    <circle cx="0" cy="0" r="160" fill="none" stroke="#5a48c0" stroke-width="2.2" opacity="0.55"/>
+    <circle cx="0" cy="0" r="120" fill="none" stroke="#c45858" stroke-width="2.2" opacity="0.6"/>
+    <circle cx="0" cy="0" r="80" fill="none" stroke="#c48b2c" stroke-width="2.2" opacity="0.65"/>
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#3b9b6e" stroke-width="2.5" opacity="0.7"/>
+    <circle cx="0" cy="0" r="10" fill="#c4724e"/>
+    <text x="0" y="-152" text-anchor="middle" font-family="Noto Sans CJK KR" font-size="16" fill="#5a48c0" font-weight="700">B</text>
+    <text x="0" y="-112" text-anchor="middle" font-family="Noto Sans CJK KR" font-size="16" fill="#c45858" font-weight="700">G</text>
+    <text x="0" y="-72" text-anchor="middle" font-family="Noto Sans CJK KR" font-size="16" fill="#c48b2c" font-weight="700">E</text>
+    <text x="0" y="-32" text-anchor="middle" font-family="Noto Sans CJK KR" font-size="16" fill="#3b9b6e" font-weight="700">L</text>
+  </g>
+</svg>

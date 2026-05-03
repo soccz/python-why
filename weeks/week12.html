@@ -41,9 +41,9 @@
 <main id="main-content">
 
 <!-- ==================== WEEK HEADER ==================== -->
-<div class="week-header">
+<div class="week-header" id="header">
   <div class="week-number">WEEK 12</div>
-  <h1 class="week-title">클래스 심화 &amp; 던더 메서드<br>— 파이썬이 연산자를 처리하는 방법</h1>
+  <h1 class="week-title">클래스 심화 &amp; 던더 메서드 — 연산자 디스패치 원리</h1>
   <p class="week-subtitle">
     <code>__init__</code>은 생성자가 아닙니다 — 초기화자입니다.<br>
     <code>super()</code>는 부모 클래스가 아닙니다 — MRO의 다음 클래스입니다.<br>
@@ -255,6 +255,10 @@ print(p1)   # &lt;__main__.Point object at 0x...&gt;  ← 쓸모없는 정보</c
       <code>a[0]</code>는 "a.__getitem__(0)을 호출하라."<br>
       던더 메서드는 이 번역 규칙에 따른 <strong>약속된 이름</strong>입니다.
     </div>
+
+    <div class="arch-diagram">
+      <img src="../book/diagrams/week12-add-dispatch.png" alt="a + b 연산자 디스패치 흐름도" class="diagram-img">
+    </div>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0">class Box:
     def __init__(self, items):
@@ -347,7 +351,7 @@ print("1" in a)        # True (str(10)에 "1" 포함)</code></pre>
     <h3>반영 메서드 (Reflected Methods) — r-접두어</h3>
     <p>
       <code>a + b</code>에서 <code>a.__add__(b)</code>가 <code>NotImplemented</code>를 반환하면, Python은 <code>b.__radd__(a)</code>를 시도합니다.
-    </p>
+    <sup class="cite"><a href="#ref-3">[3]</a></sup></p>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0">class Currency:
     def __init__(self, amount):
@@ -389,7 +393,7 @@ print(sum([Currency(10), Currency(20), Currency(30)]))
     <p>
       CPython은 던더 메서드를 일반 속성 조회(<code>getattr</code>)로 찾지 않습니다.
       타입 객체의 C 함수 포인터 슬롯(<code>tp_*</code> 필드)을 직접 참조합니다.
-    </p>
+    <sup class="cite"><a href="#ref-6">[6]</a></sup></p>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0">import dis
 
@@ -414,7 +418,7 @@ print(s.__len__())  # 99  ← 직접 호출하면 인스턴스 것이 나옴</co
     <p>
       6개의 비교 메서드(<code>__lt__, __le__, __gt__, __ge__, __eq__, __ne__</code>) 중
       <code>__eq__</code>와 하나만 구현하면 나머지를 자동 생성해주는 데코레이터입니다.
-    </p>
+    <sup class="cite"><a href="#ref-5">[5]</a></sup></p>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0">from functools import total_ordering
 
@@ -477,7 +481,7 @@ dog1.bark()  # 바둑이: 왈왈!</code></pre>
 </div>
     <p>
       대부분의 경우 <code>__new__</code>를 직접 구현할 필요 없습니다. <code>object.__new__</code>가 기본 동작을 합니다.
-    </p>
+    <sup class="cite"><a href="#ref-1">[1]</a></sup></p>
   </div>
 
   <!-- 중급 -->
@@ -607,7 +611,7 @@ dis.dis(create)
       <code>__init_subclass__</code>(PEP 487)는 이 문제를 해결합니다 —
       메타클래스 없이 "서브클래스 등록" 같은 간단한 훅을 구현할 수 있습니다.
       <strong>"간단한 일에는 간단한 도구를"</strong> — Python의 설계 원칙입니다.
-    </p>
+    <sup class="cite"><a href="#ref-2">[2]</a></sup></p>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0"># Python 3.6+ — 클래스가 서브클래싱될 때 자동 호출
 class Plugin:
@@ -856,7 +860,7 @@ print(p3 == p4)  # True</code></pre>
   <!-- 중급 -->
   <div class="level-section intermediate">
     <div class="level-badge">중급</div>
-    <h3>__eq__ 오버라이드 시 __hash__가 None이 되는 이유</h3>
+    <h3>__eq__ 오버라이드 시 __hash__가 None가 되는 이유</h3>
     <div class="callout callout-warning">
       <strong>쌍둥이 계약: a == b 이면 hash(a) == hash(b)</strong><br>
       이 계약이 깨지면 딕셔너리와 세트가 망가집니다.<br>
@@ -868,7 +872,7 @@ print(p3 == p4)  # True</code></pre>
         self.x, self.y = x, y
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
-    # __hash__를 정의 안 함 → Python이 None으로 설정
+    # __hash__를 정의 안 함 → Python이 None로 설정
 
 print(Point.__hash__)   # None
 
@@ -921,7 +925,7 @@ class GoodHash:
         return hash((self.a, self.b, self.c))  # 튜플은 각 원소를 혼합
 
 # str/bytes의 hash()는 SipHash-2-4 (Python 3.4+), SipHash-1-3 (Python 3.12+)
-# int/tuple 등은 별도 해시 함수 사용 (int는 자기 자신, tuple은 xxHash 기반)
+# int/tuple 등은 별도 해시 함수 사용 (int은 자기 자신, tuple은 xxHash 기반)
 # 해시 시드가 매 실행마다 바뀜 (hash randomization)
 # PYTHONHASHSEED=0으로 고정 가능 (테스트용)
 import os
@@ -962,7 +966,7 @@ print(sizes)
 </div>
     <h3>Part B: __eq__와 None 비교 관례</h3>
     <div class="code-block">
-<pre><code class="language-python" tabindex="0"># None과 비교할 때는 항상 is/is not을 씁니다
+<pre><code class="language-python" tabindex="0"># None와 비교할 때는 항상 is/is not을 씁니다
 # == 를 쓰면 __eq__가 호출되어 의도치 않은 동작 가능
 
 class Tricky:
@@ -983,6 +987,10 @@ print(t is None)  # False  ← 올바름
 <!-- ==================== 06. MRO & super() ==================== -->
 <section id="mro">
   <h2>MRO &amp; super() — 결재선과 위임</h2>
+
+  <div class="arch-diagram">
+    <img src="../book/diagrams/week12-mro.svg" alt="다이아몬드 상속 D(B,C) → __mro__ = (D, B, C, A, object) — super()는 부모가 아니라 MRO의 다음 클래스" class="diagram-img">
+  </div>
 
   <!-- 초급 -->
   <div class="level-section elementary">
@@ -1217,7 +1225,7 @@ class ValidationMixin:
     def validate(self):
         for key, value in self.__dict__.items():
             if value is None:
-                raise ValueError(f"{key}는 None이 될 수 없습니다")
+                raise ValueError(f"{key}는 None가 될 수 없습니다")
         return True
 
 class User(JSONMixin, LogMixin, ValidationMixin):
@@ -1278,7 +1286,7 @@ with open("data.txt", "w") as f:
     # open()은 파일 객체의 __enter__()가 self를 반환
     content = f.read()
 
-# __enter__()가 None을 반환하면 as 생략하거나 None이 됨
+# __enter__()가 None를 반환하면 as 생략하거나 None가 됨
 with some_context() as val:
     print(val)  # __enter__()가 반환한 것</code></pre>
 </div>
@@ -1759,7 +1767,7 @@ with AISession("sk-...") as session:
   <div class="callout">
     <p>
       2D 벡터 클래스를 단계적으로 완성합니다. 각 단계에서 어떤 던더 메서드가 동작하는지 확인하세요.
-    </p>
+    <sup class="cite"><a href="#ref-4">[4]</a></sup></p>
 
     <h3>실습 A — 기본 구조</h3>
     <div class="code-block">
@@ -2378,7 +2386,7 @@ print(Serializer._registry)
         <td><strong>__init__</strong></td>
         <td>인스턴스 초기화</td>
         <td>None 또는 없음</td>
-        <td>return 값이 None이 아니면 TypeError</td>
+        <td>return 값이 None가 아니면 TypeError</td>
       </tr>
       <tr>
         <td><strong>__repr__</strong></td>
@@ -2396,7 +2404,7 @@ print(Serializer._registry)
         <td><strong>__eq__</strong></td>
         <td>== 연산자</td>
         <td>bool 또는 NotImplemented</td>
-        <td>구현 시 __hash__가 None이 됨</td>
+        <td>구현 시 __hash__가 None가 됨</td>
       </tr>
       <tr>
         <td><strong>__hash__</strong></td>
@@ -2551,7 +2559,7 @@ for card in deck[:3]:
     </div>
     <div class="glossary-item">
       <div class="glossary-term">__eq__</div>
-      <div class="glossary-def">== 연산자 구현. 오버라이드 시 __hash__가 자동으로 None이 됨.</div>
+      <div class="glossary-def">== 연산자 구현. 오버라이드 시 __hash__가 자동으로 None가 됨.</div>
     </div>
     <div class="glossary-item">
       <div class="glossary-term">__hash__</div>
@@ -2654,11 +2662,12 @@ for card in deck[:3]:
 
 <!-- ==================== 14. 다음 주 맛보기 ==================== -->
 <section id="next-week">
-  <h2>다음 주 맛보기 — 13주차: 데코레이터</h2>
+  <h2>다음 주 맛보기 — 13주차: 클로저 &amp; 데코레이터</h2>
   <div class="callout">
     <p>
-      클래스와 던더 메서드를 배웠으니, 이제 함수를 변환하는 패턴을 배울 차례입니다.
-      <strong>데코레이터</strong>는 함수를 인자로 받아 새 함수를 반환하는 패턴입니다.
+      클래스와 던더 메서드를 배웠으니, 이제 <strong>함수가 함수를 감싸는</strong> 패턴을 배울 차례입니다.
+      함수가 자신의 탄생 환경을 기억하는 것이 <strong>클로저(Closure)</strong>이고,
+      그 위에 함수를 인자로 받아 새 함수를 반환하는 패턴이 <strong>데코레이터</strong>입니다.
     </p>
     <div class="code-block">
 <pre><code class="language-python" tabindex="0"># 13주차 미리보기: 데코레이터
@@ -2689,6 +2698,38 @@ slow_sum(1_000_000)   # slow_sum: 0.0XXX초
       클래스 데코레이터, 데코레이터 스택, 실전 패턴(캐싱, 로깅, 인증, 재시도).
     </p>
   </div>
+</section>
+
+<!-- ==================== 참고문헌 ==================== -->
+<section id="references" class="references-section">
+  <h2>참고문헌</h2>
+  <p class="references-intro">본 챕터의 기술적 주장은 모두 아래 1차 출처와 대조하여 검증되었습니다. URL은 모두 2026년 5월 1일 마지막 접속 기준입니다.</p>
+  <ol class="references-list">
+    <li id="ref-1">
+      <span class="ref-title">Python Software Foundation. <em>Python 3.14 Language Reference — 3. Data Model: Special method names.</em></span>
+      <span class="ref-meta">docs.python.org/3/reference/datamodel.html#special-method-names — 던더 메서드(<code>__init__</code>, <code>__new__</code>, <code>__repr__</code>, <code>__str__</code>, <code>__eq__</code>, <code>__hash__</code>, <code>__add__</code> 등) 전체 명세.</span>
+    </li>
+    <li id="ref-2">
+      <span class="ref-title">Martin Teichmann. <em>PEP 487 — Simpler customisation of class creation.</em> Python.org, 2015.</span>
+      <span class="ref-meta">peps.python.org/pep-0487/ — Python 3.6 도입. <code>__init_subclass__</code>로 메타클래스 없이 서브클래스 등록.</span>
+    </li>
+    <li id="ref-3">
+      <span class="ref-title">Samuele Pedroni. <em>The Python 2.3 Method Resolution Order — C3 Linearization.</em> 2003.</span>
+      <span class="ref-meta">python.org/download/releases/2.3/mro/ — Dylan 언어에서 가져온 C3 선형화 알고리즘. monotonicity / consistency / local precedence order 보장.</span>
+    </li>
+    <li id="ref-4">
+      <span class="ref-title">Guido van Rossum, Nick Coghlan. <em>PEP 343 — The "with" Statement.</em> Python.org, 2005.</span>
+      <span class="ref-meta">peps.python.org/pep-0343/ — Python 2.5 도입. <code>__enter__</code> / <code>__exit__</code> 컨텍스트 매니저 프로토콜.</span>
+    </li>
+    <li id="ref-5">
+      <span class="ref-title">Python Software Foundation. <em>Python 3.14 Library Reference — functools.</em></span>
+      <span class="ref-meta">docs.python.org/3/library/functools.html — <code>@total_ordering</code>, <code>@cache</code>, <code>@lru_cache</code>, <code>partial</code>, <code>wraps</code>.</span>
+    </li>
+    <li id="ref-6">
+      <span class="ref-title">CPython source — <code>Objects/typeobject.c</code> (type.__call__, slot_wrappers, _PyType_Lookup), <code>Python/ceval.c</code> (BINARY_OP, COMPARE_OP).</span>
+      <span class="ref-meta">github.com/python/cpython — 던더 메서드의 C 슬롯 디스패치, type 메타클래스 호출 흐름의 1차 출처.</span>
+    </li>
+  </ol>
 </section>
 
 </main>

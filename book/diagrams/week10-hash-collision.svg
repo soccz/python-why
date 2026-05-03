@@ -1,0 +1,73 @@
+<svg width="660" height="320" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="22" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="14" fill="#1a1410">해시 충돌과 Open Addressing — dict가 어떻게 충돌을 푸는가</text>
+  <text x="360" y="42" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">CPython dict: perturbation을 추가해 다음 슬롯을 탐색 (PyDict_Hash + dictobject.c)</text>
+
+  <!-- key → hash 단계 -->
+  <g font-family="JetBrains Mono" font-size="10">
+    <rect x="20" y="70" width="120" height="36" rx="4" fill="#1e1e2e"/>
+    <text x="80" y="93" text-anchor="middle" fill="#cdd6f4" font-weight="700">"apple"</text>
+    <text x="80" y="120" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">key</text>
+
+    <line x1="145" y1="88" x2="170" y2="88" stroke="#706b66" stroke-width="1.5" marker-end="url(#aH)"/>
+
+    <rect x="172" y="70" width="140" height="36" rx="4" fill="#fdf8ef" stroke="#c48b2c"/>
+    <text x="242" y="92" text-anchor="middle" fill="#8a5f0e" font-weight="700">hash() = 0xA3F2...</text>
+    <text x="242" y="120" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">__hash__()</text>
+
+    <line x1="317" y1="88" x2="342" y2="88" stroke="#706b66" stroke-width="1.5" marker-end="url(#aH)"/>
+
+    <rect x="345" y="70" width="140" height="36" rx="4" fill="#fdf2f2" stroke="#c45858"/>
+    <text x="415" y="92" text-anchor="middle" fill="#963434" font-weight="700">% 8 = 2 (인덱스)</text>
+    <text x="415" y="120" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">hash &amp; (size-1)</text>
+  </g>
+
+  <!-- 해시 테이블 (8 슬롯) -->
+  <text x="80" y="155" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#1a1410">슬롯 0~7:</text>
+
+  <g font-family="JetBrains Mono" font-size="9">
+    <!-- 슬롯 0 -->
+    <rect x="80" y="165" width="60" height="34" fill="#ffffff" stroke="#706b66"/>
+    <text x="110" y="180" text-anchor="middle" fill="#706b66">0</text>
+    <text x="110" y="193" text-anchor="middle" fill="#706b66" font-size="8">empty</text>
+
+    <rect x="142" y="165" width="60" height="34" fill="#ffffff" stroke="#706b66"/>
+    <text x="172" y="180" text-anchor="middle" fill="#706b66">1</text>
+    <text x="172" y="193" text-anchor="middle" fill="#706b66" font-size="8">empty</text>
+
+    <!-- 슬롯 2 — 충돌! -->
+    <rect x="204" y="165" width="60" height="34" fill="#fdf2f2" stroke="#c45858" stroke-width="2"/>
+    <text x="234" y="180" text-anchor="middle" fill="#963434" font-weight="700">2</text>
+    <text x="234" y="193" text-anchor="middle" fill="#963434" font-weight="700">"apple"</text>
+
+    <rect x="266" y="165" width="60" height="34" fill="#ffffff" stroke="#706b66"/>
+    <text x="296" y="180" text-anchor="middle" fill="#706b66">3</text>
+    <text x="296" y="193" text-anchor="middle" fill="#706b66" font-size="8">empty</text>
+
+    <rect x="328" y="165" width="60" height="34" fill="#ffffff" stroke="#706b66"/>
+    <text x="358" y="180" text-anchor="middle" fill="#706b66">4</text>
+    <text x="358" y="193" text-anchor="middle" fill="#706b66" font-size="8">empty</text>
+
+    <rect x="390" y="165" width="60" height="34" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="2"/>
+    <text x="420" y="180" text-anchor="middle" fill="#267547" font-weight="700">5</text>
+    <text x="420" y="193" text-anchor="middle" fill="#267547" font-weight="700">"banana"</text>
+
+    <rect x="452" y="165" width="60" height="34" fill="#ffffff" stroke="#706b66"/>
+    <text x="482" y="180" text-anchor="middle" fill="#706b66">6</text>
+    <text x="482" y="193" text-anchor="middle" fill="#706b66" font-size="8">empty</text>
+
+    <rect x="514" y="165" width="60" height="34" fill="#ffffff" stroke="#706b66"/>
+    <text x="544" y="180" text-anchor="middle" fill="#706b66">7</text>
+    <text x="544" y="193" text-anchor="middle" fill="#706b66" font-size="8">empty</text>
+  </g>
+
+  <!-- 충돌 시나리오 -->
+  <rect x="80" y="220" width="560" height="80" rx="4" fill="#faf7f2" stroke="#c4724e" stroke-width="1.2"/>
+  <text x="100" y="240" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#c4724e">"orange"의 hash도 슬롯 2로 가면? → Open Addressing</text>
+  <text x="100" y="260" font-family="Noto Sans KR" font-size="9.5" fill="#1a1410">1. 슬롯 2 점유됨 → "perturbation" 값으로 다음 위치 계산:</text>
+  <text x="120" y="276" font-family="JetBrains Mono" font-size="9" fill="#963434">  i = (5*i + 1 + perturb) &amp; (size - 1)</text>
+  <text x="120" y="290" font-family="JetBrains Mono" font-size="9" fill="#963434">  perturb &gt;&gt;= PERTURB_SHIFT  → 슬롯 3 / 4 / 5... 비어있는 슬롯까지 probe</text>
+
+  <defs>
+    <marker id="aH" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#706b66"/></marker>
+  </defs>
+</svg>

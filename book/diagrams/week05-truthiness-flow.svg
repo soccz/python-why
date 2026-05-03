@@ -1,0 +1,52 @@
+<svg width="660" height="340" viewBox="0 0 720 340" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="22" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="14" fill="#1a1410">if x: 가 어떻게 동작하는가 — Truthiness 평가 프로토콜</text>
+  <text x="360" y="42" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">bool() 또는 if/while이 호출하는 내부 절차 (CPython: PyObject_IsTrue)</text>
+
+  <!-- 시작 -->
+  <rect x="280" y="60" width="160" height="34" rx="17" fill="#1e1e2e"/>
+  <text x="360" y="82" text-anchor="middle" font-family="JetBrains Mono" font-size="12" fill="#cdd6f4" font-weight="700">bool(x)  /  if x:</text>
+
+  <line x1="360" y1="94" x2="360" y2="108" stroke="#706b66" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 1단계: __bool__ -->
+  <rect x="220" y="110" width="280" height="46" rx="4" fill="#f2f0fc" stroke="#5a48c0" stroke-width="1.5"/>
+  <text x="360" y="130" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#4835a0">1단계: x.__bool__() 가 정의되어 있는가?</text>
+  <text x="360" y="146" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">예 → 그 반환값(True/False) 사용 · 끝</text>
+
+  <line x1="360" y1="156" x2="360" y2="170" stroke="#706b66" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="375" y="167" font-family="Noto Sans KR" font-size="9" fill="#706b66">없으면 ↓</text>
+
+  <!-- 2단계: __len__ -->
+  <rect x="220" y="172" width="280" height="46" rx="4" fill="#fdf2f2" stroke="#c45858" stroke-width="1.5"/>
+  <text x="360" y="192" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#963434">2단계: x.__len__() 이 정의되어 있는가?</text>
+  <text x="360" y="208" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">예 → len() == 0 이면 False, 아니면 True</text>
+
+  <line x1="360" y1="218" x2="360" y2="232" stroke="#706b66" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="375" y="229" font-family="Noto Sans KR" font-size="9" fill="#706b66">없으면 ↓</text>
+
+  <!-- 3단계: 기본값 True -->
+  <rect x="220" y="234" width="280" height="44" rx="4" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="1.5"/>
+  <text x="360" y="254" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#267547">3단계: 기본값 True</text>
+  <text x="360" y="270" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">사용자 정의 객체는 별도 정의 없으면 항상 Truthy</text>
+
+  <!-- 예시 박스 (오른쪽) -->
+  <rect x="540" y="110" width="170" height="170" rx="4" fill="#faf7f2" stroke="#c4724e"/>
+  <text x="625" y="128" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="10" fill="#c4724e">자주 보는 결과</text>
+  <text x="550" y="148" font-family="JetBrains Mono" font-size="9" fill="#1a1410">bool(0)</text><text x="640" y="148" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#963434">False</text>
+  <text x="550" y="163" font-family="JetBrains Mono" font-size="9" fill="#1a1410">bool([])</text><text x="640" y="163" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#963434">False</text>
+  <text x="550" y="178" font-family="JetBrains Mono" font-size="9" fill="#1a1410">bool("")</text><text x="640" y="178" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#963434">False</text>
+  <text x="550" y="193" font-family="JetBrains Mono" font-size="9" fill="#1a1410">bool(None)</text><text x="640" y="193" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#963434">False</text>
+  <text x="550" y="213" font-family="JetBrains Mono" font-size="9" fill="#1a1410">bool(1)</text><text x="640" y="213" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#267547">True</text>
+  <text x="550" y="228" font-family="JetBrains Mono" font-size="9" fill="#1a1410">bool([0])</text><text x="640" y="228" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#267547">True</text>
+  <text x="550" y="243" font-family="JetBrains Mono" font-size="9" fill="#1a1410">bool(" ")</text><text x="640" y="243" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#267547">True</text>
+  <text x="550" y="258" font-family="JetBrains Mono" font-size="9" fill="#1a1410">bool(object())</text><text x="640" y="258" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#267547">True</text>
+  <text x="625" y="275" text-anchor="middle" font-family="Noto Sans KR" font-size="8" fill="#706b66">Falsy: 0/None/빈 컨테이너</text>
+
+  <text x="360" y="300" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">__bool__이 우선이고, 그 다음이 __len__이다 — 순서를 외우면 모든 결과를 예측할 수 있다</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#706b66"/>
+    </marker>
+  </defs>
+</svg>

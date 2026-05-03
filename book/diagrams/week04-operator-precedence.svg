@@ -1,0 +1,48 @@
+<svg width="660" height="320" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <text x="360" y="22" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="14" fill="#1a1410">2 + 3 * 4 가 왜 20이 아닌 14인가 — 연산자 우선순위 트리</text>
+
+  <!-- 표현식 -->
+  <rect x="240" y="42" width="240" height="36" rx="4" fill="#1e1e2e"/>
+  <text x="360" y="65" text-anchor="middle" font-family="JetBrains Mono" font-size="16" fill="#cdd6f4" font-weight="700">2 + 3 * 4</text>
+
+  <!-- 트리 구조 -->
+  <text x="360" y="100" text-anchor="middle" font-family="Noto Sans KR" font-size="10" fill="#706b66">파서가 만드는 AST (Abstract Syntax Tree)</text>
+
+  <!-- 루트: + -->
+  <circle cx="360" cy="135" r="22" fill="#fdf2f2" stroke="#c45858" stroke-width="2"/>
+  <text x="360" y="142" text-anchor="middle" font-family="JetBrains Mono" font-size="18" fill="#963434" font-weight="700">+</text>
+
+  <!-- 왼쪽 자식: 2 -->
+  <line x1="345" y1="150" x2="270" y2="195" stroke="#706b66" stroke-width="1.5"/>
+  <circle cx="260" cy="205" r="20" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="1.5"/>
+  <text x="260" y="212" text-anchor="middle" font-family="JetBrains Mono" font-size="16" fill="#267547" font-weight="700">2</text>
+
+  <!-- 오른쪽 자식: * -->
+  <line x1="375" y1="150" x2="450" y2="195" stroke="#706b66" stroke-width="1.5"/>
+  <circle cx="460" cy="205" r="22" fill="#fdf2f2" stroke="#c45858" stroke-width="2"/>
+  <text x="460" y="212" text-anchor="middle" font-family="JetBrains Mono" font-size="18" fill="#963434" font-weight="700">*</text>
+
+  <!-- *의 자식: 3, 4 -->
+  <line x1="445" y1="218" x2="395" y2="258" stroke="#706b66" stroke-width="1.5"/>
+  <circle cx="385" cy="270" r="18" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="1.5"/>
+  <text x="385" y="277" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#267547" font-weight="700">3</text>
+
+  <line x1="475" y1="218" x2="525" y2="258" stroke="#706b66" stroke-width="1.5"/>
+  <circle cx="535" cy="270" r="18" fill="#f0f9f4" stroke="#3b9b6e" stroke-width="1.5"/>
+  <text x="535" y="277" text-anchor="middle" font-family="JetBrains Mono" font-size="14" fill="#267547" font-weight="700">4</text>
+
+  <!-- 평가 단계 (오른쪽) -->
+  <rect x="560" y="120" width="150" height="160" rx="4" fill="#faf7f2" stroke="#c4724e" stroke-width="1"/>
+  <text x="635" y="138" text-anchor="middle" font-family="Noto Sans KR" font-weight="700" font-size="11" fill="#c4724e">평가 순서</text>
+  <text x="570" y="160" font-family="Noto Sans KR" font-size="10" fill="#1a1410">1. 깊은 곳부터:</text>
+  <text x="580" y="178" font-family="JetBrains Mono" font-size="10" fill="#963434">3 * 4 = 12</text>
+  <text x="570" y="200" font-family="Noto Sans KR" font-size="10" fill="#1a1410">2. 그 다음:</text>
+  <text x="580" y="218" font-family="JetBrains Mono" font-size="10" fill="#963434">2 + 12 = 14</text>
+  <line x1="570" y1="232" x2="700" y2="232" stroke="#c4724e" stroke-width="0.5"/>
+  <text x="635" y="250" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">곱셈이 덧셈보다</text>
+  <text x="635" y="265" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#706b66">우선순위가 높다</text>
+
+  <!-- 결론 -->
+  <text x="280" y="305" font-family="Noto Sans KR" font-size="11" fill="#1a1410">최종 결과:</text>
+  <text x="370" y="305" font-family="JetBrains Mono" font-size="14" fill="#963434" font-weight="700">14</text>
+</svg>

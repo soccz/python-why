@@ -13,10 +13,47 @@
   <meta property="og:url" content="https://soccz.github.io/python-why/">
   <meta property="og:site_name" content="PyWhy">
   <meta property="og:locale" content="ko_KR">
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="PyWhy — 파이썬 강의">
-  <meta name="twitter:description" content="컴퓨터가 어떻게 생각하는가를 중심으로 한 파이썬 강의. 15주 커리큘럼.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PyWhy — 파이썬 사고법">
+  <meta name="twitter:description" content="공식 문서로 분해하는 파이썬 사고법. 15주 · 4단계(초급/중급/고급/전공자) · CPython 바이트코드까지.">
+  <meta name="twitter:image" content="https://soccz.github.io/python-why/assets/og-card.png">
+  <meta property="og:image" content="https://soccz.github.io/python-why/assets/og-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="article:author" content="H0NG">
+  <meta name="author" content="H0NG">
+  <meta name="keywords" content="파이썬, Python, 파이썬 강의, CPython, 바이트코드, AST, 인터프리터, 타입힌트, asyncio, 클로저, 데코레이터, 한국어 파이썬 책, PyWhy">
   <link rel="canonical" href="https://soccz.github.io/python-why/">
+  <link rel="alternate" hreflang="ko" href="https://soccz.github.io/python-why/">
+
+  <!-- Schema.org JSON-LD: Book + Course -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    "name": "PyWhy — 공식 문서로 분해하는 파이썬 사고법",
+    "alternateName": "PyWhy",
+    "author": {
+      "@type": "Person",
+      "name": "H0NG"
+    },
+    "inLanguage": "ko",
+    "numberOfPages": 1010,
+    "bookFormat": "https://schema.org/EBook",
+    "abstract": "문법을 외우는 책이 아니라, 컴퓨터가 어떻게 생각하는지를 배우는 책. print()가 왜 함수인가, for 한 줄 뒤에 어떤 분해가 숨어있는가, x = 1이 왜 '상자에 넣기'가 아니라 '이름표 붙이기'인가 — 한 줄의 코드 뒤에 숨은 인터프리터의 사고 과정을 따라간다.",
+    "description": "Python 3.14 공식 문서 기반. 4단계(초급/중급/고급/전공자) 시스템 + CPython 바이트코드까지. 15주차 1,010쪽 PDF.",
+    "url": "https://soccz.github.io/python-why/",
+    "publisher": {
+      "@type": "Person",
+      "name": "H0NG"
+    },
+    "audience": {
+      "@type": "EducationalAudience",
+      "educationalRole": "Beginner to Advanced"
+    }
+  }
+  </script>
+
   <link rel="stylesheet" href="css/style.min.css">
   <style>
     /* ===== LANDING PAGE STYLES ===== */
@@ -117,6 +154,117 @@
       border-color: var(--border-accent);
       transform: translateY(-2px);
       box-shadow: var(--shadow-sm);
+    }
+
+    /* Book release section */
+    .book-release {
+      margin: 64px 0 32px;
+      padding: 56px 48px;
+      background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--accent-soft) 100%);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-lg, 16px);
+      box-shadow: var(--shadow-md);
+    }
+    .book-release-inner {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 48px;
+      align-items: start;
+    }
+    .book-release-eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 1.6px;
+      color: var(--accent-text);
+      margin-bottom: 14px;
+    }
+    .book-release-h2 {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 2.2rem;
+      font-weight: 900;
+      line-height: 1.18;
+      color: var(--text);
+      margin: 0 0 18px;
+      letter-spacing: -0.02em;
+    }
+    .book-release-lead {
+      font-size: 1.0rem;
+      line-height: 1.65;
+      color: var(--text);
+      margin: 0 0 22px;
+    }
+    .book-release-meta {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 28px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 18px;
+      font-size: 0.86rem;
+      color: var(--text-muted);
+    }
+    .book-release-meta li { padding: 3px 0; }
+    .book-release-meta li strong {
+      color: var(--accent-text);
+      font-weight: 700;
+      margin-right: 6px;
+      letter-spacing: 0.5px;
+    }
+    .book-release-cta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .book-release-note {
+      margin: 6px 0 0;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+    .book-release-gallery {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .gallery-thumb {
+      display: block;
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--bg);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .gallery-thumb:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-accent);
+    }
+    .gallery-thumb img {
+      width: 100%;
+      height: 158px;
+      object-fit: cover;
+      object-position: top;
+      display: block;
+    }
+    .gallery-thumb.gallery-cover img { object-fit: contain; background: var(--accent-soft); }
+    .gallery-cap {
+      display: block;
+      padding: 6px 8px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+      background: var(--bg-elevated);
+      border-top: 1px solid var(--border);
+    }
+    @media (max-width: 768px) {
+      .book-release { padding: 36px 22px; }
+      .book-release-inner { grid-template-columns: 1fr; gap: 32px; }
+      .book-release-h2 { font-size: 1.6rem; }
+      .book-release-meta { grid-template-columns: 1fr; }
+      .book-release-gallery { grid-template-columns: repeat(2, 1fr); }
     }
 
     /* Stats row */
@@ -528,6 +676,23 @@
 <div class="page-wrapper">
 <main id="main-content">
 
+<!-- ===== TOP BANNER (책 출시 안내) ===== -->
+<a href="book/" class="top-banner" style="
+  display: block;
+  text-align: center;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, #c4724e 0%, #8e4f30 100%);
+  color: #fdf3ec;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  transition: opacity 0.18s ease;
+" onmouseover="this.style.opacity=0.9" onmouseout="this.style.opacity=1">
+  📕 PyWhy v1.0 PDF 전자책 출시 — 1,010쪽 / 4단계 학습 / 무료 미리보기 70쪽 →
+</a>
+
 <!-- ===== HERO ===== -->
 <div class="hero">
   <span class="hero-eyebrow">Python 3.14 공식 문서 기반</span>
@@ -560,6 +725,60 @@
     <div class="stat-item">
       <span class="stat-num">200+</span>
       <span class="stat-label">코드 예제</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PDF 책 출시 안내 ===== -->
+<div class="book-release" id="book">
+  <div class="book-release-inner">
+    <div class="book-release-text">
+      <span class="book-release-eyebrow">📕 PyWhy v1.0 — PDF 전자책</span>
+      <h2 class="book-release-h2">강의 전체를 한 권으로</h2>
+      <p class="book-release-lead">
+        15주차 전체 + 색인 + 머리말 + 표지 · 목차를 정리한 <strong>1,010쪽 단권 PDF</strong>.
+        4단계 컬러 보더, 다크 테마 코드블록, 챕터별 챕터 디바이더,
+        러닝 헤더와 페이지 번호 — 출판물로 가독성을 끌어올린 판본입니다.
+      </p>
+      <ul class="book-release-meta">
+        <li><strong>판형</strong> · B5 (176×250 mm)</li>
+        <li><strong>분량</strong> · 1,010쪽 / 약 14.6 MB</li>
+        <li><strong>기준</strong> · Python 3.14 / CPython</li>
+        <li><strong>저자</strong> · H<span style="font-family: 'JetBrains Mono', monospace; color: #1a1410;">0</span>NG</li>
+      </ul>
+      <div class="book-release-cta">
+        <a href="assets/PyWhy_preview.pdf" class="btn-primary" download>📥 무료 미리보기 PDF (1주차, 70쪽)</a>
+        <a href="#book-purchase" class="btn-secondary">전체 PDF 출시 알림 받기</a>
+      </div>
+      <p class="book-release-note">
+        <small>전체 PDF는 곧 Gumroad에 출시 예정. 가격·발행일 확정 후 본 페이지에 업데이트됩니다.</small>
+      </p>
+    </div>
+    <div class="book-release-gallery">
+      <a href="assets/gallery/page-1.png" class="gallery-thumb gallery-cover">
+        <img src="assets/gallery/page-1.png" alt="PyWhy 표지" loading="lazy">
+        <span class="gallery-cap">표지</span>
+      </a>
+      <a href="assets/gallery/page-3.png" class="gallery-thumb">
+        <img src="assets/gallery/page-3.png" alt="목차" loading="lazy">
+        <span class="gallery-cap">목차</span>
+      </a>
+      <a href="assets/gallery/page-12.png" class="gallery-thumb">
+        <img src="assets/gallery/page-12.png" alt="1주차 챕터 디바이더" loading="lazy">
+        <span class="gallery-cap">챕터 디바이더</span>
+      </a>
+      <a href="assets/gallery/page-43.png" class="gallery-thumb">
+        <img src="assets/gallery/page-43.png" alt="본문 — I/O 버퍼링" loading="lazy">
+        <span class="gallery-cap">본문 + 코드</span>
+      </a>
+      <a href="assets/gallery/page-102.png" class="gallery-thumb">
+        <img src="assets/gallery/page-102.png" alt="4단계 박스 — bool 전공자 섹션" loading="lazy">
+        <span class="gallery-cap">전공자 섹션</span>
+      </a>
+      <a href="assets/gallery/page-996.png" class="gallery-thumb">
+        <img src="assets/gallery/page-996.png" alt="색인" loading="lazy">
+        <span class="gallery-cap">색인 (378개)</span>
+      </a>
     </div>
   </div>
 </div>
